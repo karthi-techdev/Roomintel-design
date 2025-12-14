@@ -1,0 +1,927 @@
+"use client";
+
+import React, { useState, useRef } from 'react';
+import {
+  FaRegCalendarAlt,
+  FaChevronDown,
+  FaChevronLeft,
+  FaChevronRight,
+} from 'react-icons/fa';
+import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
+import { RiDoubleQuotesL } from 'react-icons/ri';
+
+
+interface SlideData {
+  image: string;
+  title: string;
+  subtitle: string;
+}
+
+export default function Home() {
+
+  const slides: SlideData[] = [
+    {
+      image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2525&auto=format&fit=crop",
+      title: "Mountains Legacy Stay",
+      subtitle: "Food indulgence in mind, come next door and sate your desires with our ever changing internationally and seasonally."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=2525&auto=format&fit=crop",
+      title: "Oceanfront Paradise",
+      subtitle: "Wake up to the sound of waves and experience ultimate relaxation in our premium oceanfront suites."
+    },
+    {
+      image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2525&auto=format&fit=crop",
+      title: "Tropical Garden Villa",
+      subtitle: "Immerse yourself in nature with our secluded garden villas, offering private pools and lush greenery."
+    }
+  ];
+
+  const rooms = [
+    {
+      id: 1,
+      name: "Junior Suite",
+      image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop",
+      price: 150,
+      description: "Our Junior Suites offer a perfect blend of comfort and luxury, featuring a spacious living area and a private balcony with stunning views/.",
+      amenities: {
+        beds: 1,
+        baths: 1,
+        area: 45
+      }
+    },
+    {
+      id: 2,
+      name: "Family Room",
+      image: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=2574&auto=format&fit=crop",
+      price: 250,
+      description: "Designed with families in mind, this spacious room offers multiple beds and a cozy atmosphere for a memorable stay.",
+      amenities: {
+        beds: 3,
+        baths: 2,
+        area: 75
+      }
+    },
+    {
+      id: 3,
+      name: "Double Room",
+      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2574&auto=format&fit=crop",
+      price: 180,
+      description: "Ideal for couples or solo travelers, our Double Rooms provide a tranquil retreat with modern amenities and elegant decor.",
+      amenities: {
+        beds: 2,
+        baths: 1,
+        area: 35
+      }
+    }
+  ];
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [formData, setFormData] = useState({
+    arrival: '',
+    departure: '',
+    adults: '',
+    children: ''
+  });
+
+  const arrivalRef = useRef<HTMLInputElement>(null);
+  const departureRef = useRef<HTMLInputElement>(null);
+
+  // Carousel Navigation
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDateFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.target.type = 'date';
+    e.target.showPicker?.();
+  };
+
+  const handleDateBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!e.target.value) {
+      e.target.type = 'text';
+    }
+  };
+
+  const currentData = slides[currentSlide];
+
+  const roomData = [
+    {
+      id: 1,
+      name: "Junior Suite",
+      image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=2670&auto=format&fit=crop"
+    },
+    {
+      id: 2,
+      name: "Family Room",
+      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=2674&auto=format&fit=crop"
+    },
+    {
+      id: 3,
+      name: "Double Room",
+      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2670&auto=format&fit=crop"
+    }
+  ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlideCarousel = () => {
+    setCurrentIndex((prev) => (prev + 1) % rooms.length);
+  };
+
+  const prevSlideCarousel = () => {
+    setCurrentIndex((prev) => (prev - 1 + rooms.length) % rooms.length);
+  };
+
+  const getSlidePosition = (index: number) => {
+    if (index === currentIndex) return "center";
+    if (index === (currentIndex - 1 + rooms.length) % rooms.length) return "left";
+    if (index === (currentIndex + 1) % rooms.length) return "right";
+    return "hidden";
+  };
+
+  const activeRoom = rooms[currentIndex];
+
+    const amenities = [
+    {
+      icon: <PiWifiHigh />,
+      title: "High Speed Wifi",
+      desc: "With our service you may enjoy the finest life in our resort."
+    },
+    {
+      icon: <PiCar />,
+      title: "Pick & Drop Facility",
+      desc: "With our service you may enjoy the finest life in our resort."
+    },
+    {
+      icon: <PiTelevision />,
+      title: "Smart TV",
+      desc: "With our service you may enjoy the finest life in our resort."
+    },
+    {
+      icon: <PiSwimmingPool />,
+      title: "Swimming Pool",
+      desc: "With our service you may enjoy the finest life in our resort."
+    },
+    {
+      icon: <PiCoffee />,
+      title: "Breakfast Included",
+      desc: "With our service you may enjoy the finest life in our resort."
+    },
+    {
+      icon: <PiBathtub />,
+      title: "Shower Bathtub",
+      desc: "With our service you may enjoy the finest life in our resort."
+    }
+  ];
+
+    const staffMembers = [
+    {
+      id: 1,
+      name: "Dona Mona",
+      role: "HOUSE KEEPING",
+      image: "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?q=80&w=2680&auto=format&fit=crop"
+    },
+    {
+      id: 2,
+      name: "Desulva Merry",
+      role: "HOUSE KEEPING",
+      image: "https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?q=80&w=2687&auto=format&fit=crop"
+    },
+    {
+      id: 3,
+      name: "John Michale",
+      role: "HOUSE KEEPING",
+      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2574&auto=format&fit=crop"
+    },
+    {
+      id: 4,
+      name: "Marry Desalwa",
+      role: "HOUSE KEEPING",
+      image: "https://images.unsplash.com/photo-1581050777502-c8a115d64b53?q=80&w=2670&auto=format&fit=crop"
+    }
+  ];
+
+  const articles = [
+    {
+       id: 1,
+       title: "New heaven for our customers in ...",
+       image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop",
+       date: "11",
+       month: "Dec"
+    },
+    {
+       id: 2,
+       title: "10 top soups from our restaurant ...",
+       image: "https://images.unsplash.com/photo-1563690403756-3c46e0882772?q=80&w=2070&auto=format&fit=crop",
+       date: "11",
+       month: "Dec"
+    },
+    {
+       id: 3,
+       title: "Paradise for our customers in ...",
+       image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=2000&auto=format&fit=crop",
+       date: "11",
+       month: "Dec"
+    }
+  ];
+
+  return (
+    <main className="w-full">
+      <section className="relative w-full h-[850px] overflow-hidden">
+        {/* Background Image with Transition */}
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode='popLayout'>
+            <motion.img
+              key={currentSlide}
+              src={currentData.image}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.7 }}
+              alt="Luxury Resort Background"
+              className="w-full h-full object-cover absolute inset-0"
+            />
+          </AnimatePresence>
+          {/* Subtle overlay to make text pop against the blue water/sky */}
+          <div className="absolute inset-0 bg-black/10 z-10"></div>
+        </div>
+
+        {/* Hero Content - Centered Left */}
+        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16 w-full max-w-[1800px] mx-auto pb-40">
+          <AnimatePresence mode='wait'>
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="max-w-4xl"
+            >
+              <h1 className="text-6xl md:text-7xl lg:text-[6.5rem] font-serif text-white mb-6 leading-[1.1] drop-shadow-lg">
+                {currentData.title}
+              </h1>
+              <p className="text-white text-lg md:text-[19px] font-normal mb-12 max-w-2xl leading-relaxed opacity-95">
+                {currentData.subtitle}
+              </p>
+
+              <button className="bg-white hover:bg-gray-100 text-[#222] font-bold h-[55px] px-10 rounded-[4px] text-[13px] tracking-[0.2em] uppercase transition-all shadow-lg hover:shadow-xl">
+                View Rooms
+              </button>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Floating Elements Container (Bottom) */}
+        <div className="absolute bottom-12 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
+
+          {/* Booking Bar - Left/Center */}
+          <div className="bg-white rounded-[6px] shadow-2xl p-6 lg:p-8 w-full max-w-[1100px] pointer-events-auto">
+            <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => e.preventDefault()}>
+
+              {/* Arrival Date */}
+              <div className="flex flex-col gap-3">
+                <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Arrival Date</label>
+                <div className="relative group cursor-pointer" onClick={() => arrivalRef.current?.focus()}>
+                  <input
+                    ref={arrivalRef}
+                    type={formData.arrival ? "date" : "text"}
+                    value={formData.arrival}
+                    onChange={(e) => handleInputChange('arrival', e.target.value)}
+                    onFocus={handleDateFocus}
+                    onBlur={handleDateBlur}
+                    placeholder="Arrival Date"
+                    className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                  />
+                  <FaRegCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-lg pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Departure Date */}
+              <div className="flex flex-col gap-3">
+                <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Departure Date</label>
+                <div className="relative cursor-pointer" onClick={() => departureRef.current?.focus()}>
+                  <input
+                    ref={departureRef}
+                    type={formData.departure ? "date" : "text"}
+                    value={formData.departure}
+                    onChange={(e) => handleInputChange('departure', e.target.value)}
+                    onFocus={handleDateFocus}
+                    onBlur={handleDateBlur}
+                    placeholder="Departure Date"
+                    className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                  />
+                  <FaRegCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-lg pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Adults */}
+              <div className="flex flex-col gap-3">
+                <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Adults</label>
+                <div className="relative">
+                  <select
+                    value={formData.adults}
+                    onChange={(e) => handleInputChange('adults', e.target.value)}
+                    className="w-full h-[50px] pl-4 pr-8 bg-white border border-gray-200 rounded-[4px] text-gray-500 text-[14px] appearance-none focus:outline-none focus:border-brand-blue cursor-pointer"
+                  >
+                    <option value="" disabled hidden>Adults</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4+</option>
+                  </select>
+                  <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Children */}
+              <div className="flex flex-col gap-3">
+                <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Children</label>
+                <div className="relative">
+                  <select
+                    value={formData.children}
+                    onChange={(e) => handleInputChange('children', e.target.value)}
+                    className="w-full h-[50px] pl-4 pr-8 bg-white border border-gray-200 rounded-[4px] text-gray-500 text-[14px] appearance-none focus:outline-none focus:border-brand-blue cursor-pointer"
+                  >
+                    <option value="" disabled hidden>Children</option>
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3+</option>
+                  </select>
+                  <FaChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-xs pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="h-full flex items-end">
+                <button
+                  type="submit"
+                  className="w-full h-[50px] bg-[#c23535] text-white font-bold text-[14px] rounded-[4px] shadow-sm transition-colors tracking-wide hover:bg-[#a12b2b]"
+                  onClick={() => alert(`Checking availability for:\nCheck-in: ${formData.arrival}\nCheck-out: ${formData.departure}\nAdults: ${formData.adults}\nChildren: ${formData.children}`)}
+                >
+                  Check Availability
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+          {/* Slider Navigation Arrows - Bottom Right */}
+          <div className="hidden xl:flex flex-col gap-4 mb-2 pointer-events-auto shrink-0 ml-6">
+            {/* Right Arrow (Next) */}
+            <button
+              onClick={nextSlide}
+              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-white hover:text-brand-dark transition-all duration-300 backdrop-blur-sm z-30"
+            >
+              <FaChevronRight className="text-xl ml-1" />
+            </button>
+            {/* Left Arrow (Prev) */}
+            <button
+              onClick={prevSlide}
+              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-white hover:text-brand-dark transition-all duration-300 backdrop-blur-sm z-30"
+            >
+              <FaChevronLeft className="text-xl mr-1" />
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <section className='mx-5 my-5 rounded-[10px] bg-white overflow-hidden'>
+        <div className="w-full flex flex-col lg:flex-row min-h-[700px]">
+                {/* 1. Image Section (Left) */}
+                <div className="w-full lg:w-[35%] relative min-h-[400px] lg:min-h-full">
+                  <img
+                    src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2670&auto=format&fit=crop"
+                    alt="Snowy Chalet"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                {/* 2. Dark Blue Card Section (Middle) */}
+                <div className="w-full lg:w-[25%] bg-[#283862] p-10 xl:p-14 flex flex-col justify-center text-white relative">
+                  <div className="flex flex-col gap-6">
+                    <motion.h3
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6 }}
+                      className="text-2xl xl:text-3xl font-normal leading-snug font-sans"
+                    >
+                      A Luxurious Way to Meet with nature. The comfort and the needs of our guests come before all else here.
+                    </motion.h3>
+
+                    <motion.p
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: 0.2 }}
+                      className="text-gray-300 text-sm leading-relaxed"
+                    >
+                      We have varities of room and suits according your need
+                    </motion.p>
+
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: 0.4 }}
+                    >
+                      <button className="mt-6 bg-[#c23535] text-white font-bold h-[50px] px-8 rounded-[4px] text-[13px] tracking-widest uppercase transition-colors w-max">
+                        Discover More
+                      </button>
+                    </motion.div>
+                  </div>
+                </div>
+
+                {/* 3. White Content Section (Right) */}
+                <div className="w-full lg:w-[40%] bg-white p-10 xl:p-20 flex flex-col justify-center">
+                  <div className="flex flex-col gap-8">
+
+                    {/* Subheader */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-[1px] bg-[#c23535]"></div>
+                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                        Welcome to Bluebell
+                      </span>
+                    </div>
+
+                    {/* Main Headline */}
+                    <motion.h2
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6 }}
+                      className="text-4xl xl:text-[3.25rem] font-serif text-[#283862] leading-[1.2] font-semibold"
+                    >
+                      We Invite guests to celebrate life
+                    </motion.h2>
+
+                    {/* Description Text */}
+                    <div className="text-gray-500 text-[15px] leading-relaxed space-y-6 font-light">
+                      <p>
+                        Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality. Delightful herbs and flavors consolidate surfaces to pacify wide based palates.
+                      </p>
+                      <p>
+                        Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality.
+                      </p>
+                    </div>
+
+                    {/* Signature */}
+                    <div className="mt-4">
+                      <span className="font-cursive text-4xl text-gray-500">Kathy A. Xemn</span>
+                    </div>
+
+                  </div>
+                </div>
+        </div>
+
+        <div className="py-20 bg-white overflow-hidden flex flex-col items-center mx-5 my-5 rounded-[10px]">
+          {/* Header */}
+          <div className="text-center mb-16 px-4">
+            <div className="flex items-center justify-center gap-4 mb-4"> 
+              <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
+              <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Accomodation</span>
+              <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
+            </div>
+            <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">Our Rooms & Suits</h2>
+          </div>
+
+          {/* Carousel Container */}
+          <div className="relative w-full h-[500px] max-w-[1800px] flex justify-center items-center mb-8">
+            {rooms.map((room, index) => {
+              const position = getSlidePosition(index);
+              if (position === 'hidden') return null;
+
+              const isCenter = position === 'center';
+              const isLeft = position === 'left';
+
+              // Animation variants
+              const variants = {
+                center: { x: "0%", scale: 1, opacity: 1, zIndex: 20 },
+                left: { x: "-65%", scale: 0.85, opacity: 1, zIndex: 10 },
+                right: { x: "65%", scale: 0.85, opacity: 1, zIndex: 10 }
+              };
+
+              return (
+                <motion.div
+                  key={room.id}
+                  initial="center"
+                  animate={position}
+                  variants={variants}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full rounded-md overflow-hidden shadow-xl"
+                >
+                  <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+
+                  {/* Overlay for inactive slides */}
+                  {!isCenter && (
+                    <div
+                      className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center cursor-pointer group"
+                      onClick={isLeft ? prevSlideCarousel : nextSlideCarousel}
+                    >
+                      {/* Directional Arrow */}
+                      {isLeft ? (
+                        <BsArrowLeft className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
+                      ) : (
+                        <BsArrowRight className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+
+            {/* Mobile Navigation controls */}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-6 md:hidden z-30">
+              <button onClick={prevSlide} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
+                <BsArrowLeft />
+              </button>
+              <button onClick={nextSlide} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
+                <BsArrowRight />
+              </button>
+            </div>
+          </div>
+
+          {/* Room Details Section */}
+          <div className="w-full max-w-[1200px] px-6 lg:px-0 mt-8">
+            <AnimatePresence mode='wait'>
+              <motion.div
+                key={activeRoom.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.4 }}
+                className="flex flex-col md:flex-row gap-8 md:gap-16 items-start"
+              >
+                {/* Left: Price & Title */}
+                <div className="w-full md:w-1/3 flex flex-col">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ${activeRoom.price} Night</span>
+                  </div>
+                  <h3 className="text-3xl md:text-4xl font-serif text-[#283862] font-bold leading-tight">
+                    {activeRoom.name}
+                  </h3>
+                </div>
+
+                {/* Right: Amenities & Description */}
+                <div className="w-full md:w-2/3 flex flex-col gap-6">
+                  {/* Icons */}
+                  <div className="flex items-center gap-8 border-b border-gray-100 pb-6">
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <PiBed className="text-2xl" />
+                      <span className="text-sm">{activeRoom.amenities.beds} beds</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <PiBathtub className="text-2xl" />
+                      <span className="text-sm">{activeRoom.amenities.baths} Bathroom</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <PiArrowsOutSimple className="text-2xl" />
+                      <span className="text-sm">{activeRoom.amenities.area} m2</span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-gray-500 text-[15px] leading-relaxed">
+                    {activeRoom.description}
+                  </p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-15 px-6 lg:px-16 w-full">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
+              <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Amenities</span>
+              <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
+            </div>
+            <h2 className="text-4xl md:text-[3.5rem] font-serif text-white font-bold">Make Your Stay Memorable</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
+            {amenities.map((item, index) => (
+              <motion.div 
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className="flex items-start gap-5 group"
+              >
+                <div className="text-[#c23535] text-5xl pt-1 transition-transform duration-300 group-hover:-translate-y-1">
+                  {item.icon}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <h4 className="text-white text-xl font-bold font-sans">{item.title}</h4>
+                  <p className="text-gray-400 text-sm leading-relaxed max-w-[280px]">
+                    {item.desc}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="pb-15 px-6 lg:px-16 w-full pt-10">
+       <div className="max-w-[1400px] mx-auto">
+          {/* Header */}
+          <div className="flex flex-col lg:flex-row justify-between mb-16 gap-8 items-left">
+              <div className="max-w-xl">
+                 <div className="flex items-center gap-4 mb-4">
+                     <div className="w-12 h-[1px] bg-[#c23535]"></div>
+                     <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Dedicated Team</span>
+                 </div>
+                 <h2 className="text-4xl md:text-[3.5rem] font-serif text-white font-bold leading-tight">Our Resort Staff</h2>
+              </div>
+              
+              <div className="max-w-lg mb-2">
+                 <p className="text-gray-400 text-sm leading-relaxed">
+                   Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
+                 </p>
+              </div>
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+               {staffMembers.map((staff, index) => (
+                   <motion.div 
+                     key={staff.id}
+                     initial={{ opacity: 0, y: 30 }}
+                     whileInView={{ opacity: 1, y: 0 }}
+                     viewport={{ once: true }}
+                     transition={{ duration: 0.5, delay: index * 0.1 }}
+                     className="group"
+                   >
+                       {/* Image Container */}
+                       <div className="aspect-square w-full overflow-hidden mb-6 bg-gray-800">
+                           <img 
+                              src={staff.image} 
+                              alt={staff.name} 
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
+                           />
+                       </div>
+
+                       {/* Text */}
+                       <div className="text-center">
+                            <h4 className="text-white font-bold text-xl mb-2 font-sans tracking-wide">{staff.name}</h4>
+                            <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
+                       </div>
+                   </motion.div>
+               ))}
+          </div>
+       </div>
+      </section>
+
+      <section className="bg-white py-20 lg:py-32 overflow-hidden mx-5 my-5 rounded-[10px]">
+        {/* Restaurant */}
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-16 mb-32 lg:mb-48">
+          <div className="flex flex-col lg:flex-row items-center">
+              {/* Image Side */}
+              <div className="w-full lg:w-1/2 relative mb-16 lg:mb-0">
+                  {/* Vertical Text */}
+                  <span className="hidden lg:block absolute -left-12 top-10 -rotate-90 origin-top-left text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
+                      Restaurant
+                  </span>
+                  
+                  <div className="relative mr-8 lg:mr-16">
+                      <img 
+                          src="https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2070&auto=format&fit=crop" 
+                          alt="Restaurant" 
+                          className="w-full h-[400px] lg:h-[550px] object-cover" 
+                      />
+                      <div className="absolute -bottom-10 -right-4 z-50 lg:-right-12 border-[8px] border-white shadow-xl w-[200px] lg:w-[280px] h-[150px] lg:h-[200px]">
+                          <img 
+                              src="https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=2664&auto=format&fit=crop" 
+                              alt="Food" 
+                              className="w-full h-full object-cover" 
+                          />
+                      </div>
+                  </div>
+              </div>
+
+              {/* Content Side */}
+              <div className="w-full lg:w-1/2 relative lg:-ml-12 z-10">
+                  {/* Background Box */}
+                  <div className="bg-[#F8F9FA] p-10 lg:p-16 relative">
+                      {/* Vertical Text */}
+                      <span className="hidden lg:block absolute -left-12 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
+                          Fresh Food
+                      </span>
+
+                      <div className="flex items-center gap-4 mb-4">
+                          <div className="w-8 h-[1px] bg-[#c23535]"></div>
+                          <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Eat & Drink</span>
+                      </div>
+                      
+                      <h2 className="text-4xl lg:text-5xl font-serif text-[#283862] font-bold leading-tight mb-8">
+                          Indulge in exceptional <br/> & Local Foodies
+                      </h2>
+                      
+                      <p className="text-gray-500 text-sm mb-10 font-medium tracking-wide">
+                          Open Daily : 7.30 am - 11.00pm
+                      </p>
+                      
+                      <button className="bg-white hover:bg-[#c23535] hover:text-white border border-gray-200 text-[#283862] font-bold py-4 px-8 text-[11px] tracking-[0.2em] uppercase transition-all duration-300 shadow-sm">
+                          Read More
+                      </button>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        {/* Wellness */}
+        <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
+          <div className="flex flex-col lg:flex-row-reverse items-center">
+              {/* Image Side */}
+              <div className="w-full lg:w-1/2 relative mb-16 lg:mb-0">
+                  <div className="relative ml-8 lg:ml-16">
+                      <img 
+                          src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=2070&auto=format&fit=crop" 
+                          alt="Spa" 
+                          className="w-full h-[400px] lg:h-[500px] object-cover" 
+                      />
+                      <div className="absolute -bottom-10 -left-4 lg:-left-12 z-50 border-[8px] border-white shadow-xl w-[200px] lg:w-[280px] h-[150px] lg:h-[200px]">
+                          <img 
+                              src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=2565&auto=format&fit=crop" 
+                              alt="Spa Products" 
+                              className="w-full h-full object-cover" 
+                          />
+                      </div>
+                  </div>
+              </div>
+
+              {/* Content Side */}
+              <div className="w-full lg:w-1/2 relative lg:-mr-12 z-10">
+                  <div className="bg-[#F8F9FA] p-10 lg:p-16">
+                      <div className="flex items-center gap-4 mb-4">
+                          <div className="w-8 h-[1px] bg-[#c23535]"></div>
+                          <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Wellness</span>
+                      </div>
+                      
+                      <h2 className="text-4xl lg:text-5xl font-serif text-[#283862] font-bold leading-tight mb-8">
+                          A truly luxurious <br/> experience for <br/> the senses
+                      </h2>
+                      
+                      <p className="text-gray-500 text-sm font-medium tracking-wide leading-relaxed">
+                          For special rates please contact the <br/> front office : +1800-456-7890
+                      </p>
+                  </div>
+              </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
+          {/* Background Image */}
+          <div className="absolute inset-0 opacity-10">
+              <img 
+                src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop" 
+                alt="Resort Coastal View" 
+                className="w-full h-full object-cover"
+              />
+              {/* Gradient Overlay matching the dark navy brand color */}
+              <div className="absolute inset-0 bg-gradient-to-r from-brand-navy/90 via-brand-navy/80 to-brand-navy/60"></div>
+          </div>
+
+          {/* Content Container */}
+          <div className="relative z-10 w-full h-full max-w-[1400px] mx-auto px-6 lg:px-16 flex items-center justify-end">
+              <div className="max-w-xl text-left md:text-left"> 
+                  {/* Label */}
+                  <div className="flex items-center gap-4 mb-6">
+                        <div className="w-12 h-[2px] bg-[#c23535]"></div>
+                        <span className="text-white text-xs font-bold tracking-[0.25em] uppercase">Our Offer</span>
+                  </div>
+
+                  {/* Title */}
+                  <h2 className="text-5xl md:text-[4rem] font-serif text-white font-bold mb-6 leading-tight">
+                      Summer Offer
+                  </h2>
+
+                  {/* Description */}
+                  <p className="text-gray-300 text-lg leading-relaxed mb-10 font-light">
+                      Benefit from a 10% discount, making your reservations with a minimum of 3 days in advance
+                  </p>
+
+                  {/* Button */}
+                  <button className="bg-[#c23535] text-white text-[11px] font-bold tracking-[0.2em] uppercase px-9 py-4 rounded-[2px] transition-colors shadow-lg">
+                      Find Out More
+                  </button>
+              </div>
+          </div>
+      </section>
+
+      <section className="bg-white py-10 px-6 mx-5 my-5 rounded-[10px]">
+        <div className="max-w-[1200px] mx-auto">
+          <div className="mb-16 max-w-4xl">
+            <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-[2px] bg-[#c23535]"></div>
+                <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Testimonials</span>
+            </div>
+            <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold mb-6">What Our Customer Says</h2>
+            <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
+                Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Card 1 */}
+            <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
+                <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+                    <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
+                </div>
+                <h3 className="text-2xl font-serif text-[#283862] font-bold mb-4">My Favrouite Place</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                    The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
+                </p>
+                <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop" alt="Berber Smith" className="w-full h-full object-cover grayscale" />
+                    </div>
+                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Berber Smith</span>
+                </div>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
+                <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+                    <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
+                </div>
+                <h3 className="text-2xl font-serif text-[#283862] font-bold mb-4">Satisfied with Service</h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                    The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
+                </p>
+                <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                      <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1000&auto=format&fit=crop" alt="Albert March" className="w-full h-full object-cover grayscale" />
+                    </div>
+                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Albert March</span>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-[1200px] mx-auto py-10">
+          {/* Header */}
+          <div className="text-center mb-16">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
+                <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Tips & Receipes</span>
+                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
+              </div>
+              <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">News & Articles</h2>
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {articles.map((article) => (
+                  <div key={article.id} className="group bg-white rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-50">
+                      <div className="relative h-[300px] overflow-hidden">
+                        <img 
+                            src={article.image} 
+                            alt={article.title} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                        {/* Date Badge */}
+                        <div className="absolute bottom-4 right-8 bg-[#c23535] z-50 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-lg border-4 border-white z-10">
+                            <span className="font-bold text-xl leading-none">{article.date}</span>
+                            <span className="text-[10px] font-bold uppercase">{article.month}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-10 pt-12 text-center">
+                        <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
+                        <h3 className="text-2xl font-serif text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
+                            {article.title}
+                        </h3>
+                        <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">
+                            Read More
+                        </button>
+                      </div>
+                  </div>
+              ))}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
