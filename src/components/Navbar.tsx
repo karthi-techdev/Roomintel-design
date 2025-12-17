@@ -44,8 +44,7 @@ const Navbar: React.FC = () => {
         if (path.startsWith('/room-detail')) return 'room-detail';
         if (path === '/room-cart') return 'room-cart';
         if (path === '/room-checkout') return 'room-checkout';
-        if (path === '/blog') return 'blog';
-        if (path.startsWith('/blog/')) return 'blog-detail';
+        if (path === '/gallery') return 'gallery';
         if (path === '/contact-us') return 'contact-us';
         if (path === '/dashboard') return 'dashboard';
         return 'home';
@@ -92,7 +91,7 @@ const Navbar: React.FC = () => {
         { name: 'HOME', view: 'home', href: '/' },
         { name: 'ABOUT US', view: 'about-us', href: '/about-us' },
         { name: 'ROOMS', view: 'rooms', href: '/rooms' },
-        { name: 'BLOG', view: 'blog', href: '/blog' },
+        { name: 'GALLERY', view: 'gallery', href: '/gallery' },
         { name: 'CONTACT US', view: 'contact-us', href: '/contact-us' },
     ];
 
@@ -113,29 +112,6 @@ const Navbar: React.FC = () => {
                     </div>
                     <span className="text-2xl md:text-3xl font-bold text-brand-blue tracking-tight">Bluebell</span>
                 </Link>
-
-                {/* --- DESKTOP NAVIGATION --- */}
-                <div className="hidden xl:flex items-center gap-8">
-                    {navLinks.map((link) => (
-                        <Link 
-                            key={link.name}
-                            href={link.href}
-                            className={`relative font-bold text-[13px] tracking-widest uppercase transition-colors hover:text-[#c23535] ${
-                                currentView === link.view || (link.name === 'BLOG' && currentView === 'blog-detail') 
-                                ? 'text-[#c23535]' 
-                                : 'text-[#444]'
-                            }`}
-                        >
-                            {link.name}
-                            {(currentView === link.view || (link.name === 'BLOG' && currentView === 'blog-detail')) && (
-                                <motion.div 
-                                    layoutId="underline" 
-                                    className="absolute -bottom-2 left-0 right-0 h-[2px] bg-[#c23535]" 
-                                />
-                            )}
-                        </Link>
-                    ))}
-                </div>
 
                 {/* --- RIGHT ACTIONS --- */}
                 <div className="flex items-center gap-3 md:gap-5">
