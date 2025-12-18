@@ -573,7 +573,7 @@ export default function RoomsGrid() {
               <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap md:overflow-visible md:flex-row md:items-center md:gap-6">
 
                 {/* SORT */}
-                <div className="flex items-center gap-2 text-sm text-gray-500 min-w-[70%]">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
                   <span className="whitespace-nowrap">Sort By</span>
 
                   <div className="relative">
