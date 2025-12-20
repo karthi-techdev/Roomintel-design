@@ -94,7 +94,7 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
     <div className="bg-[#FAFAFA] w-full font-sans pb-20 min-h-screen">
 
       {/* --- HEADER --- */}
-      <div className="bg-[#283862] min-h-[250px] mt-[80px] sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
+      <div className="bg-[#283862] min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
   {/* Background Image */}
   <div className="absolute inset-0 opacity-40">
     <img src="/image/gallery/background-image.webp" className="w-full h-full object-cover" alt="Header" />
