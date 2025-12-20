@@ -115,7 +115,6 @@ const Navbar: React.FC = () => {
                     </div>
                     <span className="text-2xl md:text-3xl font-bold text-brand-blue tracking-tight">Roomintel</span>
                 </Link>
-
                 {/* --- RIGHT ACTIONS --- */}
                 <div className="flex items-center gap-3 md:gap-5">
                     
