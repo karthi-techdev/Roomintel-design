@@ -6,11 +6,13 @@ import {
   FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
+  FaTwitter,
 } from 'react-icons/fa';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
-import { RiDoubleQuotesL } from 'react-icons/ri';
+import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
+import { IoLogoLinkedin } from 'react-icons/io';
 
 
 interface SlideData {
@@ -90,13 +92,19 @@ export default function Home() {
   const departureRef = useRef<HTMLInputElement>(null);
 
   // Carousel Navigation
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
 
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
+const nextSlide = () => {
+  if (!slides?.length) return;
+  setCurrentSlide((prev) => (prev + 1) % slides.length);
+};
+
+const prevSlide = () => {
+  if (!slides?.length) return;
+  setCurrentSlide((prev) =>
+    prev === 0 ? slides.length - 1 : prev - 1
+  );
+};
+
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -250,7 +258,7 @@ export default function Home() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.7 }}
               alt="Luxury Resort Background"
-              className="w-full h-full object-cover absolute inset-0"
+              className="w-full h-[140%] object-cover absolute inset-0"
             />
           </AnimatePresence>
           {/* Subtle overlay to make text pop against the blue water/sky */}
@@ -258,7 +266,7 @@ export default function Home() {
         </div>
 
         {/* Hero Content - Centered Left */}
-        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16 w-full max-w-[1800px] mx-auto pb-40">
+        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-115 md:pb-40">
           <AnimatePresence mode='wait'>
             <motion.div
               key={currentSlide}
@@ -266,12 +274,12 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="max-w-4xl"
+              className="md:max-w-4xl"
             >
-              <h1 className="text-6xl md:text-7xl lg:text-[6.5rem] font-serif text-white mb-6 leading-[1.1] drop-shadow-lg">
+              <h1 className="text-lg md:text-5xl lg:text-[5.4rem] font-serif text-white mb-2 md:mb-6 leading-[1.1] drop-shadow-lg">
                 {currentData.title}
               </h1>
-              <p className="text-white text-lg md:text-[19px] font-normal mb-12 max-w-2xl leading-relaxed opacity-95">
+              <p className="text-white text-sm md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
                 {currentData.subtitle}
               </p>
 
@@ -283,12 +291,10 @@ export default function Home() {
         </div>
 
         {/* Floating Elements Container (Bottom) */}
-        <div className="absolute bottom-12 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
-
+        <div className="absolute bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
           {/* Booking Bar - Left/Center */}
           <div className="bg-white rounded-[6px] shadow-2xl p-6 lg:p-8 w-full max-w-[1100px] pointer-events-auto">
             <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => e.preventDefault()}>
-
               {/* Arrival Date */}
               <div className="flex flex-col gap-3">
                 <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Arrival Date</label>
@@ -306,7 +312,6 @@ export default function Home() {
                   <FaRegCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-lg pointer-events-none" />
                 </div>
               </div>
-
               {/* Departure Date */}
               <div className="flex flex-col gap-3">
                 <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Departure Date</label>
@@ -382,14 +387,14 @@ export default function Home() {
             {/* Right Arrow (Next) */}
             <button
               onClick={nextSlide}
-              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-white hover:text-brand-dark transition-all duration-300 backdrop-blur-sm z-30"
+              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-[#c23535] hover:text-brand-dark transition-all duration-300  z-30"
             >
               <FaChevronRight className="text-xl ml-1" />
             </button>
             {/* Left Arrow (Prev) */}
             <button
               onClick={prevSlide}
-              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-white hover:text-brand-dark transition-all duration-300 backdrop-blur-sm z-30"
+              className="w-[60px] h-[60px] rounded-full border border-white/80 text-white flex items-center justify-center hover:bg-[#c23535] hover:text-brand-dark transition-all duration-300 z-30"
             >
               <FaChevronLeft className="text-xl mr-1" />
             </button>
@@ -397,11 +402,11 @@ export default function Home() {
 
         </div>
       </section>
-
-      <section className='mx-5 my-5 rounded-[10px] bg-white overflow-hidden'>
-        <div className="w-full flex flex-col lg:flex-row min-h-[700px]">
+      <div className='before:absolute before:-top-[12px] before:left-5 before:w-[88%] md:before:w-[95%] lg:before:w-[97%]  before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px] w-full relative'>
+      <section className='rounded-t-[10px] rounded-b-none bg-white overflow-hidden relative'>
+        <div className='mx-0 md:mx-5  w-full flex flex-col lg:flex-row min-h-[700px] '>
                 {/* 1. Image Section (Left) */}
-                <div className="w-full lg:w-[35%] relative min-h-[400px] lg:min-h-full">
+                <div className="w-full md:w-[95%] lg:w-[25%] relative min-h-[400px] lg:min-h-full">
                   <img
                     src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2670&auto=format&fit=crop"
                     alt="Snowy Chalet"
@@ -410,14 +415,15 @@ export default function Home() {
                 </div>
 
                 {/* 2. Dark Blue Card Section (Middle) */}
-                <div className="w-full lg:w-[25%] bg-[#283862] p-10 xl:p-14 flex flex-col justify-center text-white relative">
+                <div className="w-full md:w-[95%] lg:w-[25%] bg-[#283862] p-10 lg:p-10
+                 xl:p-14 flex flex-col justify-center text-white">
                   <div className="flex flex-col gap-6">
                     <motion.h3
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="text-2xl xl:text-3xl font-normal leading-snug font-sans"
+                      className="text-2xl xl:text-2xl font-normal leading-snug font-sans"
                     >
                       A Luxurious Way to Meet with nature. The comfort and the needs of our guests come before all else here.
                     </motion.h3>
@@ -446,13 +452,13 @@ export default function Home() {
                 </div>
 
                 {/* 3. White Content Section (Right) */}
-                <div className="w-full lg:w-[40%] bg-white p-10 xl:p-20 flex flex-col justify-center">
+                <div className="w-full  bg-white p-10 xl:p-20 flex flex-col justify-center">
                   <div className="flex flex-col gap-8">
 
                     {/* Subheader */}
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-[1px] bg-[#c23535]"></div>
-                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                    <div className="flex items-center gap-1">
+                      <span className="w-12 h-[2px] bg-[#c23535]"></span>        
+                      <span className="text-end text-[#c23535] text-xs lg:text-sm font-bold tracking-[0.15em] uppercase">
                         Welcome to Bluebell
                       </span>
                     </div>
@@ -487,7 +493,7 @@ export default function Home() {
                 </div>
         </div>
 
-        <div className="py-20 bg-white overflow-hidden flex flex-col items-center mx-5 my-5 rounded-[10px]">
+        <div className="mx-5 py-20 bg-white overflow-hidden flex flex-col items-center mx-5 my-5 rounded-[10px]">
           {/* Header */}
           <div className="text-center mb-16 px-4">
             <div className="flex items-center justify-center gap-4 mb-4"> 
@@ -533,9 +539,9 @@ export default function Home() {
                     >
                       {/* Directional Arrow */}
                       {isLeft ? (
-                        <BsArrowLeft className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
+                        <BsArrowLeft className="hidden md:inline text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
                       ) : (
-                        <BsArrowRight className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
+                        <BsArrowRight className="hidden md:inline text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
                       )}
                     </div>
                   )}
@@ -545,10 +551,10 @@ export default function Home() {
 
             {/* Mobile Navigation controls */}
             <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-6 md:hidden z-30">
-              <button onClick={prevSlide} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
+              <button onClick={prevSlideCarousel} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
                 <BsArrowLeft />
               </button>
-              <button onClick={nextSlide} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
+              <button onClick={nextSlideCarousel} className="w-10 h-10 rounded-full bg-white/90 text-brand-navy flex items-center justify-center shadow-lg">
                 <BsArrowRight />
               </button>
             </div>
@@ -563,11 +569,11 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.4 }}
-                className="flex flex-col md:flex-row gap-8 md:gap-16 items-start"
+                className="flex flex-col md:flex-row gap-8 md:gap-16 items-start lg:px-30"
               >
                 {/* Left: Price & Title */}
                 <div className="w-full md:w-1/3 flex flex-col">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-end gap-2 mb-2">
                     <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ${activeRoom.price} Night</span>
                   </div>
                   <h3 className="text-3xl md:text-4xl font-serif text-[#283862] font-bold leading-tight">
@@ -578,7 +584,7 @@ export default function Home() {
                 {/* Right: Amenities & Description */}
                 <div className="w-full md:w-2/3 flex flex-col gap-6">
                   {/* Icons */}
-                  <div className="flex items-center gap-8 border-b border-gray-100 pb-6">
+                  <div className="flex flex-row items-center gap-1 md:gap-8 border-b border-gray-100 pb-6">
                     <div className="flex items-center gap-2 text-gray-500">
                       <PiBed className="text-2xl" />
                       <span className="text-sm">{activeRoom.amenities.beds} beds</span>
@@ -603,8 +609,9 @@ export default function Home() {
           </div>
         </div>
       </section>
+      </div>
 
-      <section className="py-15 px-6 lg:px-16 w-full">
+      <section className="py-30 px-6 lg:px-16 w-full overflow:hidden">
         <div className="max-w-[1400px] mx-auto">
           <div className="text-center mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
@@ -640,10 +647,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="pb-15 px-6 lg:px-16 w-full pt-10">
+      <section className="py-30 px-6 lg:px-16 w-full pt-10">
        <div className="max-w-[1400px] mx-auto">
           {/* Header */}
-          <div className="flex flex-col lg:flex-row justify-between mb-16 gap-8 items-left">
+          <div className="flex flex-col lg:flex-row justify-between mb-16 gap-9 md:items-center lg:items-end">
               <div className="max-w-xl">
                  <div className="flex items-center gap-4 mb-4">
                      <div className="w-12 h-[1px] bg-[#c23535]"></div>
@@ -670,32 +677,45 @@ export default function Home() {
                      transition={{ duration: 0.5, delay: index * 0.1 }}
                      className="group"
                    >
+                    <div className='flex flex-row gap-8 relative top-[173px] left-[23px] z-[1]'>
+                          <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
+                            <RiFacebookBoxFill className="text-white text-xl hidden group-hover:flex" />
+                          </div>
+                           <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
+                            <IoLogoLinkedin  className='text-white text-xl hidden group-hover:flex'/>
+                           </div>
+                           <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
+                            <FaTwitter   className='text-white text-xl hidden group-hover:flex'/>
+                           </div>
+                          </div>
                        {/* Image Container */}
-                       <div className="aspect-square w-full overflow-hidden mb-6 bg-gray-800">
+                       <div className='relative'>
+                       <div className="aspect-square w-full h-full overflow-hidden  bg-gray-800">
                            <img 
                               src={staff.image} 
                               alt={staff.name} 
-                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
-                           />
+                              className="w-full h-full object-cover group-hover:grayscale grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
+                           />                    
                        </div>
-
+                       
                        {/* Text */}
-                       <div className="text-center">
+                       <div className="flex flex-col justify-center text-center bg-[#0f1825] w-[90%] h-[6rem] absolute -bottom-15 md:-bottom-15 lg:-bottom-15">
                             <h4 className="text-white font-bold text-xl mb-2 font-sans tracking-wide">{staff.name}</h4>
                             <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
+                       </div>
                        </div>
                    </motion.div>
                ))}
           </div>
        </div>
       </section>
-
-      <section className="bg-white py-20 lg:py-32 overflow-hidden mx-5 my-5 rounded-[10px]">
+ <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
+      <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
         {/* Restaurant */}
         <div className="max-w-[1400px] mx-auto px-6 lg:px-16 mb-32 lg:mb-48">
           <div className="flex flex-col lg:flex-row items-center">
               {/* Image Side */}
-              <div className="w-full lg:w-1/2 relative mb-16 lg:mb-0">
+              <div className="w-full lg:w-[40%] relative mb-16 lg:mb-0">
                   {/* Vertical Text */}
                   <span className="hidden lg:block absolute -left-12 top-10 -rotate-90 origin-top-left text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
                       Restaurant
@@ -707,7 +727,7 @@ export default function Home() {
                           alt="Restaurant" 
                           className="w-full h-[400px] lg:h-[550px] object-cover" 
                       />
-                      <div className="absolute -bottom-10 -right-4 z-50 lg:-right-12 border-[8px] border-white shadow-xl w-[200px] lg:w-[280px] h-[150px] lg:h-[200px]">
+                      <div className="absolute -bottom-10 -right-4 z-0  lg:-right-12 border-[12px] border-[#f8f9fa]  w-[200px] lg:w-[300px] h-[150px] lg:h-[320px]">
                           <img 
                               src="https://images.unsplash.com/photo-1555126634-323283e090fa?q=80&w=2664&auto=format&fit=crop" 
                               alt="Food" 
@@ -716,16 +736,16 @@ export default function Home() {
                       </div>
                   </div>
               </div>
-
               {/* Content Side */}
-              <div className="w-full lg:w-1/2 relative lg:-ml-12 z-10">
+              
+              <div className="w-full lg:w-[60%] bg-[#F8F9FA] mt-52 relative lg:-ml-12 z-10">
                   {/* Background Box */}
-                  <div className="bg-[#F8F9FA] p-10 lg:p-16 relative">
+                  <div className="bg-[#F8F9FA] pl-0 md:pl-10 pt-10 pb-10 lg:pl-16 lg:pt-16 lg:pb-16 relative">
                       {/* Vertical Text */}
-                      <span className="hidden lg:block absolute -left-12 top-1/2 -translate-y-1/2 -rotate-90 text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
+                      <span className="hidden lg:block absolute -left-0 top-1/2 -translate-y-1/2 -rotate-90 text-lg font-bold tracking-[0.3em] text-gray-300 uppercase">
                           Fresh Food
                       </span>
-
+                      <div className='pl-5 md:pl-15'>
                       <div className="flex items-center gap-4 mb-4">
                           <div className="w-8 h-[1px] bg-[#c23535]"></div>
                           <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Eat & Drink</span>
@@ -737,11 +757,11 @@ export default function Home() {
                       
                       <p className="text-gray-500 text-sm mb-10 font-medium tracking-wide">
                           Open Daily : 7.30 am - 11.00pm
-                      </p>
-                      
+                      </p>    
                       <button className="bg-white hover:bg-[#c23535] hover:text-white border border-gray-200 text-[#283862] font-bold py-4 px-8 text-[11px] tracking-[0.2em] uppercase transition-all duration-300 shadow-sm">
                           Read More
                       </button>
+                      </div>
                   </div>
               </div>
           </div>
@@ -758,7 +778,7 @@ export default function Home() {
                           alt="Spa" 
                           className="w-full h-[400px] lg:h-[500px] object-cover" 
                       />
-                      <div className="absolute -bottom-10 -left-4 lg:-left-12 z-50 border-[8px] border-white shadow-xl w-[200px] lg:w-[280px] h-[150px] lg:h-[200px]">
+                      <div className="absolute -bottom-10 -left-4 lg:-left-12 z-20 border-[8px] border-[#f8f9fa]  w-[200px] lg:w-[280px] h-[150px] lg:h-[200px]">
                           <img 
                               src="https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=2565&auto=format&fit=crop" 
                               alt="Spa Products" 
@@ -788,7 +808,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+</div>
       <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
           {/* Background Image */}
           <div className="absolute inset-0 opacity-10">
@@ -827,10 +847,10 @@ export default function Home() {
               </div>
           </div>
       </section>
-
-      <section className="bg-white py-10 px-6 mx-5 my-5 rounded-[10px]">
+  {/* <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%]  before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px] after:absolute after:-bottom-[13px] after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:z-1 w-full relative'>
+      <section className="bg-white py-10  rounded-[10px] overflow-hidden md:px-5 lg:mx-0">
         <div className="max-w-[1200px] mx-auto">
-          <div className="mb-16 max-w-4xl">
+          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
             <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-[2px] bg-[#c23535]"></div>
                 <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Testimonials</span>
@@ -842,7 +862,6 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Card 1 */}
             <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
                 <div className="text-[#c23535] text-4xl mb-6 opacity-80">
                     <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
@@ -860,7 +879,6 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Card 2 */}
             <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
                 <div className="text-[#c23535] text-4xl mb-6 opacity-80">
                     <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
@@ -880,8 +898,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="max-w-[1200px] mx-auto py-10">
-          {/* Header */}
+        <div className="max-w-[1200px] mx-auto py-10 relative">
           <div className="text-center mb-16">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
@@ -891,24 +908,21 @@ export default function Home() {
               <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">News & Articles</h2>
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {articles.map((article) => (
-                  <div key={article.id} className="group bg-white rounded-md overflow-hidden hover:shadow-xl transition-all duration-300 border border-gray-50">
+                  <div key={article.id} className="group  rounded-md   transition-all duration-300 border border-gray-50 ">
                       <div className="relative h-[300px] overflow-hidden">
                         <img 
                             src={article.image} 
                             alt={article.title} 
                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         />
-                        {/* Date Badge */}
-                        <div className="absolute bottom-4 right-8 bg-[#c23535] z-50 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center shadow-lg border-4 border-white z-10">
+                        <div className="absolute bottom-0 right-8 bg-[#c23535] z-10 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center  border-4 border-white z-10">
                             <span className="font-bold text-xl leading-none">{article.date}</span>
                             <span className="text-[10px] font-bold uppercase">{article.month}</span>
                         </div>
-                      </div>
-                      
-                      <div className="p-10 pt-12 text-center">
+                      </div>   
+                      <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[88%] ml-11">
                         <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
                         <h3 className="text-2xl font-serif text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
                             {article.title}
@@ -917,11 +931,200 @@ export default function Home() {
                             Read More
                         </button>
                       </div>
-                  </div>
+                  </div>                  
               ))}
           </div>
         </div>
       </section>
+      </div>  */}
+
+<div
+  className="
+    relative w-full
+    before:absolute before:-top-[12px] before:left-5
+    before:w-[91%] sm:before:w-[93%] md:before:w-[95%] lg:before:w-[97%]
+    before:h-[13px] before:content-[''] before:bg-white/45
+    before:rounded-t-[8px]
+
+    after:absolute after:-bottom-[13px] after:left-5
+    after:w-[91%] sm:after:w-[93%] md:after:w-[95%] lg:after:w-[97%]
+    after:h-[13px] after:content-[''] after:bg-white/45
+    after:rounded-b-[8px] after:z-10
+  "
+>
+  <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
+
+    {/* ================= Testimonials ================= */}
+    <div className="max-w-[1200px] mx-auto">
+      <div className="mb-16 max-w-4xl ml-5 md:ml-0">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-12 h-[2px] bg-[#c23535]" />
+          <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
+            Testimonials
+          </span>
+        </div>
+
+        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold mb-6">
+          What Our Customer Says
+        </h2>
+
+        <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
+          Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {[1, 2].map((_, i) => (
+          <div
+            key={i}
+            className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
+          >
+            <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+              <RiDoubleQuotesL />
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-serif text-[#283862] font-bold mb-4">
+              My Favourite Place
+            </h3>
+
+            <p className="text-gray-500 text-sm leading-relaxed mb-8">
+              The team at Baroque is incredibly dedicated, knowledgeable, and helpful.
+            </p>
+
+            <div className="w-full h-[1px] bg-gray-200 mb-6" />
+
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                <img
+                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d"
+                  className="w-full h-full object-cover grayscale"
+                />
+              </div>
+              <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                Berber Smith
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* ================= Articles ================= */}
+    <div className="max-w-[1200px] mx-auto py-16 sm:py-20">
+      <div className="text-center mb-16">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="w-8 md:w-12 h-[2px] bg-[#c23535]" />
+          <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+            Tips & Recipes
+          </span>
+          <div className="w-8 md:w-12 h-[2px] bg-[#c23535]" />
+        </div>
+
+        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">
+          News & Articles
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:place-items-center lg:grid-cols-3 gap-8">
+  {articles.map((article) => (
+    <div
+      key={article.id}
+      className="
+        relative
+        border border-gray-50 rounded-md
+        pb-[180px]
+        sm:pb-[190px]
+        md:pb-[200px]
+        lg:pb-[180px]
+        md:w-[55%]
+        lg:w-full
+      "
+    >
+      {/* Image */}
+      <div className="relative h-[220px] sm:h-[250px] md:h-[280px] lg:h-[300px] overflow-hidden rounded-lg">
+        <img
+          src={article.image}
+          className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
+        />
+
+        <div className="absolute bottom-0 right-5 sm:right-6 md:right-8 bg-[#c23535] text-white w-14 h-14 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center border-4 border-white z-10">
+          <span className="font-bold text-lg md:text-xl">
+            {article.date}
+          </span>
+          <span className="text-[9px] md:text-[10px] font-bold uppercase">
+            {article.month}
+          </span>
+        </div>
+      </div>
+
+      {/* Floating Content */}
+      <div
+        className="
+          absolute
+          right-0
+          -bottom-[5px]
+          md:-bottom-[15px]
+          lg:-bottom-[27px]
+          w-[95%]
+          sm:w-[92%]
+          md:w-[90%]
+          lg:w-[90%]
+          p-6 sm:p-8 md:p-10 pt-10
+          text-center
+          bg-[var(--background)]
+          rounded-lg
+          shadow-lg
+        "
+      >
+        <p className="text-gray-400 text-xs mb-3 font-medium">
+          admin / 0 Comments
+        </p>
+
+        <h3 className="text-xl sm:text-2xl font-serif text-[#283862] font-bold mb-6 md:mb-8">
+          {article.title}
+        </h3>
+
+        <button className="bg-[#c23535] text-white font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full">
+          Read More
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
+
+    </div>
+
+  </section>
+</div>
+
+
+
     </main>
   );
 }
+//<div className=''>
+//                     <div className='rounded-xl overflow-hidden'>
+//                       <img 
+//                             src={article.image} 
+//                             alt={article.title} 
+//                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+//                         />
+//                     </div>
+//                     <div>
+//                       <div className="bg-[#c23535] z-10 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center  border-4 border-white z-10">
+//                            <span className="font-bold text-xl leading-none">{article.date}</span>
+//                              <span className="text-[10px] font-bold uppercase">{article.month}</span>
+//                       </div>
+//                     </div>
+//                     <div className=''>
+// <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[90%] ml-11">
+//                         <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
+//                          <h3 className="text-2xl font-serif text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
+//                              {article.title}
+//                          </h3>
+//                          <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">
+//                              Read More
+//                         </button>
+//                        </div>
+//                     </div>
+//                   </div>
