@@ -22,7 +22,6 @@ import {
     FaUserCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
-
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -44,8 +43,7 @@ const Navbar: React.FC = () => {
         if (path.startsWith('/room-detail')) return 'room-detail';
         if (path === '/room-cart') return 'room-cart';
         if (path === '/room-checkout') return 'room-checkout';
-        if (path === '/blog') return 'blog';
-        if (path.startsWith('/blog/')) return 'blog-detail';
+        if (path === '/gallery') return 'gallery';
         if (path === '/contact-us') return 'contact-us';
         if (path === '/dashboard') return 'dashboard';
         return 'home';
@@ -92,17 +90,21 @@ const Navbar: React.FC = () => {
         { name: 'HOME', view: 'home', href: '/' },
         { name: 'ABOUT US', view: 'about-us', href: '/about-us' },
         { name: 'ROOMS', view: 'rooms', href: '/rooms' },
-        { name: 'BLOG', view: 'blog', href: '/blog' },
+        { name: 'GALLERY', view: 'gallery', href: '/gallery' },
         { name: 'CONTACT US', view: 'contact-us', href: '/contact-us' },
     ];
-
     return (
         <>
-            <nav
-                className={`fixed top-0 left-0 w-full z-5000 transition-all duration-300 font-sans ${scrolled ? 'bg-white shadow-md py-0 mt-0' : 'bg-white shadow-sm py-2 mt-0'
-                    } px-4 md:px-6 lg:px-16 flex items-center`}
-                style={{ height: scrolled ? '70px' : '90px' }}
-            >
+           <nav
+  className={`fixed top-0 z-50 transition-all duration-300 font-sans
+    ${scrolled
+      ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
+      : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
+    }
+    px-4 md:px-6 lg:px-16 flex items-center justify-between
+  `}
+>
+
                 {/* --- LOGO --- */}
                 <Link
                     href="/"
@@ -122,40 +124,11 @@ const Navbar: React.FC = () => {
                     </div>
                 </Link>
 
-                {/* --- DESKTOP NAVIGATION --- */}
-                <div className="hidden xl:flex items-center gap-8 mx-auto">
-                    {navLinks.map((link) => (
-                        <Link
-                            key={link.name}
-                            href={link.href}
-                            className={`relative font-bold text-[13px] tracking-widest uppercase transition-colors hover:text-[#c23535] ${currentView === link.view || (link.name === 'BLOG' && currentView === 'blog-detail')
-                                    ? 'text-[#c23535]'
-                                    : 'text-[#444]'
-                                }`}
-                        >
-                            {link.name}
-                            {(currentView === link.view || (link.name === 'BLOG' && currentView === 'blog-detail')) && (
-                                <motion.div
-                                    layoutId="underline"
-                                    className="absolute -bottom-2 left-0 right-0 h-[2px] bg-[#c23535]"
-                                />
-                            )}
-                        </Link>
-                    ))}
-                </div>
-
                 {/* --- RIGHT ACTIONS --- */}
                 <div className="flex items-center gap-3 md:gap-5 ml-auto">
 
                     {/* Search Input (Desktop Dropdown) */}
                     <div className="hidden lg:block relative">
-                        <button
-                            onClick={toggleSearch}
-                            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isSearchOpen ? 'bg-[#c23535] text-white' : 'text-gray-600 hover:text-[#c23535] hover:bg-gray-50'
-                                }`}
-                        >
-                            {isSearchOpen ? <FaTimes /> : <FaSearch />}
-                        </button>
                         <AnimatePresence>
                             {isSearchOpen && (
                                 <motion.div
@@ -277,18 +250,7 @@ const Navbar: React.FC = () => {
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto">
-
-                                {/* Mobile Search */}
-                                <div className="mb-8 relative">
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="w-full h-12 bg-gray-100 rounded-sm px-4 pl-11 text-sm focus:outline-none focus:ring-1 focus:ring-[#c23535]/50 focus:bg-white transition-all"
-                                    />
-                                    <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                </div>
-
-                                {/* Links */}
+                             {/* Links */}
                                 <div className="flex flex-col gap-1 mb-8">
                                     {navLinks.map((link) => (
                                         <Link
