@@ -39,7 +39,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 "customerPhone": "9361428950"
             }
         }
-        let token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTIxNjJiZGI4YzRjZGUxZDllZjJiN2QiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGVJZCI6IjY5MjE2Mjg1YjhjNGNkZTFkOWVmMmFkOSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2NjI2MzUwMiwiZXhwIjoxNzY2MzQ5OTAyfQ.YQ5vW-EW-jAlgy9TzvUEf9taEzoLt15PffLKMg0GA50'
+        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTIxNjJiZGI4YzRjZGUxZDllZjJiN2QiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGVJZCI6IjY5MjE2Mjg1YjhjNGNkZTFkOWVmMmFkOSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2NjQwMDI4MiwiZXhwIjoxNzY2NDg2NjgyfQ.Wc4xytWim_iCQeGm4HjeE3ZgKWmZDJSahJ6KmlOFWT8'
         const headers: any = {
             headers: {
                 "Content-Type": "application/json",

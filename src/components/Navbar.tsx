@@ -1,26 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  FaPhoneAlt, 
-  FaBars, 
-  FaTimes, 
-  FaChevronRight, 
-  FaFacebookF, 
-  FaInstagram, 
-  FaSkype, 
-  FaSearch, 
-  FaUser, 
-  FaShoppingBag,
-  FaSignInAlt,
-  FaUserPlus,
-  FaEnvelope,
-  FaLock,
-  FaUserCircle
+import {
+    FaPhoneAlt,
+    FaBars,
+    FaTimes,
+    FaChevronRight,
+    FaFacebookF,
+    FaInstagram,
+    FaSkype,
+    FaSearch,
+    FaUser,
+    FaShoppingBag,
+    FaSignInAlt,
+    FaUserPlus,
+    FaEnvelope,
+    FaLock,
+    FaUserCircle
 } from 'react-icons/fa';
-import { PiHouseLineBold } from 'react-icons/pi';
 import { motion, AnimatePresence } from 'framer-motion';
 const Navbar: React.FC = () => {
     const pathname = usePathname();
@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [scrolled, setScrolled] = useState(false);
-    
+
     // Auth State
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -62,13 +62,13 @@ const Navbar: React.FC = () => {
 
     const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
     const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
-    
+
     const openLogin = () => {
         setIsLoginOpen(true);
         setIsRegisterOpen(false);
         setIsMobileMenuOpen(false);
     };
-    
+
     const openRegister = () => {
         setIsRegisterOpen(true);
         setIsLoginOpen(false);
@@ -106,19 +106,27 @@ const Navbar: React.FC = () => {
 >
 
                 {/* --- LOGO --- */}
-                <Link 
+                <Link
                     href="/"
-                    className="flex items-center gap-2 cursor-pointer z-50 group"
+                    className="flex items-center gap-2 cursor-pointer z-50"
                 >
-                    <div className="text-brand-blue text-3xl md:text-4xl pb-1 group-hover:scale-110 transition-transform duration-300">
-                        <PiHouseLineBold />
+                    {/* Using Next.js Image component */}
+                    <div className="relative">
+                        <Image
+                            src="/Logo.png"
+                            alt="Room Intel Logo"
+                            width={scrolled ? 120 : 150}  // Smaller when scrolled
+                            height={scrolled ? 200 : 200}   // Smaller when scrolled
+                            className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '
+                                }`}
+                            priority
+                        />
                     </div>
-                    <span className="text-2xl md:text-3xl font-bold text-brand-blue tracking-tight">Roomintel</span>
                 </Link>
 
                 {/* --- RIGHT ACTIONS --- */}
-                <div className="flex items-center gap-3 md:gap-5">
-                    
+                <div className="flex items-center gap-3 md:gap-5 ml-auto">
+
                     {/* Search Input (Desktop Dropdown) */}
                     <div className="hidden lg:block relative">
                         <AnimatePresence>
@@ -151,23 +159,23 @@ const Navbar: React.FC = () => {
                     {/* Auth Section (Login/Register OR My Account) */}
                     <div className="hidden lg:flex items-center gap-2">
                         {isLoggedIn ? (
-                             <Link 
+                            <Link
                                 href="/dashboard"
                                 className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
-                             >
+                            >
                                 <FaUserCircle size={16} /> My Account
-                             </Link>
+                            </Link>
                         ) : (
                             <>
-                                <button 
+                                <button
                                     onClick={openLogin}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-brand-blue transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
                                 >
                                     <FaSignInAlt /> Login
                                 </button>
-                                <button 
+                                <button
                                     onClick={openRegister}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-brand-blue transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
                                 >
                                     Register
                                 </button>
@@ -176,7 +184,7 @@ const Navbar: React.FC = () => {
                     </div>
 
                     {/* Cart */}
-                    <Link 
+                    <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
@@ -211,7 +219,7 @@ const Navbar: React.FC = () => {
                             onClick={toggleMenu}
                             className="fixed inset-0 z-50000 bg-black/60 backdrop-blur-sm lg:hidden"
                         />
-                        
+
                         {/* Drawer */}
                         <motion.div
                             initial={{ x: "100%" }}
@@ -220,29 +228,37 @@ const Navbar: React.FC = () => {
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             className="fixed top-0 right-0 z-50001 h-full w-[300px] sm:w-[350px] bg-white shadow-2xl flex flex-col lg:hidden overflow-hidden"
                         >
-                            {/* Drawer Header */}
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col items-center">
-                                <Link 
-                                    href="/"
-                                    className="text-brand-blue text-5xl mb-2"
-                                    onClick={toggleMenu}
-                                >
-                                    <PiHouseLineBold />
-                                </Link>
-                                <span className="text-2xl font-bold text-brand-blue tracking-tight">Bluebell</span>
+                            {/* Drawer Header with Logo */}
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
+                                <div className="relative">
+                                    <Image
+                                        src="/Room-intel-logo2.png"
+                                        alt="Room Intel Logo"
+                                        width={40}
+                                        height={40}
+                                        className="h-10 w-auto object-contain"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-serif font-bold text-[#283862] leading-none">
+                                        Bluebell
+                                    </span>
+                                    <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
+                                        Resort
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto">
                              {/* Links */}
                                 <div className="flex flex-col gap-1 mb-8">
                                     {navLinks.map((link) => (
-                                        <Link 
+                                        <Link
                                             key={link.name}
                                             href={link.href}
                                             onClick={toggleMenu}
-                                            className={`flex items-center justify-between py-3 px-2 border-b border-gray-50 text-sm font-bold tracking-widest uppercase transition-colors ${
-                                                currentView === link.view ? 'text-[#c23535] bg-red-50/50 pl-4 border-l-4 border-l-[#c23535]' : 'text-gray-700 hover:text-[#c23535] hover:bg-gray-50'
-                                            }`}
+                                            className={`flex items-center justify-between py-3 px-2 border-b border-gray-50 text-sm font-bold tracking-widest uppercase transition-colors ${currentView === link.view ? 'text-[#c23535] bg-red-50/50 pl-4 border-l-4 border-l-[#c23535]' : 'text-gray-700 hover:text-[#c23535] hover:bg-gray-50'
+                                                }`}
                                         >
                                             {link.name}
                                             <FaChevronRight className={`text-xs ${currentView === link.view ? 'text-[#c23535]' : 'text-gray-300'}`} />
@@ -253,7 +269,7 @@ const Navbar: React.FC = () => {
                                 {/* Mobile Auth */}
                                 <div className="grid grid-cols-1 gap-3 mb-8">
                                     {isLoggedIn ? (
-                                        <Link 
+                                        <Link
                                             href="/dashboard"
                                             onClick={toggleMenu}
                                             className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
@@ -262,13 +278,13 @@ const Navbar: React.FC = () => {
                                         </Link>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3">
-                                            <button 
+                                            <button
                                                 onClick={openLogin}
                                                 className="h-12 border border-gray-200 rounded-sm font-bold text-xs uppercase tracking-wider text-gray-700 hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-2"
                                             >
                                                 <FaSignInAlt /> Login
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={openRegister}
                                                 className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
                                             >
@@ -314,7 +330,7 @@ const Navbar: React.FC = () => {
                             onClick={closeAuth}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
-                        
+
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -322,7 +338,7 @@ const Navbar: React.FC = () => {
                             className="relative w-full max-w-[450px] bg-white rounded-sm shadow-2xl overflow-hidden"
                         >
                             {/* Close Button */}
-                            <button 
+                            <button
                                 onClick={closeAuth}
                                 className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-[#c23535] hover:text-white transition-colors"
                             >
@@ -342,9 +358,9 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaEnvelope />
                                             </div>
-                                            <input 
-                                                type="email" 
-                                                placeholder="Email Address" 
+                                            <input
+                                                type="email"
+                                                placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                                 defaultValue="alex.morgan@example.com"
                                             />
@@ -353,14 +369,14 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Password" 
+                                            <input
+                                                type="password"
+                                                placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                                 defaultValue="password"
                                             />
                                         </div>
-                                        
+
                                         <div className="flex justify-between items-center text-xs text-gray-500">
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input type="checkbox" className="accent-[#c23535]" /> Remember me
@@ -374,7 +390,7 @@ const Navbar: React.FC = () => {
                                     </form>
 
                                     <div className="mt-8 text-center text-sm text-gray-500">
-                                        Don't have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
+                                        Don`t have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
                                     </div>
                                 </div>
                             ) : (
@@ -390,9 +406,9 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaUser />
                                             </div>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Full Name" 
+                                            <input
+                                                type="text"
+                                                placeholder="Full Name"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                             />
                                         </div>
@@ -400,9 +416,9 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaEnvelope />
                                             </div>
-                                            <input 
-                                                type="email" 
-                                                placeholder="Email Address" 
+                                            <input
+                                                type="email"
+                                                placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                             />
                                         </div>
@@ -410,9 +426,9 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Password" 
+                                            <input
+                                                type="password"
+                                                placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                             />
                                         </div>
@@ -420,15 +436,15 @@ const Navbar: React.FC = () => {
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Confirm Password" 
+                                            <input
+                                                type="password"
+                                                placeholder="Confirm Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
                                             />
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]" required /> 
+                                            <input type="checkbox" className="accent-[#c23535]" required />
                                             <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
