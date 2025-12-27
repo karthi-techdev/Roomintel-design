@@ -258,7 +258,7 @@ const prevSlide = () => {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.7 }}
               alt="Luxury Resort Background"
-              className="w-full h-[140%] object-cover absolute inset-0"
+              className="w-[400px] h-[140%] md:w-full md:h-[140%] object-fill md:object-cover absolute inset-0"
             />
           </AnimatePresence>
           {/* Subtle overlay to make text pop against the blue water/sky */}
@@ -266,7 +266,7 @@ const prevSlide = () => {
         </div>
 
         {/* Hero Content - Centered Left */}
-        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-115 md:pb-40">
+        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-110 md:pb-40">
           <AnimatePresence mode='wait'>
             <motion.div
               key={currentSlide}
@@ -276,10 +276,10 @@ const prevSlide = () => {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="md:max-w-4xl"
             >
-              <h1 className="text-lg md:text-5xl lg:text-[5.4rem] font-serif text-white mb-2 md:mb-6 leading-[1.1] drop-shadow-lg">
+              <h1 className="text-lg md:text-5xl lg:text-[5.4rem] noto-geogia-font text-white mb-2 md:mb-6 leading-[1.1] drop-shadow-lg">
                 {currentData.title}
               </h1>
-              <p className="text-white text-sm md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
+              <p className="text-white text-[1rem] md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
                 {currentData.subtitle}
               </p>
 
@@ -291,7 +291,7 @@ const prevSlide = () => {
         </div>
 
         {/* Floating Elements Container (Bottom) */}
-        <div className="absolute bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
+        <div className="absolute bottom-8 md:bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
           {/* Booking Bar - Left/Center */}
           <div className="bg-white rounded-[6px] shadow-2xl p-6 lg:p-8 w-full max-w-[1100px] pointer-events-auto">
             <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => e.preventDefault()}>
@@ -404,13 +404,13 @@ const prevSlide = () => {
       </section>
       <div className='before:absolute before:-top-[12px] before:left-5 before:w-[88%] md:before:w-[95%] lg:before:w-[97%]  before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px] w-full relative'>
       <section className='rounded-t-[10px] rounded-b-none bg-white overflow-hidden relative'>
-        <div className='mx-0 md:mx-5  w-full flex flex-col lg:flex-row min-h-[700px] '>
+        <div className='mx-0 md:mx-5  w-full flex flex-col lg:flex-row md:min-h-[700px] '>
                 {/* 1. Image Section (Left) */}
                 <div className="w-full md:w-[95%] lg:w-[25%] relative min-h-[400px] lg:min-h-full">
                   <img
                     src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2670&auto=format&fit=crop"
                     alt="Snowy Chalet"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain md:object-cover"
                   />
                 </div>
 
@@ -423,7 +423,7 @@ const prevSlide = () => {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="text-2xl xl:text-2xl font-normal leading-snug font-sans"
+                      className="text-2xl xl:text-2xl font-normal leading-snug  "
                     >
                       A Luxurious Way to Meet with nature. The comfort and the needs of our guests come before all else here.
                     </motion.h3>
@@ -469,7 +469,7 @@ const prevSlide = () => {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="text-4xl xl:text-[3.25rem] font-serif text-[#283862] leading-[1.2] font-semibold"
+                      className="text-4xl xl:text-[3.25rem] noto-geogia-font text-[#283862] leading-[1.2] font-semibold"
                     >
                       We Invite guests to celebrate life
                     </motion.h2>
@@ -501,7 +501,7 @@ const prevSlide = () => {
               <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Accomodation</span>
               <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
             </div>
-            <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">Our Rooms & Suits</h2>
+            <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold">Our Rooms & Suits</h2>
           </div>
 
           {/* Carousel Container */}
@@ -527,9 +527,9 @@ const prevSlide = () => {
                   animate={position}
                   variants={variants}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full rounded-md overflow-hidden shadow-xl"
+                  className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full md:h-full  rounded-md overflow-hidden shadow-xl"
                 >
-                  <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                  <img src={room.image} alt={room.name} className="w-full h-full object-fill md:object-cover" />
 
                   {/* Overlay for inactive slides */}
                   {!isCenter && (
@@ -576,7 +576,7 @@ const prevSlide = () => {
                   <div className="flex items-end gap-2 mb-2">
                     <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ${activeRoom.price} Night</span>
                   </div>
-                  <h3 className="text-3xl md:text-4xl font-serif text-[#283862] font-bold leading-tight">
+                  <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
                     {activeRoom.name}
                   </h3>
                 </div>
@@ -619,7 +619,7 @@ const prevSlide = () => {
               <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Amenities</span>
               <div className="w-8 md:w-12 h-[1px] bg-[#c23535]"></div>
             </div>
-            <h2 className="text-4xl md:text-[3.5rem] font-serif text-white font-bold">Make Your Stay Memorable</h2>
+            <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-white font-bold">Make Your Stay Memorable</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8">
@@ -636,7 +636,7 @@ const prevSlide = () => {
                   {item.icon}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <h4 className="text-white text-xl font-bold font-sans">{item.title}</h4>
+                  <h4 className="text-white text-xl font-bold  ">{item.title}</h4>
                   <p className="text-gray-400 text-sm leading-relaxed max-w-[280px]">
                     {item.desc}
                   </p>
@@ -656,7 +656,7 @@ const prevSlide = () => {
                      <div className="w-12 h-[1px] bg-[#c23535]"></div>
                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Dedicated Team</span>
                  </div>
-                 <h2 className="text-4xl md:text-[3.5rem] font-serif text-white font-bold leading-tight">Our Resort Staff</h2>
+                 <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-white font-bold leading-tight">Our Resort Staff</h2>
               </div>
               
               <div className="max-w-lg mb-2">
@@ -677,7 +677,7 @@ const prevSlide = () => {
                      transition={{ duration: 0.5, delay: index * 0.1 }}
                      className="group"
                    >
-                    <div className='flex flex-row gap-8 relative top-[173px] left-[23px] z-[1]'>
+                    <div className='flex flex-row gap-8 relative top-[173px] justify-center z-[1]'>
                           <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
                             <RiFacebookBoxFill className="text-white text-xl hidden group-hover:flex" />
                           </div>
@@ -694,13 +694,13 @@ const prevSlide = () => {
                            <img 
                               src={staff.image} 
                               alt={staff.name} 
-                              className="w-full h-full object-cover group-hover:grayscale grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
+                              className="w-full h-full object-cover  group-hover:blur-xs group-hover:grayscale grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
                            />                    
                        </div>
                        
                        {/* Text */}
                        <div className="flex flex-col justify-center text-center bg-[#0f1825] w-[90%] h-[6rem] absolute -bottom-15 md:-bottom-15 lg:-bottom-15">
-                            <h4 className="text-white font-bold text-xl mb-2 font-sans tracking-wide">{staff.name}</h4>
+                            <h4 className="text-white font-bold text-xl mb-2   tracking-wide">{staff.name}</h4>
                             <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
                        </div>
                        </div>
@@ -751,7 +751,7 @@ const prevSlide = () => {
                           <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Eat & Drink</span>
                       </div>
                       
-                      <h2 className="text-4xl lg:text-5xl font-serif text-[#283862] font-bold leading-tight mb-8">
+                      <h2 className="text-4xl lg:text-5xl noto-geogia-font text-[#283862] font-bold leading-tight mb-8">
                           Indulge in exceptional <br/> & Local Foodies
                       </h2>
                       
@@ -796,7 +796,7 @@ const prevSlide = () => {
                           <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Wellness</span>
                       </div>
                       
-                      <h2 className="text-4xl lg:text-5xl font-serif text-[#283862] font-bold leading-tight mb-8">
+                      <h2 className="text-4xl lg:text-5xl noto-geogia-font text-[#283862] font-bold leading-tight mb-8">
                           A truly luxurious <br/> experience for <br/> the senses
                       </h2>
                       
@@ -831,7 +831,7 @@ const prevSlide = () => {
                   </div>
 
                   {/* Title */}
-                  <h2 className="text-5xl md:text-[4rem] font-serif text-white font-bold mb-6 leading-tight">
+                  <h2 className="text-5xl md:text-[4rem] noto-geogia-font text-white font-bold mb-6 leading-tight">
                       Summer Offer
                   </h2>
 
@@ -855,7 +855,7 @@ const prevSlide = () => {
                 <div className="w-12 h-[2px] bg-[#c23535]"></div>
                 <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Testimonials</span>
             </div>
-            <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold mb-6">What Our Customer Says</h2>
+            <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">What Our Customer Says</h2>
             <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
                 Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend.
             </p>
@@ -866,7 +866,7 @@ const prevSlide = () => {
                 <div className="text-[#c23535] text-4xl mb-6 opacity-80">
                     <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
                 </div>
-                <h3 className="text-2xl font-serif text-[#283862] font-bold mb-4">My Favrouite Place</h3>
+                <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-4">My Favrouite Place</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-8">
                     The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
                 </p>
@@ -883,7 +883,7 @@ const prevSlide = () => {
                 <div className="text-[#c23535] text-4xl mb-6 opacity-80">
                     <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
                 </div>
-                <h3 className="text-2xl font-serif text-[#283862] font-bold mb-4">Satisfied with Service</h3>
+                <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-4">Satisfied with Service</h3>
                 <p className="text-gray-500 text-sm leading-relaxed mb-8">
                     The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
                 </p>
@@ -905,7 +905,7 @@ const prevSlide = () => {
                 <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Tips & Receipes</span>
                 <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
               </div>
-              <h2 className="text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">News & Articles</h2>
+              <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold">News & Articles</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -924,7 +924,7 @@ const prevSlide = () => {
                       </div>   
                       <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[88%] ml-11">
                         <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
-                        <h3 className="text-2xl font-serif text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
+                        <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
                             {article.title}
                         </h3>
                         <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">
@@ -964,7 +964,7 @@ const prevSlide = () => {
           </span>
         </div>
 
-        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold mb-6">
+        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
           What Our Customer Says
         </h2>
 
@@ -983,7 +983,7 @@ const prevSlide = () => {
               <RiDoubleQuotesL />
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-serif text-[#283862] font-bold mb-4">
+            <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
               My Favourite Place
             </h3>
 
@@ -1020,7 +1020,7 @@ const prevSlide = () => {
           <div className="w-8 md:w-12 h-[2px] bg-[#c23535]" />
         </div>
 
-        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-serif text-[#283862] font-bold">
+        <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold">
           News & Articles
         </h2>
       </div>
@@ -1080,7 +1080,7 @@ const prevSlide = () => {
           admin / 0 Comments
         </p>
 
-        <h3 className="text-xl sm:text-2xl font-serif text-[#283862] font-bold mb-6 md:mb-8">
+        <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-6 md:mb-8">
           {article.title}
         </h3>
 
@@ -1119,7 +1119,7 @@ const prevSlide = () => {
 //                     <div className=''>
 // <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[90%] ml-11">
 //                         <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
-//                          <h3 className="text-2xl font-serif text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
+//                          <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
 //                              {article.title}
 //                          </h3>
 //                          <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">

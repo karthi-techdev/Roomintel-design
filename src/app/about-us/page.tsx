@@ -65,7 +65,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     ];
 
     return (
-        <section className="w-full font-sans pb-20 min-h-screen">
+        <section className="w-full   pb-20 min-h-screen">
 
             {/* --- HEADER --- */}
             <div className="bg-[#283862] h-[450px] sm:h-[500px] md:h-[600px] lg:h-[800px] text-white px-4 relative overflow-hidden">
@@ -77,7 +77,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 <div className="absolute inset-0 bg-black/60"></div>
 
                 <div className="relative z-10 flex flex-col items-center justify-center h-full text-center">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif font-bold mb-3 md:mb-4 drop-shadow-lg">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl noto-geogia-font font-bold mb-3 md:mb-4 drop-shadow-lg">
                         About
                     </h1>
 
@@ -105,11 +105,11 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                                     <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Welcome to Bluebell</span>
                                 </div>
 
-                                <h2 className="text-[20px] md:text-[28px] lg:text-[38px] font-serif text-[#283862] font-bold leading-tight">
+                                <h2 className="text-[20px] md:text-[28px] lg:text-[38px] noto-geogia-font text-[#283862] font-bold leading-tight">
                                     Our Resort has been present for over 20 years.
                                 </h2>
 
-                                <p className="text-[#283862] font-serif italic text-[18px] md:text-[20px] lg:text-[25px]  font-medium">
+                                <p className="text-[#283862] noto-geogia-font italic text-[18px] md:text-[20px] lg:text-[25px]  font-medium">
                                     We make the best or all our customers.
                                 </p>
 
@@ -162,7 +162,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                                     <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Our Features</span>
                                     <div className="w-12 h-[2px] bg-[#c23535]"></div>
                                 </div>
-                                <h2 className="text-4xl md:text-5xl font-serif text-[#283862] font-bold">Why Choose Us</h2>
+                                <h2 className="text-4xl md:text-5xl noto-geogia-font text-[#283862] font-bold">Why Choose Us</h2>
                                 <p className="text-gray-500 text-sm mt-6 max-w-2xl mx-auto leading-relaxed">
                                     Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly.
                                 </p>
@@ -207,7 +207,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
 
                                 {/* RIGHT CONTENT */}
                                 <div className="w-full lg:w-1/2">
-                                    <p className="text-[#283862] font-serif italic text-[15px] sm:text-[16px] md:text-lg mb-6 leading-relaxed">
+                                    <p className="text-[#283862] noto-geogia-font italic text-[15px] sm:text-[16px] md:text-lg mb-6 leading-relaxed">
                                         At Bluebell, we understand the different expectations of visitors.
                                         We feel elated when you come back for the second time!
                                     </p>
@@ -295,7 +295,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                                 <div className="w-12 h-[2px] bg-[#c23535]"></div>
                                 <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Dedicated Team</span>
                             </div>
-                            <h2 className="text-4xl md:text-5xl font-serif text-[#283862] font-bold mb-6">Our Resort Staff</h2>
+                            <h2 className="text-4xl md:text-5xl noto-geogia-font text-[#283862] font-bold mb-6">Our Resort Staff</h2>
                             <p className="text-gray-500 text-sm max-w-2xl leading-relaxed">
                                 Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
                             </p>
@@ -345,7 +345,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 text-center">
                             {stats.map((stat, idx) => (
                                 <div key={idx} className="flex flex-col items-center">
-                                    <div className="text-4xl md:text-5xl font-serif font-bold text-[#283862] mb-2 flex items-start">
+                                    <div className="text-4xl md:text-5xl noto-geogia-font font-bold text-[#283862] mb-2 flex items-start">
                                         {stat.value.replace(/[^0-9]/g, '')}
                                         <span className="text-[#c23535] text-2xl md:text-3xl mt-1">{stat.value.replace(/[0-9]/g, '')}</span>
                                     </div>

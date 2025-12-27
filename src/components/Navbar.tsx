@@ -1,27 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  FaPhoneAlt, 
-  FaBars, 
-  FaTimes, 
-  FaChevronRight, 
-  FaFacebookF, 
-  FaInstagram, 
-  FaSkype, 
-  FaSearch, 
-  FaUser, 
-  FaShoppingBag,
-  FaSignInAlt,
-  FaUserPlus,
-  FaEnvelope,
-  FaLock,
-  FaUserCircle
+import { usePathname, useRouter } from 'next/navigation';
+import {
+    FaPhoneAlt,
+    FaBars,
+    FaTimes,
+    FaChevronRight,
+    FaFacebookF,
+    FaInstagram,
+    FaSkype,
+    FaSearch,
+    FaUser,
+    FaShoppingBag,
+    FaSignInAlt,
+    FaUserPlus,
+    FaEnvelope,
+    FaLock,
+    FaUserCircle
 } from 'react-icons/fa';
-import { PiHouseLineBold } from 'react-icons/pi';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authService } from '../api/authService';
+import logoImg from "../../public/Navbar-Logo.png"
+
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,7 +33,22 @@ const Navbar: React.FC = () => {
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [scrolled, setScrolled] = useState(false);
-    
+    const router = useRouter();
+
+    // API Config - Refactored to use authService
+    // const API_BASE_URL = 'http://localhost:5000/api/v1/site/auth'; 
+
+    // Form State
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        name: '',
+        confirmPassword: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [user, setUser] = useState<any>(null);
+
     // Auth State
     const [isLoggedIn, setIsLoggedIn] = useState(false);
 
@@ -57,18 +75,27 @@ const Navbar: React.FC = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener('scroll', handleScroll);
+
+        // Check auth on mount
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+        if (token && userData) {
+            setIsLoggedIn(true);
+            setUser(JSON.parse(userData));
+        }
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
     const toggleSearch = () => setIsSearchOpen(!isSearchOpen);
-    
+
     const openLogin = () => {
         setIsLoginOpen(true);
         setIsRegisterOpen(false);
         setIsMobileMenuOpen(false);
     };
-    
+
     const openRegister = () => {
         setIsRegisterOpen(true);
         setIsLoginOpen(false);
@@ -80,10 +107,63 @@ const Navbar: React.FC = () => {
         setIsRegisterOpen(false);
     };
 
-    const handleAuthSubmit = () => {
-        // Dummy login/register logic
-        setIsLoggedIn(true);
-        closeAuth();
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError('');
+    };
+
+    const handleAuthSubmit = async () => {
+        setLoading(true);
+        setError('');
+
+        if (!isLoginOpen && formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            let data;
+            if (isLoginOpen) {
+                data = await authService.login({
+                    email: formData.email,
+                    password: formData.password
+                });
+            } else {
+                data = await authService.register({
+                    email: formData.email,
+                    password: formData.password,
+                    name: formData.name
+                });
+            }
+
+            // Assuming data structure has { token, data: user } based on previous code
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.data));
+
+            setIsLoggedIn(true);
+            setUser(data.data);
+            closeAuth();
+            alert(isLoginOpen ? "Login Successful" : "Registration Successful");
+
+            // Reset form
+            setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+        } catch (err: any) {
+            console.error("Auth Error:", err);
+            const errorMessage = err.response?.data?.message || err.message || 'Authentication failed';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        authService.logout();
+        setIsLoggedIn(false);
+        setUser(null);
+        // Clean redirect to home to avoid protected route issues
+        router.push('/');
+        router.refresh();
     };
 
     const navLinks = [
@@ -93,89 +173,89 @@ const Navbar: React.FC = () => {
         { name: 'GALLERY', view: 'gallery', href: '/gallery' },
         { name: 'CONTACT US', view: 'contact-us', href: '/contact-us' },
     ];
+
     return (
         <>
            <nav
-  className={`fixed top-0 z-50 transition-all duration-300 font-sans
+  className={`fixed top-0 z-50 transition-all duration-300  
     ${scrolled
-      ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
-      : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
-    }
+                        ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
+                        : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
+                    }
     px-4 md:px-6 lg:px-16 flex items-center justify-between
   `}
->
+            >
 
                 {/* --- LOGO --- */}
-                <Link 
+                <Link
                     href="/"
-                    className="flex items-center gap-2 cursor-pointer z-50 group"
+                    className="flex items-center gap-2 cursor-pointer z-50"
                 >
-                    <div className="text-brand-blue text-3xl md:text-4xl pb-1 group-hover:scale-110 transition-transform duration-300">
-                        <PiHouseLineBold />
+                    {/* Using Next.js Image component */}
+                    <div className="relative">
+                        <Image
+                            src={logoImg}
+                            alt="Room Intel Logo"
+                            width={scrolled ? 120 : 150}  // Smaller when scrolled
+                            height={scrolled ? 200 : 200}   // Smaller when scrolled
+                            className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '
+                                }`}
+                            priority
+                        />
                     </div>
-                    <span className="text-2xl md:text-3xl font-bold text-brand-blue tracking-tight">Roomintel</span>
                 </Link>
-                {/* --- RIGHT ACTIONS --- */}
-                <div className="flex items-center gap-3 md:gap-5">
-                    
-                    {/* Search Input (Desktop Dropdown) */}
-                    <div className="hidden lg:block relative">
-                        <AnimatePresence>
-                            {isSearchOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute right-0 top-full mt-4 w-[300px] bg-white shadow-xl border border-gray-100 rounded-sm p-4 z-50"
-                                >
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Search rooms..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full h-12 bg-gray-50 border border-gray-200 rounded-sm pl-4 pr-10 text-sm focus:outline-none focus:border-[#c23535] transition-colors"
-                                            autoFocus
-                                        />
-                                        <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    </div>
-                                </motion.div>
+
+                {/* --- DESKTOP NAVIGATION LINKS --- */}
+                <div className="hidden lg:flex items-center justify-evenly w-[100%]">
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.href}
+                            className={`relative font-bold text-[13px] max-[1250px]:text-[.65rem] tracking-widest uppercase transition-colors hover:text-[#c23535] ${
+                                currentView === link.view 
+                                ? 'text-[#c23535]' 
+                                : 'text-[#444]'
+                            }`}
+                        >
+                            {link.name}
+                            {currentView === link.view && (
+                                <motion.div 
+                                    layoutId="underline" 
+                                    className="absolute -bottom-2 left-0 right-0 h-[2px] bg-[#c23535]" 
+                                />
                             )}
-                        </AnimatePresence>
-                    </div>
+                        </Link>
+                    ))}
+                </div>
+
+                {/* --- RIGHT ACTIONS --- */}
+                <div className="flex items-center gap-3 md:gap-5 ml-auto">
 
                     <div className="hidden lg:block h-6 w-[1px] bg-gray-200 mx-1"></div>
 
                     {/* Auth Section (Login/Register OR My Account) */}
                     <div className="hidden lg:flex items-center gap-2">
                         {isLoggedIn ? (
-                             <Link 
+                            <Link
                                 href="/dashboard"
-                                className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
-                             >
+                                className="flex items-center justify-around px-3 py-2 text-[12px] w-max gap-2 font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
+                            >
                                 <FaUserCircle size={16} /> My Account
-                             </Link>
+                            </Link>
                         ) : (
                             <>
-                                <button 
+                                <button
                                     onClick={openLogin}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-brand-blue transition-colors"
+                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
                                 >
                                     <FaSignInAlt /> Login
-                                </button>
-                                <button 
-                                    onClick={openRegister}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-brand-blue transition-colors"
-                                >
-                                    Register
                                 </button>
                             </>
                         )}
                     </div>
 
                     {/* Cart */}
-                    <Link 
+                    <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
@@ -184,9 +264,9 @@ const Navbar: React.FC = () => {
                     </Link>
 
                     {/* Reservation Button (Desktop) */}
-                    <button className="hidden lg:block bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
-                        Reservation
-                    </button>
+                    <Link href="/contact-us" className="hidden flex items-center w-max lg:flex bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
+                        Send an enquiry
+                    </Link>
 
                     {/* --- MOBILE TOGGLE --- */}
                     <button
@@ -210,7 +290,7 @@ const Navbar: React.FC = () => {
                             onClick={toggleMenu}
                             className="fixed inset-0 z-50000 bg-black/60 backdrop-blur-sm lg:hidden"
                         />
-                        
+
                         {/* Drawer */}
                         <motion.div
                             initial={{ x: "100%" }}
@@ -219,29 +299,37 @@ const Navbar: React.FC = () => {
                             transition={{ type: "spring", damping: 25, stiffness: 200 }}
                             className="fixed top-0 right-0 z-50001 h-full w-[300px] sm:w-[350px] bg-white shadow-2xl flex flex-col lg:hidden overflow-hidden"
                         >
-                            {/* Drawer Header */}
-                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex flex-col items-center">
-                                <Link 
-                                    href="/"
-                                    className="text-brand-blue text-5xl mb-2"
-                                    onClick={toggleMenu}
-                                >
-                                    <PiHouseLineBold />
-                                </Link>
-                                <span className="text-2xl font-bold text-brand-blue tracking-tight">Bluebell</span>
+                            {/* Drawer Header with Logo */}
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
+                                <div className="relative">
+                                    <Image
+                                        src="/Room-intel-logo2.png"
+                                        alt="Room Intel Logo"
+                                        width={40}
+                                        height={40}
+                                        className="h-10 w-auto object-contain"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">
+                                        Bluebell
+                                    </span>
+                                    <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
+                                        Resort
+                                    </span>
+                                </div>
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto">
-                             {/* Links */}
+                                {/* Links */}
                                 <div className="flex flex-col gap-1 mb-8">
                                     {navLinks.map((link) => (
-                                        <Link 
+                                        <Link
                                             key={link.name}
                                             href={link.href}
                                             onClick={toggleMenu}
-                                            className={`flex items-center justify-between py-3 px-2 border-b border-gray-50 text-sm font-bold tracking-widest uppercase transition-colors ${
-                                                currentView === link.view ? 'text-[#c23535] bg-red-50/50 pl-4 border-l-4 border-l-[#c23535]' : 'text-gray-700 hover:text-[#c23535] hover:bg-gray-50'
-                                            }`}
+                                            className={`flex items-center justify-between py-3 px-2 border-b border-gray-50 text-sm font-bold tracking-widest uppercase transition-colors ${currentView === link.view ? 'text-[#c23535] bg-red-50/50 pl-4 border-l-4 border-l-[#c23535]' : 'text-gray-700 hover:text-[#c23535] hover:bg-gray-50'
+                                                }`}
                                         >
                                             {link.name}
                                             <FaChevronRight className={`text-xs ${currentView === link.view ? 'text-[#c23535]' : 'text-gray-300'}`} />
@@ -252,7 +340,7 @@ const Navbar: React.FC = () => {
                                 {/* Mobile Auth */}
                                 <div className="grid grid-cols-1 gap-3 mb-8">
                                     {isLoggedIn ? (
-                                        <Link 
+                                        <Link
                                             href="/dashboard"
                                             onClick={toggleMenu}
                                             className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
@@ -261,13 +349,13 @@ const Navbar: React.FC = () => {
                                         </Link>
                                     ) : (
                                         <div className="grid grid-cols-2 gap-3">
-                                            <button 
+                                            <button
                                                 onClick={openLogin}
                                                 className="h-12 border border-gray-200 rounded-sm font-bold text-xs uppercase tracking-wider text-gray-700 hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-2"
                                             >
                                                 <FaSignInAlt /> Login
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={openRegister}
                                                 className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
                                             >
@@ -313,7 +401,7 @@ const Navbar: React.FC = () => {
                             onClick={closeAuth}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
-                        
+
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -321,7 +409,7 @@ const Navbar: React.FC = () => {
                             className="relative w-full max-w-[450px] bg-white rounded-sm shadow-2xl overflow-hidden"
                         >
                             {/* Close Button */}
-                            <button 
+                            <button
                                 onClick={closeAuth}
                                 className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-[#c23535] hover:text-white transition-colors"
                             >
@@ -332,34 +420,41 @@ const Navbar: React.FC = () => {
                                 <div className="p-8 md:p-10">
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaSignInAlt /></div>
-                                        <h2 className="text-2xl font-serif font-bold text-[#283862]">Welcome Back</h2>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Welcome Back</h2>
                                         <p className="text-gray-500 text-sm mt-2">Log in to your account to continue</p>
                                     </div>
 
                                     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        {error && <div className="text-red-500 text-sm">{error}</div>}
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaEnvelope />
                                             </div>
-                                            <input 
-                                                type="email" 
-                                                placeholder="Email Address" 
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
-                                                defaultValue="alex.morgan@example.com"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Password" 
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
-                                                defaultValue="password"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
-                                        
+
                                         <div className="flex justify-between items-center text-xs text-gray-500">
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input type="checkbox" className="accent-[#c23535]" /> Remember me
@@ -367,8 +462,8 @@ const Navbar: React.FC = () => {
                                             <a href="#" className="hover:text-[#c23535]">Forgot Password?</a>
                                         </div>
 
-                                        <button className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md">
-                                            Login
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Logging in...' : 'Login'}
                                         </button>
                                     </form>
 
@@ -380,59 +475,76 @@ const Navbar: React.FC = () => {
                                 <div className="p-8 md:p-10 z-5000000">
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaUserPlus /></div>
-                                        <h2 className="text-2xl font-serif font-bold text-[#283862]">Create Account</h2>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Create Account</h2>
                                         <p className="text-gray-500 text-sm mt-2">Register to get exclusive offers</p>
                                     </div>
 
                                     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        {error && <div className="text-red-500 text-sm">{error}</div>}
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaUser />
                                             </div>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Full Name" 
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                placeholder="Full Name"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaEnvelope />
                                             </div>
-                                            <input 
-                                                type="email" 
-                                                placeholder="Email Address" 
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Password" 
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaLock />
                                             </div>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Confirm Password" 
+                                            <input
+                                                type="password"
+                                                name="confirmPassword"
+                                                placeholder="Confirm Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.confirmPassword}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]" required /> 
+                                            <input type="checkbox" className="accent-[#c23535]" required />
                                             <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
-                                        <button className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md">
-                                            Create Account
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Creating Account...' : 'Create Account'}
                                         </button>
                                     </form>
 
