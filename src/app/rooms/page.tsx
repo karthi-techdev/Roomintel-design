@@ -6,6 +6,7 @@ import { HiCursorArrowRays } from "react-icons/hi2";
 import { TfiStar } from "react-icons/tfi";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import { TbNorthStar } from "react-icons/tb";
+import { useEffect } from "react";
 
 
 
@@ -242,7 +243,20 @@ export default function RoomsGrid() {
   const [selectedSizes, setSelectedSizes] = useState<number[]>([]);
   const [selectedBeds, setSelectedBeds] = useState<string[]>([]);
   const [selectedAdults, setSelectedAdults] = useState<string[]>([]);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+    useEffect(() => {
+    if (isFilterOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isFilterOpen]);
 
   // Sorting: 'newest', 'priceAsc', 'priceDesc'
   const [sortBy, setSortBy] = useState<string>('newest');
@@ -379,11 +393,14 @@ export default function RoomsGrid() {
 
 
       {/* --- Main Content --- */}
-      <div className="max-w-[1450px] p-6 mx-auto pt-20 bg-white rounded-[10px]">
+      <div className="max-w-[1450px] p-6 mx-auto lg:pt-20 bg-white rounded-[10px]">
         <div className="flex flex-col lg:flex-row gap-12 pb-20">
 
           {/* --- Sidebar --- */}
-          <aside className="w-full lg:w-[15%] space-y-12">
+
+
+
+          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12">
 
             {/* Price Filter */}
             <div className="bg-white">
@@ -560,17 +577,246 @@ export default function RoomsGrid() {
 
           </aside>
 
+          {/* MOBILE FILTER POPUP */}
+          
+          {isFilterOpen && (
+
+            <>
+            
+            
+              {/* BACKDROP */}
+              <div
+                className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+                onClick={() => setIsFilterOpen(false)}
+                
+              />
+              
+
+              {/* POPUP */}
+              <motion.aside
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ duration: 0.3 }}
+                className="fixed top-[68px] right-0 h-[calc(100vh-68px)] w-[90%] max-w-[380px] bg-white z-50 overflow-y-auto p-6 space-y-12 lg:hidden"
+              >
+                {/* CLOSE HEADER */}
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862]">
+                    Filter
+                  </h3>
+                  <button
+                    onClick={() => setIsFilterOpen(false)}
+                    className="text-xl font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="bg-white mb-3">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2 relative">
+                    Price
+                  </h3>
+
+                  <div className="mb-6">
+                    <input
+                      type="range"
+                      min="0"
+                      max="9900"
+                      step="50"
+                      value={priceRange}
+                      onChange={handlePriceChange}
+                      className="w-full h-2 bg-gray-200 rounded-lg lg:h-[14px] rounded-[5px] appearance-none cursor-pointer accent-[#c23535]"
+                    />
+                  </div>
+                  <div className="text-gray-500 font-medium">
+                    $0 - ${priceRange}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
+
+                {/* Category Filter */}
+                <div className="bg-white">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 relative">
+                    Category
+                  </h3>
+
+                  <div className="space-y-3">
+                    {categories.map((cat, idx) => {
+                      const isChecked = selectedCategories.includes(cat);
+                      return (
+                        <label key={idx} className="flex items-center gap-3 cursor-pointer group select-none">
+                          <div className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center transition-colors group-hover:border-[#c23535] ${isChecked ? 'bg-[#c23535] border-brand-red' : 'border-[#c23535]'}`}>
+                            <input
+                              type="checkbox"
+                              className="peer appearance-none absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleCategoryChange(cat)}
+                            />
+                            <FaCheck className={`text-white text-xs ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
+                          </div>
+                          <span className={`transition-colors group-hover:text-brand-red ${isChecked ? 'text-brand-red font-semibold' : 'text-gray-500'}`}>{cat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] flex h-[2px]'></span>
+
+
+
+
+                <div className="bg-white ">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                    Size
+                  </h3>
+
+                  <div className="space-y-3">
+                    {sizes.map((size, idx) => {
+                      const isChecked = selectedSizes.includes(size);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleSizeChange(size)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {size} M
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+
+                <div className="bg-white">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                    Beds
+                  </h3>
+
+                  <div className="space-y-4">
+                    {bedsOptions.map((bed, idx) => {
+                      const isChecked = selectedBeds.includes(bed);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleBedsChange(bed)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {bed}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+
+                <div className="bg-white">
+                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                    Adults
+                  </h3>
+
+                  <div className="space-y-4">
+                    {adultsOptions.map((adult, idx) => {
+                      const isChecked = selectedAdults.includes(adult);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleAdultsChange(adult)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {adult}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.aside>
+            </>
+          )}
+
+
           {/* --- Grid Content --- */}
           <main className="w-full lg:w-3/4">
 
             {/* Top Toolbar */}
+            <div className="flex justify-between items-center gap-2 lg:hidden">
+              {/* ROOMS COUNT – MOBILE */}
+              <span className="text-[#283862] font-bold text-sm">
+                {filteredAndSortedRooms.length} Rooms Available
+              </span>
+
+              {/* FILTER BUTTON */}
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className="flex items-center gap-2 text-sm text-gray-500 
+               border border-gray-300 px-3 py-2 
+               rounded-sm hover:border-[#c23535]"
+              >
+                <FaFilter />
+                Filter
+              </button>
+            </div>
+
             <div className="flex flex-col gap-4 mb-10 pb-6 border-b border-gray-200 md:flex-row md:items-center md:justify-between">
 
-              <div className="text-[#283862] font-bold text-lg  text-center md:text-left">
+              <div className="hidden lg:block text-[#283862] font-bold text-lg text-center md:text-left">
                 {filteredAndSortedRooms.length} Rooms Available
               </div>
 
-              <div className="flex items-center gap-3 overflow-x-auto whitespace-nowrap md:overflow-visible md:flex-row md:items-center md:gap-6">
+              <div className="flex justify-between items-center gap-3 mt-5 overflow-x-auto whitespace-nowrap md:overflow-visible md:flex-row md:items-center md:gap-6">
 
                 {/* SORT */}
                 <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -599,8 +845,8 @@ export default function RoomsGrid() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'grid'
-                        ? 'bg-[#c23535] text-white'
-                        : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
+                      ? 'bg-[#c23535] text-white'
+                      : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
                       }`}
                   >
                     <FaTh />
@@ -609,8 +855,8 @@ export default function RoomsGrid() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'list'
-                        ? 'bg-[#c23535] text-white'
-                        : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
+                      ? 'bg-[#c23535] text-white'
+                      : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
                       }`}
                   >
                     <FaList />
@@ -665,7 +911,7 @@ export default function RoomsGrid() {
                         {/* GRID VIEW PARAGRAPH */}
                         {viewMode === "grid" && (
                           <div className="flex gap-1 items-center">
-                            <TbNorthStar  />
+                            <TbNorthStar />
                             <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
                               {room.description}
                             </p>
@@ -685,9 +931,9 @@ export default function RoomsGrid() {
 
                       </div>
 
-                      <div className='flex justify-between items-center'>
+                      <div className='flex justify-between border-t-2 border-[#00000017] items-center'>
 
-                        <div className="flex flex-wrap gap-[10px] border-t border-gray-100 pt-4">
+                        <div className="flex flex-wrap gap-[10px]  border-gray-100 pt-4">
                           <div className="flex gap-[5px] items-center">
                             <PiArrowsOutSimple className="text-[12px] text-[#c23535]" />
                             <span className='text-[10px]'>Size: {room.size} m²</span>
