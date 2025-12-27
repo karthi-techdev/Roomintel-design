@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
     FaPhoneAlt,
     FaBars,
@@ -22,6 +22,7 @@ import {
     FaUserCircle
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { authService } from '../api/authService';
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -30,6 +31,21 @@ const Navbar: React.FC = () => {
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [scrolled, setScrolled] = useState(false);
+    const router = useRouter();
+
+    // API Config - Refactored to use authService
+    // const API_BASE_URL = 'http://localhost:5000/api/v1/site/auth'; 
+
+    // Form State
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+        name: '',
+        confirmPassword: ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [user, setUser] = useState<any>(null);
 
     // Auth State
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -57,6 +73,15 @@ const Navbar: React.FC = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener('scroll', handleScroll);
+
+        // Check auth on mount
+        const token = localStorage.getItem('token');
+        const userData = localStorage.getItem('user');
+        if (token && userData) {
+            setIsLoggedIn(true);
+            setUser(JSON.parse(userData));
+        }
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -80,10 +105,63 @@ const Navbar: React.FC = () => {
         setIsRegisterOpen(false);
     };
 
-    const handleAuthSubmit = () => {
-        // Dummy login/register logic
-        setIsLoggedIn(true);
-        closeAuth();
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError('');
+    };
+
+    const handleAuthSubmit = async () => {
+        setLoading(true);
+        setError('');
+
+        if (!isLoginOpen && formData.password !== formData.confirmPassword) {
+            setError("Passwords do not match");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            let data;
+            if (isLoginOpen) {
+                data = await authService.login({
+                    email: formData.email,
+                    password: formData.password
+                });
+            } else {
+                data = await authService.register({
+                    email: formData.email,
+                    password: formData.password,
+                    name: formData.name
+                });
+            }
+
+            // Assuming data structure has { token, data: user } based on previous code
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify(data.data));
+
+            setIsLoggedIn(true);
+            setUser(data.data);
+            closeAuth();
+            alert(isLoginOpen ? "Login Successful" : "Registration Successful");
+
+            // Reset form
+            setFormData({ email: '', password: '', name: '', confirmPassword: '' });
+        } catch (err: any) {
+            console.error("Auth Error:", err);
+            const errorMessage = err.response?.data?.message || err.message || 'Authentication failed';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = () => {
+        authService.logout();
+        setIsLoggedIn(false);
+        setUser(null);
+        // Clean redirect to home to avoid protected route issues
+        router.push('/');
+        router.refresh();
     };
 
     const navLinks = [
@@ -95,15 +173,15 @@ const Navbar: React.FC = () => {
     ];
     return (
         <>
-           <nav
-  className={`fixed top-0 z-50 transition-all duration-300 font-sans
+            <nav
+                className={`fixed top-0 z-50 transition-all duration-300 font-sans
     ${scrolled
-      ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
-      : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
-    }
+                        ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
+                        : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
+                    }
     px-4 md:px-6 lg:px-16 flex items-center justify-between
   `}
->
+            >
 
                 {/* --- LOGO --- */}
                 <Link
@@ -159,12 +237,20 @@ const Navbar: React.FC = () => {
                     {/* Auth Section (Login/Register OR My Account) */}
                     <div className="hidden lg:flex items-center gap-2">
                         {isLoggedIn ? (
-                            <Link
-                                href="/dashboard"
-                                className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
-                            >
-                                <FaUserCircle size={16} /> My Account
-                            </Link>
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/dashboard"
+                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
+                                >
+                                    <FaUserCircle size={16} /> My Account
+                                </Link>
+                                <button
+                                    onClick={handleLogout}
+                                    className="text-xs font-bold uppercase text-gray-500 hover:text-red-600"
+                                >
+                                    Logout
+                                </button>
+                            </div>
                         ) : (
                             <>
                                 <button
@@ -250,7 +336,7 @@ const Navbar: React.FC = () => {
                             </div>
 
                             <div className="p-6 flex-1 overflow-y-auto">
-                             {/* Links */}
+                                {/* Links */}
                                 <div className="flex flex-col gap-1 mb-8">
                                     {navLinks.map((link) => (
                                         <Link
@@ -354,15 +440,19 @@ const Navbar: React.FC = () => {
                                     </div>
 
                                     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        {error && <div className="text-red-500 text-sm">{error}</div>}
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaEnvelope />
                                             </div>
                                             <input
                                                 type="email"
+                                                name="email"
                                                 placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
-                                                defaultValue="alex.morgan@example.com"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
@@ -371,9 +461,12 @@ const Navbar: React.FC = () => {
                                             </div>
                                             <input
                                                 type="password"
+                                                name="password"
                                                 placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
-                                                defaultValue="password"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
 
@@ -384,8 +477,8 @@ const Navbar: React.FC = () => {
                                             <a href="#" className="hover:text-[#c23535]">Forgot Password?</a>
                                         </div>
 
-                                        <button className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md">
-                                            Login
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Logging in...' : 'Login'}
                                         </button>
                                     </form>
 
@@ -402,14 +495,19 @@ const Navbar: React.FC = () => {
                                     </div>
 
                                     <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        {error && <div className="text-red-500 text-sm">{error}</div>}
                                         <div className="relative">
                                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                                                 <FaUser />
                                             </div>
                                             <input
                                                 type="text"
+                                                name="name"
                                                 placeholder="Full Name"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
@@ -418,8 +516,12 @@ const Navbar: React.FC = () => {
                                             </div>
                                             <input
                                                 type="email"
+                                                name="email"
                                                 placeholder="Email Address"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
@@ -428,8 +530,12 @@ const Navbar: React.FC = () => {
                                             </div>
                                             <input
                                                 type="password"
+                                                name="password"
                                                 placeholder="Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
                                         <div className="relative">
@@ -438,8 +544,12 @@ const Navbar: React.FC = () => {
                                             </div>
                                             <input
                                                 type="password"
+                                                name="confirmPassword"
                                                 placeholder="Confirm Password"
                                                 className="w-full h-12 pl-10 pr-4 bg-gray-50 border border-gray-200 rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm"
+                                                value={formData.confirmPassword}
+                                                onChange={handleInputChange}
+                                                required
                                             />
                                         </div>
 
@@ -448,8 +558,8 @@ const Navbar: React.FC = () => {
                                             <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
-                                        <button className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md">
-                                            Create Account
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Creating Account...' : 'Create Account'}
                                         </button>
                                     </form>
 
