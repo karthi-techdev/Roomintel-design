@@ -83,7 +83,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     }
 
     return (
-        <div className=" w-full font-sans pb-20 min-h-screen">
+        <div className=" w-full   pb-20 min-h-screen">
 
             {/* --- HEADER --- */}
             <div className="bg-[#283862] pt-32 pb-16 text-white text-center px-4 relative overflow-hidden">
@@ -91,7 +91,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
                 </div>
                 <div className="relative z-10">
-                    <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Room Checkout</h1>
+                    <h1 className="text-4xl md:text-5xl noto-geogia-font font-bold mb-4">Room Checkout</h1>
                     <div className="flex justify-center items-center gap-2 text-xs font-bold tracking-widest uppercase text-gray-300">
                         <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={onBack}>Home</span>
                         <span>/</span>
@@ -106,7 +106,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
-                        <h2 className="text-2xl font-serif font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing Address</h2>
+                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing Address</h2>
 
                         <form className="space-y-6">
                             <div className="space-y-2">
@@ -232,7 +232,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     <div className="w-full lg:w-1/3">
                         <div className="sticky top-24">
                             <div className="bg-[#283862] text-white p-8 rounded-sm shadow-xl border border-gray-700/50">
-                                <h3 className="text-2xl font-serif font-bold mb-6 pb-4 border-b border-gray-600">Your Order</h3>
+                                <h3 className="text-2xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Your Order</h3>
 
                                 <div className="flex justify-between items-start mb-4 text-sm">
                                     <span className="font-bold text-gray-300">City Double or Twin Room</span>
@@ -250,7 +250,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                     <span className="text-xl font-bold text-[#EDA337]">$6.510</span>
                                 </div>
 
-                                <h3 className="text-xl font-serif font-bold mb-6">Payment Method</h3>
+                                <h3 className="text-xl noto-geogia-font font-bold mb-6">Payment Method</h3>
 
                                 <div className="space-y-4 mb-8">
                                     <label className="flex items-center gap-3 cursor-pointer group">

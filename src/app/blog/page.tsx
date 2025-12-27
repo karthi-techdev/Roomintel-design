@@ -173,7 +173,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
   };
 
   return (
-    <div className="min-h-screen pb-20 font-sans">
+    <div className="min-h-screen pb-20  ">
 
       {/* Header */}
       <div className="relative overflow-hidden bg-[#283862] px-4 pb-24 pt-40 text-center text-white">
@@ -188,7 +188,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
           />
         </div>
         <div className="relative z-10">
-          <h1 className="mb-4 font-serif text-5xl font-bold drop-shadow-lg md:text-7xl">Blog</h1>
+          <h1 className="mb-4 noto-geogia-font text-5xl font-bold drop-shadow-lg md:text-7xl">Blog</h1>
           <div className="flex items-center justify-center gap-3 text-xs font-bold uppercase tracking-widest text-gray-200 md:text-sm">
             <span className="cursor-pointer hover:text-[#c23535] transition-colors" onClick={onBack}>Home</span>
             <span>/</span>
@@ -228,7 +228,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
 
               <div>
                 <h2
-                  className="mb-3  font-serif text-2xl font-bold leading-tight text-[#283862] transition-colors group-hover:text-[#c23535] md:text-3xl"
+                  className="mb-3  noto-geogia-font text-2xl font-bold leading-tight text-[#283862] transition-colors group-hover:text-[#c23535] md:text-3xl"
                   // onClick={() => handleReadMore(post.id)}
                 >
                   {post.title}
