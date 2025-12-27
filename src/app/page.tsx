@@ -96,7 +96,7 @@ export default function Home() {
   useEffect(() => {
     const fetchSections = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/v1/page-sections?page=home');
+        const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=home');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

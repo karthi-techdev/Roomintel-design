@@ -14,7 +14,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     React.useEffect(() => {
         const fetchSections = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/v1/page-sections?page=about');
+                const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=about');
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
