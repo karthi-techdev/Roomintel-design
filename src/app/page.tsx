@@ -234,7 +234,7 @@ export default function Home() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.7 }}
                   alt="Luxury Resort Background"
-                  className="w-full h-[140%] object-cover absolute inset-0"
+                  className="w-full h-[140%] object-fill md:object-cover absolute inset-0"
                 />
               </AnimatePresence>
               {/* Subtle overlay to make text pop against the blue water/sky */}
@@ -242,7 +242,7 @@ export default function Home() {
             </div>
 
             {/* Hero Content - Centered Left */}
-            <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-115 md:pb-40">
+            <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-110 md:pb-40">
               <AnimatePresence mode='wait'>
                 <motion.div
                   key={currentSlide}
@@ -255,7 +255,7 @@ export default function Home() {
                   <h1 className="text-lg md:text-5xl lg:text-[5.4rem] font-serif text-white mb-2 md:mb-6 leading-[1.1] drop-shadow-lg">
                     {currentData.title}
                   </h1>
-                  <p className="text-white text-sm md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
+                  <p className="text-white text-text-[1rem] md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
                     {currentData.subtitle}
                   </p>
 
@@ -267,7 +267,7 @@ export default function Home() {
             </div>
 
             {/* Floating Elements Container (Bottom) */}
-            <div className="absolute bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
+            <div className="absolute bottom-8 md:bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
               {/* Booking Bar - Left/Center */}
               <div className="bg-white rounded-[6px] shadow-2xl p-6 lg:p-8 w-full max-w-[1100px] pointer-events-auto">
                 <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => e.preventDefault()}>
@@ -389,7 +389,7 @@ export default function Home() {
                   <img
                     src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2670&auto=format&fit=crop"
                     alt="Snowy Chalet"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain md:object-cover"
                   />
                 </div>
 
@@ -476,7 +476,7 @@ export default function Home() {
         );
       case 'room':
         return (
-          <section key="room" className='rounded-t-[10px] bg-white overflow-hidden py-20 flex flex-col items-center mx-5 my-5'>
+          <section key="room" className='rounded-t-[10px] bg-white overflow-hidden py-20 flex flex-col items-center mx-0 my-5'>
             {/* Header */}
             <div className="text-center mb-16 px-4">
               <div className="flex items-center justify-center gap-4 mb-4">
@@ -511,7 +511,7 @@ export default function Home() {
                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                     className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full rounded-md overflow-hidden shadow-xl"
                   >
-                    <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                    <img src={room.image} alt={room.name} className="w-full h-full object-fill lg:object-cover" />
                     {!isCenter && (
                       <div
                         className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center cursor-pointer group"
