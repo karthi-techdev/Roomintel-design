@@ -8,14 +8,9 @@ import {
   FaPlus, 
   FaMinus, 
   FaMapMarkerAlt, 
-  FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
   FaTimes,
-  FaFacebookF,
-  FaTwitter,
-  FaInstagram,
-  FaLinkedinIn
 } from 'react-icons/fa';
 import { 
   PiBed, 
@@ -185,7 +180,7 @@ export default function RoomView() {
   const visibleRelated = getVisibleRelatedRooms();
 
   return (
-    <main className="w-full font-sans pb-20">
+    <main className="w-full   pb-20">
       
       {/* --- LIGHTBOX --- */}
       <AnimatePresence>
@@ -239,7 +234,7 @@ export default function RoomView() {
              <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
          </div>
          <div className="relative z-10">
-            <h1 className="text-3xl md:text-5xl font-serif font-bold mb-4 leading-tight">City Double Or Twin Room</h1>
+            <h1 className="text-3xl md:text-5xl noto-geogia-font font-bold mb-4 leading-tight">City Double Or Twin Room</h1>
             <div className="flex flex-wrap justify-center items-center gap-2 text-[10px] md:text-xs font-bold tracking-widest uppercase text-gray-300">
                 <span className="hover:text-[#c23535] cursor-pointer transition-colors">Home</span>
                 <span>/</span>
@@ -306,7 +301,7 @@ export default function RoomView() {
                 
                 {/* About Section */}
                 <div ref={aboutRef} className="scroll-mt-32">
-                    <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#283862] mb-6">About This Room</h2>
+                    <h2 className="text-2xl md:text-3xl noto-geogia-font font-bold text-[#283862] mb-6">About This Room</h2>
                     <p className="text-gray-500 text-sm leading-relaxed mb-8">
                         Angkor's Family Pool Suite is ideal for quality time together, with ample living space both indoors and out. Two ensuite bedrooms open onto a stylish living and dining room. Kids can splash in the enclosed garden pool while parents hideaway in the spa room complete with Jacuzzi. It's details like these that place us among the best resorts in Siem Reap.
                     </p>
@@ -345,7 +340,7 @@ export default function RoomView() {
 
                 {/* Useful Information Table */}
                 <div ref={infoRef} className="scroll-mt-32">
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-6">Useful Information</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Useful Information</h3>
                     <div className="bg-white border border-gray-200 rounded-sm overflow-hidden shadow-sm">
                         {[
                             { label: "Value For Money", value: "4.2" },
@@ -367,19 +362,19 @@ export default function RoomView() {
                     <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Banner" />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#283862]/90 to-transparent"></div>
                     <div className="relative z-10 p-8 md:p-12 max-w-xl">
-                        <h3 className="text-white text-xl md:text-2xl font-serif font-bold mb-4">Travel Experience When Booking A Room At Hotelian Hotel</h3>
+                        <h3 className="text-white text-xl md:text-2xl noto-geogia-font font-bold mb-4">Travel Experience When Booking A Room At Hotelian Hotel</h3>
                         <p className="text-gray-300 text-xs mb-6 leading-relaxed line-clamp-2">
                             Wishing to keep the pristine nature of the island intact, not one tree has been moved — as evidenced by the villas growing up around them. The design pays homage.
                         </p>
                         <button className="text-white text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:text-[#c23535] transition-colors group-hover:translate-x-2 duration-300">
-                            Read More <FaChevronDown className="-rotate-90" />
+                            Read More <FaChevronRight/>
                         </button>
                     </div>
                 </div>
 
                 {/* Amenities */}
                 <div ref={amenitiesRef} className="scroll-mt-32">
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-6">Amenities & Facilities</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Amenities & Facilities</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-8">
                         {amenities.map((item, idx) => (
                             <div key={idx} className="flex items-center gap-3 text-gray-500 group">
@@ -392,7 +387,7 @@ export default function RoomView() {
 
                 {/* FAQ */}
                 <div ref={faqRef} className="scroll-mt-32">
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-6">Frequently Asked Questions</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Frequently Asked Questions</h3>
                     <div className="space-y-3">
                         {faqs.map((faq, idx) => (
                             <div key={idx} className="bg-[#34425a] rounded-sm overflow-hidden">
@@ -426,7 +421,7 @@ export default function RoomView() {
 
                 {/* Nearby */}
                 <div>
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-6">Where To Go Nearby</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Where To Go Nearby</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                         {nearbyPlaces.map((place, idx) => (
                             <div key={idx} className="flex justify-between items-start border-b border-gray-200 pb-3 hover:border-[#c23535]/30 transition-colors group">
@@ -442,7 +437,7 @@ export default function RoomView() {
                 
                 {/* Accommodation Rules */}
                 <div className="bg-[#283862] text-white p-8 rounded-sm shadow-md">
-                    <h3 className="text-2xl font-serif font-bold mb-4 border-b border-gray-700 pb-4">Accommodation Rules</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold mb-4 border-b border-gray-700 pb-4">Accommodation Rules</h3>
                     <p className="text-gray-400 text-sm mb-6 leading-relaxed">
                         Located just minutes from Siem Reap Town centre, and with a quiet boutique setting, Anantara Angkor boasts the best meeting venues in Siem Reap. Our versatile meeting spaces, both indoors and out.
                     </p>
@@ -458,7 +453,7 @@ export default function RoomView() {
 
                 {/* Reviews List */}
                 <div ref={commentsRef} className="scroll-mt-32">
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">3 Comments</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">3 Comments</h3>
                     <div className="space-y-10">
                         {[1, 2, 3].map((item, idx) => (
                             <div key={idx} className="flex gap-4 md:gap-6 group">
@@ -482,7 +477,7 @@ export default function RoomView() {
 
                 {/* Comment Form */}
                 <div className="bg-[#34425a] p-6 md:p-10 rounded-sm text-white shadow-md">
-                    <h3 className="text-2xl font-serif font-bold mb-2">Leave A Comment</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold mb-2">Leave A Comment</h3>
                     <p className="text-xs text-gray-400 mb-8">Your email address will not be published. Required fields are marked *</p>
                     <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
                         <textarea placeholder="Your Comment..." className="w-full h-32 bg-[#3f4e66] border border-gray-600 rounded-sm p-4 text-sm focus:outline-none focus:border-[#EDA337] text-white placeholder-gray-400 resize-none"></textarea>
@@ -513,11 +508,11 @@ export default function RoomView() {
                     <div className="bg-[#283862] rounded-sm overflow-hidden text-white shadow-xl border border-gray-700/50">
                         <div className="bg-[#EDA337] p-5 flex justify-between items-center font-bold">
                             <span className="text-sm uppercase tracking-wider">Starting At:</span>
-                            <span className="text-2xl font-serif">${basePrice}</span>
+                            <span className="text-2xl noto-geogia-font">${basePrice}</span>
                         </div>
                         
                         <div className="p-6 md:p-8 space-y-5">
-                            <h3 className="text-2xl font-serif font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
+                            <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
                             
                             <div className="space-y-4">
                                 <input 
@@ -589,7 +584,7 @@ export default function RoomView() {
 
                     {/* Location Widget */}
                     <div className="bg-[#34425a] p-8 text-white rounded-sm shadow-xl border border-gray-700/50">
-                        <h3 className="text-xl font-serif font-bold mb-6 pb-4 border-b border-gray-600">Location</h3>
+                        <h3 className="text-xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Location</h3>
                         <div className="h-[200px] bg-gray-700 mb-6 overflow-hidden relative group cursor-pointer rounded-sm border border-gray-600">
                             <img src="https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" alt="Map" />
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -616,7 +611,7 @@ export default function RoomView() {
         {/* --- RELATED ROOMS CAROUSEL --- */}
         <div className="mt-20">
             <div className="flex justify-between items-end mb-12 border-b border-gray-200 pb-6">
-                <h2 className="text-2xl md:text-3xl font-serif font-bold text-[#283862]">You May Interested Room</h2>
+                <h2 className="text-2xl md:text-3xl noto-geogia-font font-bold text-[#283862]">You May Interested Room</h2>
                 <div className="flex gap-2">
                     <button onClick={prevRelated} className="w-10 h-10 border border-gray-300 hover:border-[#c23535] hover:bg-[#c23535] hover:text-white rounded-sm flex items-center justify-center transition-colors">
                         <FaChevronLeft />
@@ -647,7 +642,7 @@ export default function RoomView() {
                              </div>
                              <div className="px-6 pb-6">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="text-xl font-serif font-bold text-[#283862] group-hover:text-[#c23535] transition-colors">{item.name}</h3>
+                                    <h3 className="text-xl noto-geogia-font font-bold text-[#283862] group-hover:text-[#c23535] transition-colors">{item.name}</h3>
                                     <div className="text-xs font-bold text-[#EDA337] mt-1 bg-[#EDA337]/10 px-2 py-1 rounded-sm">From ${item.price}</div>
                                 </div>
                                 <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6 flex items-center gap-2">
@@ -659,7 +654,7 @@ export default function RoomView() {
                                         <span className="flex items-center gap-1"><PiBed /> {item.beds} Beds</span>
                                         <span className="flex items-center gap-1"><PiUsers /> {item.adults} Adults</span>
                                     </div>
-                                    <button className="text-[#283862] hover:text-[#c23535] uppercase flex items-center gap-1 transition-colors">Book Now <FaChevronDown className="-rotate-90 text-[10px]" /></button>
+                                    <button className="text-[#283862] hover:text-[#c23535] uppercase flex items-center gap-1 transition-colors">Book Now <FaChevronRight className="text-[10px]" /></button>
                                 </div>
                              </div>
                          </motion.div>

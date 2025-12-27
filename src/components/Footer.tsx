@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { PiHouseLineBold } from "react-icons/pi";
 import { FaArrowRight, FaArrowUp } from "react-icons/fa";
-
+import Image from "next/image";
+import logoImg from "../../public/Navbar-Logo.png"
 
 export default function Footer() {
 
@@ -23,7 +24,7 @@ export default function Footer() {
 
     return (
        <>
-          <footer className="bg-[#0B121C] pt-20 pb-8 relative text-white font-sans">
+          <footer className="bg-[#0B121C] pt-20 pb-8 relative text-white  ">
         {/* Top Images */}
         <div className="max-w-[1400px] mx-auto px-6 lg:px-16 mb-20">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -39,11 +40,13 @@ export default function Footer() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 lg:gap-8 mb-20">
                 {/* Brand & Contact */}
                 <div className="flex flex-col gap-8">
-                     <div className="flex items-center gap-2">
-                        <div className="text-brand-red text-4xl pb-1">
-                          <PiHouseLineBold />
-                        </div>
-                        <span className="text-3xl font-bold text-white tracking-tight">Bluebell</span>
+                     <div className="flex gap-2 h-30 w-30">
+                         <Image
+                            src={logoImg}
+                            alt="Room Intel Logo"
+                            className="object-contain transition-all rounded-4xl duration-300"
+                            priority
+                        />
                      </div>
                      
                      <div className="flex flex-col gap-4 text-sm text-gray-400">
@@ -64,7 +67,7 @@ export default function Footer() {
 
                 {/* Quick Links */}
                 <div className="lg:pl-10">
-                    <h3 className="text-2xl font-serif font-bold mb-8">Quick Links</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold mb-8">Quick Links</h3>
                     <ul className="flex flex-col gap-4 text-sm text-gray-400">
                         <li><a href="#" className="hover:text-brand-red transition-colors">About Us</a></li>
                         <li><a href="#" className="hover:text-brand-red transition-colors">Boutique Apartment</a></li>
@@ -75,7 +78,7 @@ export default function Footer() {
 
                 {/* Newsletter */}
                 <div>
-                    <h3 className="text-2xl font-serif font-bold mb-4">Sign up for our newsletter to receive special offers, news and events.</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold mb-4">Sign up for our newsletter to receive special offers, news and events.</h3>
                     <div className="mt-8 relative">
                         <input 
                             type="email" 
@@ -91,7 +94,7 @@ export default function Footer() {
 
             {/* Copyright */}
             <div className="border-t border-dashed border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 relative">
-                <p className="text-gray-500 text-sm text-center md:text-left">© Copyright Bluebell Resort Word Press Theme. All right reserved.</p>
+                <p className="text-gray-500 text-sm text-center md:text-left">© Copyright Room Intel. All right reserved.</p>
                 <button 
                     onClick={scrollToTop}
                     className="w-12 h-12 z-1000 bg-[#c23535] cursor-pointer rounded-full text-white flex items-center justify-center transition-all shadow-lg fixed bottom-4 right-4"

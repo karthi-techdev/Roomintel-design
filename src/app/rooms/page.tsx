@@ -10,7 +10,7 @@ import { useEffect } from "react";
 
 
 
-import { FaFilter } from "react-icons/fa";
+import { FaChevronRight, FaFilter } from "react-icons/fa";
 
 import {
   FaStar,
@@ -25,6 +25,7 @@ import {
   PiArrowsOutSimple
 } from 'react-icons/pi';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 // --- TYPES ---
 
@@ -362,7 +363,7 @@ export default function RoomsGrid() {
   };
 
   return (
-    <div className="w-full pb-20 font-sans">
+    <div className="w-full pb-20  ">
       {/* --- Page Header --- */}
       <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
 
@@ -380,7 +381,7 @@ export default function RoomsGrid() {
 
       <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
         <div className="z-10">
-          <h1 className="font-serif font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
+          <h1 className="noto-geogia-font font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
             Rooms Grid
           </h1>
           <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
@@ -404,7 +405,7 @@ export default function RoomsGrid() {
 
             {/* Price Filter */}
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4 relative">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4 relative">
                 Price
               </h3>
 
@@ -427,7 +428,7 @@ export default function RoomsGrid() {
 
             {/* Category Filter */}
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 relative">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
                 Category
               </h3>
 
@@ -457,7 +458,7 @@ export default function RoomsGrid() {
 
 
             <div className="bg-white ">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Size
               </h3>
 
@@ -497,7 +498,7 @@ export default function RoomsGrid() {
             <span className='bg-[#00000033] flex h-[2px]'></span>
 
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Beds
               </h3>
 
@@ -537,7 +538,7 @@ export default function RoomsGrid() {
             <span className='bg-[#00000033] flex h-[2px]'></span>
 
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Adults
               </h3>
 
@@ -602,7 +603,7 @@ export default function RoomsGrid() {
               >
                 {/* CLOSE HEADER */}
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862]">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862]">
                     Filter
                   </h3>
                   <button
@@ -613,7 +614,7 @@ export default function RoomsGrid() {
                   </button>
                 </div>
                 <div className="bg-white mb-3">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2 relative">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2 relative">
                     Price
                   </h3>
 
@@ -636,7 +637,7 @@ export default function RoomsGrid() {
 
                 {/* Category Filter */}
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 relative">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
                     Category
                   </h3>
 
@@ -666,7 +667,7 @@ export default function RoomsGrid() {
 
 
                 <div className="bg-white ">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Size
                   </h3>
 
@@ -706,7 +707,7 @@ export default function RoomsGrid() {
                 <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Beds
                   </h3>
 
@@ -746,7 +747,7 @@ export default function RoomsGrid() {
                 <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Adults
                   </h3>
 
@@ -899,7 +900,7 @@ export default function RoomsGrid() {
                     {/* Content Section */}
                     <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
                       <div className='flex justify-between text-center'>
-                        <h3 className="text-[12px] md:text-[14px] lg:text-[16px] font-serif font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
+                        <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
                           {room.name}
                         </h3>
                         <span>From $1.590</span>
@@ -951,9 +952,8 @@ export default function RoomsGrid() {
                             <span className='text-[10px]'>Adults: {room.adults} Adults</span>
                           </div>
                         </div>
-                        <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[8px] py-[3px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <a href="" className="text-sm transition-colors duration-300 group-hover:text-[#c23535]">book</a>
-                          <IoIosArrowRoundForward className="text-[20px] transition-transform duration-300 group-hover:translate-x-1" />
+                        <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                          <Link href="/room-view" className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]">Book Now</Link>
                         </div>
 
                       </div>
@@ -963,7 +963,7 @@ export default function RoomsGrid() {
               </div>
             ) : (
               <div className="w-full h-60 flex flex-col items-center justify-center text-gray-500">
-                <p className="text-xl font-serif mb-2">No rooms found</p>
+                <p className="text-xl noto-geogia-font mb-2">No rooms found</p>
                 <p className="text-sm">Try adjusting your filters</p>
               </div>
             )}

@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@fontsource-variable/noto-serif-georgian": "^5.2.9",
+    "@fontsource-variable/outfit": "^5.2.8",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",

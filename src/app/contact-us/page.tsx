@@ -11,7 +11,7 @@ interface ContactUsProps {
 
 const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
   return (
-    <div className="w-full font-sans pb-0 min-h-screen">
+    <div className="w-full   pb-0 min-h-screen">
       
       {/* --- HEADER - Made responsive */}
       <div className="bg-[#283862] pt-40 pb-20 md:pt-56 md:pb-36 text-white text-center px-4 relative overflow-hidden">
@@ -23,7 +23,7 @@ const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
              />
          </div>
          <div className="relative z-10">
-            <h1 className="text-3xl md:text-5xl lg:text-7xl font-serif font-bold mb-4 drop-shadow-lg">Contact Us</h1>
+            <h1 className="text-3xl md:text-5xl lg:text-7xl noto-geogia-font font-bold mb-4 drop-shadow-lg">Contact Us</h1>
             <div className="flex justify-center items-center gap-3 text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
                 <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={onBack}>Home</span>
                 <span>/</span>
@@ -100,7 +100,7 @@ const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
                 
                 {/* Address */}
                 <div>
-                   <h3 className="text-xl md:text-2xl font-serif font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
+                   <h3 className="text-xl md:text-2xl noto-geogia-font font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
                       Bluebell Resort <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
                    </h3>
                    <div className="text-black text-sm md:text-base lg:text-[17px] space-y-2 font-light leading-relaxed pl-1">
@@ -111,7 +111,7 @@ const ContactUs: React.FC<ContactUsProps> = ({ onBack }) => {
 
                 {/* Phone */}
                 <div>
-                   <h3 className="text-xl md:text-2xl font-serif font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
+                   <h3 className="text-xl md:text-2xl noto-geogia-font font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
                       Reception Phone No. <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
                    </h3>
                    <div className="flex items-center gap-3 text-[#c23535] text-base md:text-lg font-bold mb-3 md:mb-4 pl-1">

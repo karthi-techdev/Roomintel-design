@@ -23,6 +23,8 @@ import {
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { authService } from '../api/authService';
+import logoImg from "../../public/Navbar-Logo.png"
+
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -171,10 +173,11 @@ const Navbar: React.FC = () => {
         { name: 'GALLERY', view: 'gallery', href: '/gallery' },
         { name: 'CONTACT US', view: 'contact-us', href: '/contact-us' },
     ];
+
     return (
         <>
-            <nav
-                className={`fixed top-0 z-50 transition-all duration-300 font-sans
+           <nav
+  className={`fixed top-0 z-50 transition-all duration-300  
     ${scrolled
                         ? 'bg-white shadow-lg h-[80px] md:h-[90px] left-0 right-0 rounded-sm'
                         : 'bg-white shadow-lg h-[80px] md:h-[90px] left-5 right-5 rounded-lg  before:content-[""] before:absolute before:left-[25px] before:right-[25px] before:-bottom-[13px] before:h-[13px] before:bg-white/25 before:rounded-b-[8px]'
@@ -191,7 +194,7 @@ const Navbar: React.FC = () => {
                     {/* Using Next.js Image component */}
                     <div className="relative">
                         <Image
-                            src="/Logo.png"
+                            src={logoImg}
                             alt="Room Intel Logo"
                             width={scrolled ? 120 : 150}  // Smaller when scrolled
                             height={scrolled ? 200 : 200}   // Smaller when scrolled
@@ -202,55 +205,43 @@ const Navbar: React.FC = () => {
                     </div>
                 </Link>
 
+                {/* --- DESKTOP NAVIGATION LINKS --- */}
+                <div className="hidden lg:flex items-center justify-evenly w-[100%]">
+                    {navLinks.map((link) => (
+                        <Link
+                            key={link.name}
+                            href={link.href}
+                            className={`relative font-bold text-[13px] max-[1250px]:text-[.65rem] tracking-widest uppercase transition-colors hover:text-[#c23535] ${
+                                currentView === link.view 
+                                ? 'text-[#c23535]' 
+                                : 'text-[#444]'
+                            }`}
+                        >
+                            {link.name}
+                            {currentView === link.view && (
+                                <motion.div 
+                                    layoutId="underline" 
+                                    className="absolute -bottom-2 left-0 right-0 h-[2px] bg-[#c23535]" 
+                                />
+                            )}
+                        </Link>
+                    ))}
+                </div>
+
                 {/* --- RIGHT ACTIONS --- */}
                 <div className="flex items-center gap-3 md:gap-5 ml-auto">
-
-                    {/* Search Input (Desktop Dropdown) */}
-                    <div className="hidden lg:block relative">
-                        <AnimatePresence>
-                            {isSearchOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="absolute right-0 top-full mt-4 w-[300px] bg-white shadow-xl border border-gray-100 rounded-sm p-4 z-50"
-                                >
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            placeholder="Search rooms..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full h-12 bg-gray-50 border border-gray-200 rounded-sm pl-4 pr-10 text-sm focus:outline-none focus:border-[#c23535] transition-colors"
-                                            autoFocus
-                                        />
-                                        <FaSearch className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
 
                     <div className="hidden lg:block h-6 w-[1px] bg-gray-200 mx-1"></div>
 
                     {/* Auth Section (Login/Register OR My Account) */}
                     <div className="hidden lg:flex items-center gap-2">
                         {isLoggedIn ? (
-                            <div className="flex items-center gap-2">
-                                <Link
-                                    href="/dashboard"
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
-                                >
-                                    <FaUserCircle size={16} /> My Account
-                                </Link>
-                                <button
-                                    onClick={handleLogout}
-                                    className="text-xs font-bold uppercase text-gray-500 hover:text-red-600"
-                                >
-                                    Logout
-                                </button>
-                            </div>
+                            <Link
+                                href="/dashboard"
+                                className="flex items-center justify-around px-3 py-2 text-[12px] w-max gap-2 font-bold uppercase tracking-wide text-[#c23535] border border-[#c23535]/30 bg-[#c23535]/5 rounded-sm hover:bg-[#c23535] hover:text-white transition-all"
+                            >
+                                <FaUserCircle size={16} /> My Account
+                            </Link>
                         ) : (
                             <>
                                 <button
@@ -258,12 +249,6 @@ const Navbar: React.FC = () => {
                                     className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
                                 >
                                     <FaSignInAlt /> Login
-                                </button>
-                                <button
-                                    onClick={openRegister}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
-                                >
-                                    Register
                                 </button>
                             </>
                         )}
@@ -279,9 +264,9 @@ const Navbar: React.FC = () => {
                     </Link>
 
                     {/* Reservation Button (Desktop) */}
-                    <button className="hidden lg:block bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
-                        Reservation
-                    </button>
+                    <Link href="/contact-us" className="hidden flex items-center w-max lg:flex bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
+                        Send an enquiry
+                    </Link>
 
                     {/* --- MOBILE TOGGLE --- */}
                     <button
@@ -326,7 +311,7 @@ const Navbar: React.FC = () => {
                                     />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-xl font-serif font-bold text-[#283862] leading-none">
+                                    <span className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">
                                         Bluebell
                                     </span>
                                     <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
@@ -435,7 +420,7 @@ const Navbar: React.FC = () => {
                                 <div className="p-8 md:p-10">
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaSignInAlt /></div>
-                                        <h2 className="text-2xl font-serif font-bold text-[#283862]">Welcome Back</h2>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Welcome Back</h2>
                                         <p className="text-gray-500 text-sm mt-2">Log in to your account to continue</p>
                                     </div>
 
@@ -483,14 +468,14 @@ const Navbar: React.FC = () => {
                                     </form>
 
                                     <div className="mt-8 text-center text-sm text-gray-500">
-                                        Don`t have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
+                                        Don't have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
                                     </div>
                                 </div>
                             ) : (
                                 <div className="p-8 md:p-10 z-5000000">
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaUserPlus /></div>
-                                        <h2 className="text-2xl font-serif font-bold text-[#283862]">Create Account</h2>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Create Account</h2>
                                         <p className="text-gray-500 text-sm mt-2">Register to get exclusive offers</p>
                                     </div>
 
