@@ -380,7 +380,7 @@ export default function Home() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="text-2xl xl:text-2xl font-normal leading-snug font-sans"
+                      className="text-2xl xl:text-2xl font-normal leading-snug  "
                     >
                       A Luxurious Way to Meet with nature. The comfort and the needs of our guests come before all else here.
                     </motion.h3>
@@ -426,7 +426,7 @@ export default function Home() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
                       transition={{ duration: 0.6 }}
-                      className="text-4xl xl:text-[3.25rem] font-serif text-[#283862] leading-[1.2] font-semibold"
+                      className="text-4xl xl:text-[3.25rem] noto-geogia-font text-[#283862] leading-[1.2] font-semibold"
                     >
                       We Invite guests to celebrate life
                     </motion.h2>

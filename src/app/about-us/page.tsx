@@ -201,7 +201,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 pageSections.map((section: any) => renderSection(section.type))
             ) : error ? (
                 <div className="w-full h-screen flex flex-col items-center justify-center p-10 text-center">
-                    <h2 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h2>
+                    <h3 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
                     <p className="text-sm text-gray-400">Please ensure the backend server is running on port 5000.</p>
                     <button
