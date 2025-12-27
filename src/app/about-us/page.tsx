@@ -10,23 +10,38 @@ interface AboutUsProps {
 const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     const [pageSections, setPageSections] = React.useState<any[]>([]);
     const [error, setError] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    const DEFAULT_ABOUT_SECTIONS = [
+        { type: "bannerone", sortOrder: 1, status: "active" },
+        { type: "bannertwo", sortOrder: 2, status: "active" },
+        { type: "bannerthree", sortOrder: 3, status: "active" },
+    ];
 
     React.useEffect(() => {
         const fetchSections = async () => {
             try {
                 const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=about');
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    setPageSections(DEFAULT_ABOUT_SECTIONS);
+                    return;
                 }
                 const data = await response.json();
                 if (data.success) {
-                    setPageSections(data.data.filter((s: any) => s.status === 'active'));
+                    const activeSections = data.data.filter((s: any) => s.status === 'active');
+                    if (activeSections.length > 0) {
+                        setPageSections(activeSections);
+                    } else {
+                        setPageSections(DEFAULT_ABOUT_SECTIONS);
+                    }
                 } else {
-                    setError(data.message || 'Failed to fetch sections');
+                    setPageSections(DEFAULT_ABOUT_SECTIONS);
                 }
             } catch (error: any) {
-                console.error('Error fetching page sections:', error);
-                setError(`Failed to connect to backend: ${error.message}`);
+                console.warn('Backend fetch failed, using default sections:', error);
+                setPageSections(DEFAULT_ABOUT_SECTIONS);
+            } finally {
+                setLoading(false);
             }
         };
         fetchSections();
@@ -174,8 +189,9 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     };
 
     return (
-        <section className="w-full font-sans pb-20 min-h-screen">
-            {/* --- STATIC HEADER --- */}
+        <section className="w-full   pb-20 min-h-screen">
+
+            {/* --- HEADER --- */}
             <div className="bg-[#283862] h-[450px] sm:h-[500px] md:h-[600px] lg:h-[800px] text-white px-4 relative overflow-hidden">
                 <div className="absolute inset-0">
                     <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
@@ -197,8 +213,10 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 </motion.div>
             </div>
 
-            {pageSections.length > 0 ? (
-                pageSections.map((section: any) => renderSection(section.type))
+            {loading ? (
+                <div className="w-full h-screen flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#c23535]"></div>
+                </div>
             ) : error ? (
                 <div className="w-full h-screen flex flex-col items-center justify-center p-10 text-center">
                     <h3 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h3>
@@ -211,9 +229,11 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                         Retry
                     </button>
                 </div>
+            ) : pageSections.length > 0 ? (
+                pageSections.map((section: any) => renderSection(section.type))
             ) : (
                 <div className="w-full h-screen flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#c23535]"></div>
+                    <p className="text-gray-500">No content available.</p>
                 </div>
             )}
         </section>

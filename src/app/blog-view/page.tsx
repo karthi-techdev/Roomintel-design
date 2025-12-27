@@ -46,7 +46,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
   const tags = ["Holidays", "Hotels", "Prices", "Relaxation", "Resort", "Tips"];
 
   return (
-    <div className="w-full font-sans pb-20 min-h-screen">
+    <div className="w-full   pb-20 min-h-screen">
       
       {/* --- HEADER --- */}
       <div className="bg-[#283862] pt-40 pb-32 text-white text-center px-4 relative overflow-hidden">
@@ -54,7 +54,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
              <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
          </div>
          <div className="relative z-10 max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-6xl font-serif font-bold mb-6 leading-tight drop-shadow-lg">
+            <h1 className="text-4xl md:text-6xl noto-geogia-font font-bold mb-6 leading-tight drop-shadow-lg">
               New heaven for our customers in ...
             </h1>
             <div className="flex justify-center items-center gap-3 text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
@@ -104,7 +104,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
                             Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure. To take a trivial example, which of us ever undertakes laborious physical exercise, except to obtain some advantage from it.
                         </p>
                         
-                        <div className="bg-[#FAFAFA] border-l-4 border-[#c23535] p-6 md:p-8 my-8 italic text-gray-600 font-serif text-lg">
+                        <div className="bg-[#FAFAFA] border-l-4 border-[#c23535] p-6 md:p-8 my-8 italic text-gray-600 noto-geogia-font text-lg">
                             "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet."
                         </div>
 
@@ -129,7 +129,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
 
                 {/* Comment Section */}
                 <div className="mb-12">
-                    <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8">Leave A Comment</h3>
+                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8">Leave A Comment</h3>
                     
                     <form className="bg-white p-8 md:p-10 rounded-sm shadow-sm border border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -174,7 +174,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
 
                 {/* Categories */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-serif font-bold text-[#283862] flex items-center gap-3">
+                    <h3 className="text-xl noto-geogia-font font-bold text-[#283862] flex items-center gap-3">
                         Categories <span className="w-8 h-[1px] bg-[#283862]"></span>
                     </h3>
                     <ul className="space-y-4">
@@ -190,7 +190,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
 
                 {/* Popular Posts */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-serif font-bold text-[#283862] flex items-center gap-3">
+                    <h3 className="text-xl noto-geogia-font font-bold text-[#283862] flex items-center gap-3">
                         Popular Post <span className="w-8 h-[1px] bg-[#283862]"></span>
                     </h3>
                     <div className="space-y-6">
@@ -216,7 +216,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
 
                 {/* Tags */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-serif font-bold text-[#283862] flex items-center gap-3">
+                    <h3 className="text-xl noto-geogia-font font-bold text-[#283862] flex items-center gap-3">
                         Tags <span className="w-8 h-[1px] bg-[#283862]"></span>
                     </h3>
                     <div className="flex flex-wrap gap-2">

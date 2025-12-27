@@ -48,32 +48,6 @@ export default function RoomCart() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-            {/* Mobile Header */}
-            <div className="lg:hidden fixed top-0 left-0 right-0 bg-white shadow-md z-50">
-                <div className="flex items-center justify-between p-4">
-                    <button 
-                        onClick={() => router.back()} // Optional: Add back navigation
-                        className="flex items-center gap-2 text-gray-700"
-                    >
-                        <FaArrowLeft className="text-lg" />
-                        <span className="font-medium">Back</span>
-                    </button>
-                    <div className="text-center">
-                        <h1 className="font-bold text-[#283862]">Room Cart</h1>
-                        <div className="text-xs text-gray-500">1 item</div>
-                    </div>
-                    <button 
-                        onClick={() => setShowSummaryModal(true)}
-                        className="relative"
-                    >
-                        <FaShoppingCart className="text-[#c23535] text-xl" />
-                        <span className="absolute -top-2 -right-2 bg-[#c23535] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                            1
-                        </span>
-                    </button>
-                </div>
-            </div>
-
             {/* --- HEADER --- */}
             <div className="bg-[#283862] pt-24 lg:pt-32 pb-16 lg:pb-26 text-white text-center px-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-30">
@@ -81,7 +55,7 @@ export default function RoomCart() {
                         className="w-full h-full object-cover" alt="Header" />
                 </div>
                 <div className="relative z-10">
-                    <h1 className="text-3xl lg:text-4xl xl:text-5xl font-serif font-bold mb-4">Room Cart</h1>
+                    <h1 className="text-3xl lg:text-4xl xl:text-5xl noto-geogia-font font-bold mb-4">Room Cart</h1>
                     <div className="flex justify-center items-center gap-2 text-xs font-bold tracking-widest uppercase text-gray-300">
                         <span className="hover:text-[#c23535] cursor-pointer transition-colors">Home</span>
                         <span>/</span>

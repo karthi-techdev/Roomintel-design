@@ -364,7 +364,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                <div className="space-y-6">
                   <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Main Heading</label><input type="text" defaultValue="Welcome to Bluebell Resort" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none" /></div>
                   <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">About Content</label><textarea className="w-full h-48 p-4 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none resize-none" value={aboutContent} onChange={(e) => setAboutContent(e.target.value)}></textarea></div>
-                  <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Signature Name</label><input type="text" defaultValue="Kathy A. Xemn" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none font-serif" /></div>
+                  <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Signature Name</label><input type="text" defaultValue="Kathy A. Xemn" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none noto-geogia-font" /></div>
                </div>
             )}
 
@@ -418,7 +418,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans flex text-[#283862]">
+    <div className="min-h-screen bg-gray-50   flex text-[#283862]">
       
       {/* MOBILE BACKDROP */}
       <AnimatePresence>
@@ -431,8 +431,8 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       <motion.aside className={`fixed lg:sticky top-0 left-0 z-50 w-[280px] h-screen bg-white border-r border-gray-200 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-in-out flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-24 flex items-center justify-center border-b border-gray-100 bg-white">
            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-[#283862] text-white rounded-lg flex items-center justify-center text-xl font-serif font-bold">B</div>
-              <div><h1 className="text-xl font-serif font-bold text-[#283862] leading-none">Bluebell</h1><span className="text-[10px] uppercase tracking-[0.2em] text-[#c23535] font-bold">Admin Panel</span></div>
+              <div className="w-10 h-10 bg-[#283862] text-white rounded-lg flex items-center justify-center text-xl noto-geogia-font font-bold">B</div>
+              <div><h1 className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">Bluebell</h1><span className="text-[10px] uppercase tracking-[0.2em] text-[#c23535] font-bold">Admin Panel</span></div>
            </div>
         </div>
         <div className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
@@ -486,7 +486,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                
                {activeSection === 'bookings' && (
                  <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-serif font-bold text-[#283862]">Booking Management</h2><button className="bg-[#c23535] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#a12b2b] flex items-center gap-2"><FaDownload /> Export CSV</button></div>
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Booking Management</h2><button className="bg-[#c23535] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#a12b2b] flex items-center gap-2"><FaDownload /> Export CSV</button></div>
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                        <div className="p-4 border-b border-gray-100 flex gap-4"><input type="text" placeholder="Search guests..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="flex-1 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-[#283862] outline-none" /><button className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold"><FaFilter /> Filter</button></div>
                        <table className="w-full text-sm text-left text-gray-500">
@@ -509,7 +509,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                {activeSection === 'rooms' && (
                  <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-serif font-bold text-[#283862]">Room Inventory</h2><button onClick={() => openModal('room')} className="bg-[#283862] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#1a2542] flex items-center gap-2"><FaPlus /> Add Room</button></div>
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Room Inventory</h2><button onClick={() => openModal('room')} className="bg-[#283862] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#1a2542] flex items-center gap-2"><FaPlus /> Add Room</button></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                        {rooms.map(r => (
                           <div key={r.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group hover:shadow-lg transition-all">
@@ -527,7 +527,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                {activeSection === 'payments' && (
                  <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center"><h2 className="text-2xl font-serif font-bold text-[#283862]">Financials</h2></div>
+                    <div className="flex justify-between items-center"><h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Financials</h2></div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                        <div className="bg-white p-6 rounded-xl border border-gray-100 flex items-center gap-4 shadow-sm"><div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><FaMoneyBillWave /></div><div><div className="text-xs font-bold text-gray-400 uppercase">Revenue</div><div className="text-2xl font-bold text-[#283862]">$124,500</div></div></div>
                        <div className="bg-white p-6 rounded-xl border border-gray-100 flex items-center gap-4 shadow-sm"><div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center"><FaCreditCard /></div><div><div className="text-xs font-bold text-gray-400 uppercase">Card Sales</div><div className="text-2xl font-bold text-[#283862]">$85,200</div></div></div>
@@ -556,7 +556,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                {activeSection === 'blog' && (
                  <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center"><h2 className="text-2xl font-serif font-bold text-[#283862]">Blog Posts</h2><button onClick={() => openModal('post')} className="bg-[#c23535] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#a12b2b] flex items-center gap-2"><FaPlus /> Create Post</button></div>
+                    <div className="flex justify-between items-center"><h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Blog Posts</h2><button onClick={() => openModal('post')} className="bg-[#c23535] text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#a12b2b] flex items-center gap-2"><FaPlus /> Create Post</button></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                        {posts.map(p => (
                           <div key={p.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden group flex flex-col hover:shadow-lg transition-all">
@@ -575,7 +575,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                {activeSection === 'enquiries' && (
                  <div className="space-y-6 animate-fade-in">
-                    <h2 className="text-2xl font-serif font-bold text-[#283862]">Enquiries</h2>
+                    <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Enquiries</h2>
                     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden divide-y divide-gray-100">
                        {enquiries.map(e => (
                           <div key={e.id} className="p-6 hover:bg-gray-50 transition-colors cursor-pointer">
@@ -592,7 +592,7 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
                {activeSection === 'settings' && (
                  <div className="space-y-6 animate-fade-in max-w-3xl">
-                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl font-serif font-bold text-[#283862]">Configuration</h2><button onClick={() => showToast('Settings Saved')} className="bg-[#283862] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#1a2542]">Save All</button></div>
+                    <div className="flex justify-between items-center mb-4"><h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Configuration</h2><button onClick={() => showToast('Settings Saved')} className="bg-[#283862] text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md hover:bg-[#1a2542]">Save All</button></div>
                     <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 space-y-6">
                        <div className="space-y-2"><label className="text-xs font-bold text-gray-500 uppercase">Site Title</label><input type="text" value={siteSettings.title} onChange={e => setSiteSettings({...siteSettings, title: e.target.value})} className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none" /></div>
                        <div className="grid grid-cols-2 gap-6">

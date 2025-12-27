@@ -89,6 +89,17 @@ export default function Home() {
   });
   const [pageSections, setPageSections] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const DEFAULT_HOME_SECTIONS = [
+    { type: "slider", sortOrder: 1, status: "active" },
+    { type: "bannerone", sortOrder: 2, "status": "active" },
+    { type: "room", sortOrder: 3, "status": "active" },
+    { type: "bannertwo", sortOrder: 4, "status": "active" },
+    { type: "bannerthree", sortOrder: 5, "status": "active" },
+    { type: "bannerfour", sortOrder: 6, "status": "active" },
+    { type: "testimonials", sortOrder: 7, "status": "active" }
+  ];
 
   const arrivalRef = useRef<HTMLInputElement>(null);
   const departureRef = useRef<HTMLInputElement>(null);
@@ -98,17 +109,28 @@ export default function Home() {
       try {
         const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=home');
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          // If 404 or other error, fallback to default
+          setPageSections(DEFAULT_HOME_SECTIONS);
+          return;
         }
         const data = await response.json();
         if (data.success) {
-          setPageSections(data.data.filter((s: any) => s.status === 'active'));
+          const activeSections = data.data.filter((s: any) => s.status === 'active');
+          if (activeSections.length > 0) {
+            setPageSections(activeSections);
+          } else {
+            setPageSections(DEFAULT_HOME_SECTIONS);
+          }
         } else {
-          setError(data.message || 'Failed to fetch sections');
+          // Fallback on error
+          setPageSections(DEFAULT_HOME_SECTIONS);
         }
       } catch (error: any) {
-        console.error('Error fetching page sections:', error);
-        setError(`Failed to connect to backend: ${error.message}`);
+        console.warn('Backend fetch failed, using default sections:', error);
+        // Fallback on network error
+        setPageSections(DEFAULT_HOME_SECTIONS);
+      } finally {
+        setLoading(false);
       }
     };
     fetchSections();
@@ -570,7 +592,7 @@ export default function Home() {
                       {item.icon}
                     </div>
                     <div className="flex flex-col gap-2">
-                      <h4 className="text-white text-xl font-bold font-sans">{item.title}</h4>
+                      <h4 className="text-white text-xl font-bold ">{item.title}</h4>
                       <p className="text-gray-400 text-sm leading-relaxed max-w-[280px]">{item.desc}</p>
                     </div>
                   </motion.div>
@@ -699,8 +721,10 @@ export default function Home() {
 
   return (
     <main className="w-full">
-      {pageSections.length > 0 ? (
-        pageSections.map((section: any) => renderSection(section.type))
+      {loading ? (
+        <div className="w-full h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#c23535]"></div>
+        </div>
       ) : error ? (
         <div className="w-full h-screen flex flex-col items-center justify-center p-10 text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h2>
@@ -713,10 +737,11 @@ export default function Home() {
             Retry
           </button>
         </div>
+      ) : pageSections.length > 0 ? (
+        pageSections.map((section: any) => renderSection(section.type))
       ) : (
-        // Fallback or Loading state
         <div className="w-full h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#c23535]"></div>
+          <p className="text-gray-500">No content available.</p>
         </div>
       )}
     </main>

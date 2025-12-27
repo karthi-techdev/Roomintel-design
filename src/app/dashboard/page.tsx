@@ -93,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
   }, []);
 
   return (
-    <div className="bg-gray-50 w-full font-sans pb-20 min-h-screen">
+    <div className="bg-gray-50 w-full   pb-20 min-h-screen">
       
       {/* --- HERO HEADER --- */}
       <div className="relative bg-[#283862] h-[300px] md:h-[350px] overflow-hidden">
@@ -109,7 +109,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                 transition={{ duration: 0.6 }}
                 className="text-center md:text-left"
             >
-                <h1 className="text-4xl md:text-5xl font-serif font-bold text-white mb-2">Welcome Back, {user.name.split(' ')[0]}</h1>
+                <h1 className="text-4xl md:text-5xl noto-geogia-font font-bold text-white mb-2">Welcome Back, {user.name.split(' ')[0]}</h1>
                 <p className="text-gray-300 text-sm md:text-base max-w-lg">Manage your bookings, check your loyalty status, and update your personal details all in one place.</p>
             </motion.div>
          </div>
@@ -140,7 +140,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                             </div>
                         </div>
                         
-                        <h3 className="font-serif font-bold text-xl text-[#283862] mb-1">{user.name}</h3>
+                        <h3 className="noto-geogia-font font-bold text-xl text-[#283862] mb-1">{user.name}</h3>
                         <div className="inline-block px-3 py-1 bg-[#283862]/5 text-[#283862] text-[10px] font-bold uppercase tracking-widest rounded-full mb-6">
                             {user.status}
                         </div>
@@ -210,7 +210,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                         <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
                             <div className="flex justify-between items-center p-8 border-b border-gray-100 bg-white">
                                 <div>
-                                    <h2 className="text-2xl font-serif font-bold text-[#283862]">Profile Information</h2>
+                                    <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Profile Information</h2>
                                     <p className="text-gray-400 text-sm mt-1">Update your account's profile information and email address.</p>
                                 </div>
                                 <button className="hidden sm:block text-xs font-bold text-white bg-[#283862] px-6 py-3 rounded-md hover:bg-[#1a2542] transition-colors shadow-md">
@@ -285,7 +285,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                             </div>
                             
                             <div className="bg-[#FAFAFA] p-8 border-t border-gray-100">
-                                <h3 className="text-lg font-serif font-bold text-[#283862] mb-4 flex items-center gap-2">
+                                <h3 className="text-lg noto-geogia-font font-bold text-[#283862] mb-4 flex items-center gap-2">
                                     <FaStar className="text-[#EDA337]" /> Membership Status
                                 </h3>
                                 <div className="flex flex-col md:flex-row gap-6 md:items-center">
@@ -311,7 +311,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                         <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                             <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                                 <div>
-                                    <h2 className="text-2xl font-serif font-bold text-[#283862]">My Bookings</h2>
+                                    <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">My Bookings</h2>
                                     <p className="text-sm text-gray-500 mt-1">Showing <span className="font-bold text-[#283862]">{bookings.length}</span> active and past bookings.</p>
                                 </div>
                                 <div className="flex gap-2 text-xs font-bold">
@@ -339,7 +339,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                                                 <div>
                                                     <div className="flex flex-col md:flex-row justify-between md:items-start gap-2 mb-4">
                                                         <div>
-                                                            <h3 className="text-xl font-serif font-bold text-[#283862] group-hover:text-[#c23535] transition-colors cursor-pointer">{booking.roomName}</h3>
+                                                            <h3 className="text-xl noto-geogia-font font-bold text-[#283862] group-hover:text-[#c23535] transition-colors cursor-pointer">{booking.roomName}</h3>
                                                             <div className="flex items-center gap-2 mt-1">
                                                                 <span className={`px-2 py-0.5 rounded-sm text-[10px] font-bold uppercase tracking-wider ${booking.status === 'Upcoming' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                                                                     {booking.status}
