@@ -26,11 +26,13 @@ import {
 } from 'react-icons/pi';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { siteService } from '../../api/siteService';
 
 // --- TYPES ---
 
 interface Room {
-  id: number;
+  id: string | number;
+  slug: string;
   name: string;
   image: string;
   price: number;
@@ -42,195 +44,11 @@ interface Room {
   adults: number;
   category: string;
   location: string;
-  date: string; // Added for sorting
+  date: string;
 }
 
-// --- DATA ---
-
-const roomsData: Room[] = [
-  {
-    id: 1,
-    name: "City Double Or Twin Room",
-    image: "/image/rooms/room-1.jpg",
-    price: 150,
-    rating: 5,
-    reviews: 5,
-    description: "Business, Family, Terrace",
-    size: 100,
-    beds: [{ count: 2, type: "Double Bed" }],
-    adults: 3,
-    category: "Luxury",
-    location: "Australia",
-    date: "2023-10-01"
-  },
-  {
-    id: 2,
-    name: "Superior Double Room",
-    image: "/image/rooms/room-2.jpg",
-    price: 240,
-    rating: 5,
-    reviews: 5,
-    description: "Couple, Family, Luxury",
-    size: 100,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Couple",
-    location: "Argentina",
-    date: "2023-09-15"
-  },
-  {
-    id: 3,
-    name: "Classic Family Suite",
-    image: "/image/rooms/room-3.jpg",
-    price: 320,
-    rating: 4,
-    reviews: 12,
-    description: "Family, Luxury, Terrace",
-    size: 150,
-    beds: [{ count: 2, type: "Queen Bed" }],
-    adults: 4,
-    category: "Family",
-    location: "Australia",
-    date: "2023-11-20"
-  },
-  {
-    id: 4,
-    name: "Ocean View Terrace",
-    image: "/image/rooms/room-4.jpg",
-    price: 450,
-    rating: 5,
-    reviews: 8,
-    description: "Couple, Family, Luxury",
-    size: 120,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Terrace",
-    location: "Australia",
-    date: "2023-08-05"
-  },
-  {
-    id: 5,
-    name: "Business Executive Room",
-    image: "/image/rooms/room-5.jpg",
-    price: 180,
-    rating: 4,
-    reviews: 15,
-    description: "Business, Classic, Couple, Luxury, Terrace",
-    size: 85,
-    beds: [{ count: 1, type: "Queen Bed" }],
-    adults: 1,
-    category: "Business",
-    location: "United States",
-    date: "2023-12-01"
-  },
-  {
-    id: 6,
-    name: "Mountain Retreat",
-    image: "/image/rooms/room-6.jpg",
-    price: 210,
-    rating: 5,
-    reviews: 22,
-    description: "Business, Couple, Family",
-    size: 95,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Classic",
-    location: "Canada",
-    date: "2023-01-15"
-  },
-  {
-    id: 7,
-    name: "Urban Loft",
-    image: "/image/rooms/room-7.avif",
-    price: 275,
-    rating: 4,
-    reviews: 9,
-    description: "Business, Family, Luxury",
-    size: 110,
-    beds: [{ count: 1, type: "Queen Bed" }],
-    adults: 2,
-    category: "Couple",
-    location: "Germany",
-    date: "2023-05-10"
-  },
-  {
-    id: 8,
-    name: "Grand Luxury Suite",
-    image: "/image/rooms/room-8.webp",
-    price: 850,
-    rating: 5,
-    reviews: 3,
-    description: "Classic, Couple, Luxury, Terrace",
-    size: 200,
-    beds: [{ count: 1, type: "California King" }],
-    adults: 2,
-    category: "Luxury",
-    location: "United States",
-    date: "2023-12-25"
-  },
-  {
-    id: 9,
-    name: "Family Garden Villa",
-    image: "/image/rooms/room-9.webp",
-    price: 380,
-    rating: 5,
-    reviews: 18,
-    description: "Business, Classic, Luxury",
-    size: 160,
-    beds: [{ count: 2, type: "Queen Bed" }, { count: 1, type: "Single Bed" }],
-    adults: 5,
-    category: "Family",
-    location: "Argentina",
-    date: "2023-06-20"
-  },
-  {
-    id: 10,
-    name: "Berlin Terrace Penthouse",
-    image: "/image/rooms/room-10.avif",
-    price: 600,
-    rating: 5,
-    reviews: 7,
-    description: "Business, Classic, Family, Luxury",
-    size: 140,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Terrace",
-    location: "Germany",
-    date: "2023-09-01"
-  },
-  {
-    id: 11,
-    name: "Cozy Cabin",
-    image: "/image/rooms/room-11.jpg",
-    price: 130,
-    rating: 3,
-    reviews: 40,
-    description: "Classic, Couple, Luxury, Terrace",
-    size: 60,
-    beds: [{ count: 1, type: "Double Bed" }],
-    adults: 2,
-    category: "Classic",
-    location: "Canada",
-    date: "2022-12-10"
-  },
-  {
-    id: 12,
-    name: "Corporate Suite",
-    image: "/image/rooms/room-12.webp",
-    price: 220,
-    rating: 4,
-    reviews: 14,
-    description: "Business, Couple, Family, Terrace",
-    size: 90,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 1,
-    category: "Business",
-    location: "United States",
-    date: "2023-10-15"
-  }
-];
-
-const categories = ["Business", "Classic", "Couple", "Family", "Luxury", "Terrace"];
+// --- CONSTANTS ---
+// const categories = ["Business", "Classic", "Couple", "Family", "Luxury", "Terrace"];
 const locations = ["Argentina", "Australia", "Canada", "Germany", "United States"];
 const sizes = [100, 150, 200, 250];
 const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
@@ -238,6 +56,11 @@ const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
 export default function RoomsGrid() {
   // --- STATE ---
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Filters
   const [priceRange, setPriceRange] = useState(9900);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -247,7 +70,54 @@ export default function RoomsGrid() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    useEffect(() => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Categories
+        try {
+          const catData = await siteService.getCategories();
+          if (catData.success && Array.isArray(catData.data)) {
+            setCategories(catData.data.map((c: any) => c.name));
+          }
+        } catch (err) {
+          console.error("Failed to fetch categories:", err);
+        }
+
+        // Fetch Rooms
+        const data = await siteService.getRooms();
+
+        if (data.success && Array.isArray(data.data)) {
+          if (data.data.length === 0) console.warn("Backend returned 0 rooms");
+
+          const mappedRooms: Room[] = data.data.map((r: any) => ({
+            id: r._id,
+            slug: r.slug, // Map slug
+            name: r.name || r.title,
+            image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
+            price: r.price || 0,
+            rating: 5, // Mock data
+            reviews: 0, // Mock data
+            description: r.description,
+            size: parseInt(r.size) || 100,
+            beds: [{ count: 1, type: r.beds || "Standard" }],
+            adults: r.adults,
+            category: r.category?.name || "Uncategorized",
+            location: r.locationName || "Unknown",
+            date: r.createdAt || new Date().toISOString()
+          }));
+          setRooms(mappedRooms);
+        }
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
     if (isFilterOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -319,7 +189,7 @@ export default function RoomsGrid() {
 
   const filteredAndSortedRooms = useMemo(() => {
     // 1. Filter
-    let result = roomsData.filter(room => {
+    let result = rooms.filter(room => {
       // Price Filter
       const matchesPrice = room.price <= priceRange;
 
@@ -329,7 +199,28 @@ export default function RoomsGrid() {
       // Location Filter
       const matchesLocation = selectedLocations.length === 0 || selectedLocations.includes(room.location);
 
-      return matchesPrice && matchesCategory && matchesLocation;
+      // Size Filter
+      const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(room.size);
+
+      // Beds Filter
+      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(sel => {
+        const totalBeds = room.beds.reduce((acc, b) => acc + b.count, 0);
+        const bedTypes = room.beds.map(b => b.type.toLowerCase()).join(" ");
+
+        if (sel === "2 Beds") return totalBeds === 2;
+        if (sel === "1 Bed") return totalBeds === 1;
+        if (sel === "1 King Bed") return totalBeds === 1 && bedTypes.includes("king");
+        if (sel === "1 Double Bed") return totalBeds === 1 && bedTypes.includes("double");
+        return false;
+      });
+
+      // Adults Filter
+      const matchesAdults = selectedAdults.length === 0 || selectedAdults.some(sel => {
+        const num = parseInt(sel);
+        return room.adults === num;
+      });
+
+      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds && matchesAdults;
     });
 
     // 2. Sort
@@ -345,7 +236,7 @@ export default function RoomsGrid() {
     });
 
     return result;
-  }, [priceRange, selectedCategories, selectedLocations, sortBy]);
+  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
 
   // --- PAGINATION LOGIC ---
 
@@ -579,19 +470,19 @@ export default function RoomsGrid() {
           </aside>
 
           {/* MOBILE FILTER POPUP */}
-          
+
           {isFilterOpen && (
 
             <>
-            
-            
+
+
               {/* BACKDROP */}
               <div
                 className="fixed inset-0 bg-black/40 z-40 lg:hidden"
                 onClick={() => setIsFilterOpen(false)}
-                
+
               />
-              
+
 
               {/* POPUP */}
               <motion.aside
@@ -817,7 +708,7 @@ export default function RoomsGrid() {
                 {filteredAndSortedRooms.length} Rooms Available
               </div>
 
-              <div className="flex justify-between items-center gap-3 mt-5 overflow-x-auto whitespace-nowrap md:overflow-visible md:flex-row md:items-center md:gap-6">
+              <div className="flex justify-between items-center gap-3 mt-5 whitespace-nowrap md:flex-row md:items-center md:gap-6">
 
                 {/* SORT */}
                 <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -842,7 +733,7 @@ export default function RoomsGrid() {
                 </div>
 
                 {/* GRID / LIST */}
-                <div className="flex gap-2 min-w-max">
+                <div className="flex gap-2 min-w-max md:flex hidden">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'grid'
@@ -884,11 +775,13 @@ export default function RoomsGrid() {
                   >
                     {/* Image Section */}
                     <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}>
-                      <img
-                        src={room.image}
-                        alt={room.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+                      <Link href={`/room-view/${room.slug}`}>
+                        <img
+                          src={room.image}
+                          alt={room.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                        />
+                      </Link>
 
                       {/* Rating Badge */}
                       <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
@@ -900,10 +793,12 @@ export default function RoomsGrid() {
                     {/* Content Section */}
                     <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
                       <div className='flex justify-between text-center'>
-                        <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
-                          {room.name}
-                        </h3>
-                        <span>From $1.590</span>
+                        <Link href={`/room-view/${room.slug}`}>
+                          <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
+                            {room.name}
+                          </h3>
+                        </Link>
+                        <span>From ${room.price}</span>
 
                       </div>
 
@@ -953,7 +848,7 @@ export default function RoomsGrid() {
                           </div>
                         </div>
                         <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <Link href="/room-view" className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]">Book Now</Link>
+                          <Link href={`/room-view/${room.slug}`} className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]">Book Now</Link>
                         </div>
 
                       </div>
