@@ -7,6 +7,7 @@ import Script from "next/script";
 import '@fontsource-variable/outfit';
 import '@fontsource-variable/noto-serif-georgian';
 import { ToastProvider } from "@/components/ui/Toast";
+import { AlertContainer } from "@/components/ui/AlertContainer";
 
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ToastProvider>
+          <AlertContainer />
           <Navbar />
           {children}
           <Footer />

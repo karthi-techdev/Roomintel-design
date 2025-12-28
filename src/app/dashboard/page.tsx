@@ -24,6 +24,7 @@ import { authService } from '@/api/authService';
 
 import { bookingService } from '@/api/bookingService';
 import { membershipService } from '@/api/membershipService';
+import { showAlert } from '@/utils/alertStore';
 
 const Dashboard: React.FC = () => {
     const router = useRouter();
@@ -52,7 +53,7 @@ const Dashboard: React.FC = () => {
             const paymentRes = await bookingService.initiatePayment(amount * 100, "INR"); // Convert to paise
 
             if (paymentRes.status === false) {
-                alert(paymentRes.message);
+                showAlert.error(paymentRes.message);
                 return;
             }
 
@@ -66,7 +67,7 @@ const Dashboard: React.FC = () => {
                 description: `Payment for ${booking.roomName}`,
                 order_id: orderData.razorpayOrderId,
                 handler: async function (response: any) {
-                    alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+                    showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
                     // Refresh bookings
                     window.location.reload();
                 },
@@ -83,15 +84,15 @@ const Dashboard: React.FC = () => {
             if (typeof window !== "undefined" && (window as any).Razorpay) {
                 const rzp = new (window as any).Razorpay(options);
                 rzp.on('payment.failed', function (response: any) {
-                    alert("Payment Failed: " + response.error.description);
+                    showAlert.error("Payment Failed: " + response.error.description);
                 });
                 rzp.open();
             } else {
-                alert("Razorpay SDK not loaded. Please refresh the page.");
+                showAlert.error("Razorpay SDK not loaded. Please refresh the page.");
             }
         } catch (error: any) {
             console.error("Payment error:", error);
-            alert("Payment initiation failed: " + (error.message || "Unknown error"));
+            showAlert.error("Payment initiation failed: " + (error.message || "Unknown error"));
         }
     };
 
@@ -101,7 +102,7 @@ const Dashboard: React.FC = () => {
         try {
             const result = await bookingService.cancelBooking(bookingId);
             if (result.status) {
-                alert("Booking cancelled successfully");
+                showAlert.success("Booking cancelled successfully");
                 // Refresh bookings
                 const bookingsRes = await bookingService.getMyBookings();
                 if (bookingsRes && bookingsRes.status && Array.isArray(bookingsRes.data)) {
@@ -122,7 +123,7 @@ const Dashboard: React.FC = () => {
             }
         } catch (error: any) {
             console.error("Cancel error:", error);
-            alert("Failed to cancel booking: " + (error.message || "Unknown error"));
+            showAlert.error("Failed to cancel booking: " + (error.message || "Unknown error"));
         }
     };
 

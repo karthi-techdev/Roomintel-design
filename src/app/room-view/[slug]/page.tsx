@@ -94,6 +94,8 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
     const [rooms, setRooms] = useState(1);
     const [children, setChildren] = useState(0);
+    const [checkInDate, setCheckInDate] = useState(new Date().toISOString().split('T')[0]);
+    const [checkOutDate, setCheckOutDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
 
     // FAQ State
     const [activeAccordion, setActiveAccordion] = useState<number | null>(0);
@@ -419,6 +421,30 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
 
                                     <div className="space-y-4 pt-2">
+                                        {/* Date Selection */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-gray-300 uppercase tracking-wider">Check-In</label>
+                                                <input
+                                                    type="date"
+                                                    value={checkInDate}
+                                                    onChange={(e) => setCheckInDate(e.target.value)}
+                                                    min={new Date().toISOString().split('T')[0]}
+                                                    className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-[#EDA337]"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-medium text-gray-300 uppercase tracking-wider">Check-Out</label>
+                                                <input
+                                                    type="date"
+                                                    value={checkOutDate}
+                                                    onChange={(e) => setCheckOutDate(e.target.value)}
+                                                    min={checkInDate}
+                                                    className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-[#EDA337]"
+                                                />
+                                            </div>
+                                        </div>
+
                                         <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
                                             <span className="text-sm font-medium pl-1">Number</span>
                                             <div className="flex items-center gap-4 text-gray-300">
@@ -489,6 +515,8 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 roomImage: room?.previewImage || room?.images?.[0] || "",
                                                 price: basePrice,
                                                 amenities: room?.amenities || [],
+                                                checkIn: checkInDate,
+                                                checkOut: checkOutDate,
                                                 guestDetails: {
                                                     rooms: rooms,
                                                     adults: room?.adults || 2, // Default adults from room or 2

@@ -399,8 +399,10 @@ export default function RoomCart() {
                                                 <span className="hidden sm:inline text-sm text-gray-500">•</span>
                                                 <span className="flex items-center gap-1 text-sm text-gray-500">
                                                     <FaCalendarDay className="text-[#c23535]" />
-                                                    {/* Dynamic Date Display logic - Default to tomorrow if not set */}
-                                                    {new Date(Date.now() + 86400000).toLocaleDateString()}
+                                                    {cartItem.checkIn && cartItem.checkOut
+                                                        ? `${new Date(cartItem.checkIn).toLocaleDateString()} - ${new Date(cartItem.checkOut).toLocaleDateString()}`
+                                                        : new Date(Date.now() + 86400000).toLocaleDateString()
+                                                    }
                                                 </span>
                                             </div>
                                             <h2 className="text-xl lg:text-2xl font-bold text-[#283862]">{cartItem.roomName}</h2>
