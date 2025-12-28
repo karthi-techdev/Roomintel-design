@@ -25,5 +25,10 @@ export const authService = {
             if (userStr) return JSON.parse(userStr);
         }
         return null;
+    },
+
+    getProfile: async () => {
+        const response = await axiosInstance.get('/site/auth/me');
+        return response.data;
     }
 };

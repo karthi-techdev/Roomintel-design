@@ -19,21 +19,13 @@ import {
 } from 'react-icons/fa';
 import { authService } from '../../api/authService';
 import { cartService } from '../../api/cartService';
-// ... (EXTRAS_OPTIONS remains same, skipping for brevity in this replacement block if possible, but replace_file_content needs continguous block. I'll target just the top imports)
-
-
-const EXTRAS_OPTIONS = [
-    { name: 'Spa Package', price: 120, popular: true, description: 'Relaxing 60-min massage' },
-    { name: 'Dinner for Two', price: 85, popular: false, description: '3-course meal at our restaurant' },
-    { name: 'City Tour', price: 65, popular: true, description: 'Guided tour of local landmarks' },
-    { name: 'Airport Transfer', price: 45, popular: false, description: 'Private car pickup/drop-off' },
-    { name: 'Late Checkout', price: 30, popular: false, description: 'Keep your room until 2 PM' },
-];
+import { siteService } from '../../api/siteService';
 
 export default function RoomCart() {
     const router = useRouter();
     const [cartItem, setCartItem] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [availableServices, setAvailableServices] = useState<any[]>([]);
 
     // Default states, will be updated from cart data
     const [adults, setAdults] = useState(2);
@@ -68,6 +60,24 @@ export default function RoomCart() {
                 }
             }
 
+            // Defensive: Ensure financials exist if loaded from old localStorage
+            if (loadedCartItem && !loadedCartItem.financials) {
+                const price = loadedCartItem.price || 0;
+                const rCount = loadedCartItem.guestDetails?.rooms || 1;
+                const bTotal = price * rCount;
+                const tax = bTotal * 0.10;
+                const sCharge = bTotal * 0.05;
+                loadedCartItem.financials = {
+                    baseTotal: bTotal,
+                    extrasTotal: 0,
+                    taxes: tax,
+                    serviceCharge: sCharge,
+                    discountAmount: 0,
+                    grandTotal: bTotal + tax + sCharge,
+                    currency: '$'
+                };
+            }
+
             // 2. If User Logged In, Sync or Fetch
             if (user) {
                 try {
@@ -81,8 +91,17 @@ export default function RoomCart() {
                         await cartService.syncCart(loadedCartItem);
                     } else if (backendItems && backendItems.length > 0) {
                         // If no local but backend has data, use backend
-                        // Only supporting single item flow for now
                         loadedCartItem = backendItems[0];
+
+                        // Handle backend populated structure: map nested Room fields to flat cart structure
+                        if (loadedCartItem.roomId && typeof loadedCartItem.roomId === 'object') {
+                            const roomDetails: any = loadedCartItem.roomId;
+                            loadedCartItem.roomName = roomDetails.name || "Room";
+                            loadedCartItem.roomTitle = roomDetails.title || roomDetails.name;
+                            loadedCartItem.roomImage = roomDetails.previewImage || (roomDetails.images ? roomDetails.images[0] : "");
+                            loadedCartItem.amenities = roomDetails.amenities || [];
+                        }
+
                         // Also update local storage to keep them in sync for other pages
                         localStorage.setItem('room_cart', JSON.stringify(loadedCartItem));
                     }
@@ -100,9 +119,24 @@ export default function RoomCart() {
                 if (loadedCartItem.selectedExtras) {
                     setSelectedExtras(new Set(loadedCartItem.selectedExtras));
                 }
-                if (loadedCartItem.appliedPromo) {
-                    // If we saved promo state
+                // Restore Promo Code State
+                if (loadedCartItem.promoCode) {
+                    setPromoCode(loadedCartItem.promoCode);
+                    setAppliedPromo({
+                        code: loadedCartItem.promoCode,
+                        discountAmount: loadedCartItem.financials?.discountAmount || 0
+                    });
                 }
+            }
+
+            // Fetch Services
+            try {
+                const servicesData = await siteService.getServices();
+                if (servicesData && servicesData.success) {
+                    setAvailableServices(servicesData.data);
+                }
+            } catch (e) {
+                console.error("Error fetching services", e);
             }
 
             setIsLoading(false);
@@ -116,7 +150,7 @@ export default function RoomCart() {
     const baseTotal = roomPrice * roomsCount;
 
     const extrasTotal = Array.from(selectedExtras).reduce((acc, extraName) => {
-        const extra = EXTRAS_OPTIONS.find(e => e.name === extraName);
+        const extra = availableServices.find(e => e.title === extraName);
         return acc + (extra ? extra.price : 0);
     }, 0);
 
@@ -129,6 +163,7 @@ export default function RoomCart() {
     const grandTotal = Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge - discountAmount);
 
     // Handle Promo Code
+    // Handle Promo Code
     const handleApplyPromo = async () => {
         if (!promoCode.trim()) return;
 
@@ -139,10 +174,35 @@ export default function RoomCart() {
             const result = await promoCodeService.validatePromoCode(promoCode, baseTotal);
 
             if (result.valid) {
+                const discount = result.discountAmount || 0;
                 setAppliedPromo({
                     code: promoCode.toUpperCase(),
-                    discountAmount: result.discountAmount || 0
+                    discountAmount: discount
                 });
+
+                // Update Cart Item State & Persist
+                if (cartItem) {
+                    const newFinancials = {
+                        ...cartItem.financials,
+                        discountAmount: discount,
+                        grandTotal: Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge - discount)
+                    };
+
+                    const updatedItem = {
+                        ...cartItem,
+                        promoCode: promoCode.toUpperCase(),
+                        financials: newFinancials
+                    };
+
+                    setCartItem(updatedItem);
+                    localStorage.setItem('room_cart', JSON.stringify(updatedItem));
+
+                    const user = authService.getCurrentUser();
+                    if (user) {
+                        await cartService.syncCart(updatedItem);
+                    }
+                }
+
                 setAlertState({
                     type: 'success',
                     title: 'Success!',
@@ -168,9 +228,34 @@ export default function RoomCart() {
         }
     };
 
-    const handleRemovePromo = () => {
+    const handleRemovePromo = async () => {
         setAppliedPromo(null);
         setPromoCode('');
+
+        // Update Cart Item & Persist Removal
+        if (cartItem) {
+            const newFinancials = {
+                ...cartItem.financials,
+                discountAmount: 0,
+                grandTotal: Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge)
+            };
+
+            const updatedItem = {
+                ...cartItem,
+                promoCode: undefined, // or remove field
+                financials: newFinancials
+            };
+            delete updatedItem.promoCode;
+
+            setCartItem(updatedItem);
+            localStorage.setItem('room_cart', JSON.stringify(updatedItem));
+
+            const user = authService.getCurrentUser();
+            if (user) {
+                await cartService.syncCart(updatedItem);
+            }
+        }
+
         setAlertState({
             type: 'default',
             title: 'Removed',
@@ -439,25 +524,23 @@ export default function RoomCart() {
                             <div className="bg-white rounded-xl lg:rounded-2xl border border-gray-200 p-4 lg:p-6">
                                 <h3 className="text-lg font-bold text-[#283862] mb-4">Enhance Your Stay</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {EXTRAS_OPTIONS.map((extra, idx) => {
-                                        const isSelected = selectedExtras.has(extra.name);
+                                    {availableServices.map((service: any, idx: number) => {
+                                        const isSelected = selectedExtras.has(service.title);
                                         return (
                                             <div
                                                 key={idx}
-                                                onClick={() => toggleExtra(extra.name)}
+                                                onClick={() => toggleExtra(service.title)}
                                                 className={`border rounded-lg p-4 cursor-pointer transition-all ${isSelected ? 'border-[#c23535] bg-[#c23535]/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
                                             >
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
-                                                        <div className="font-medium text-[#283862]">{extra.name}</div>
-                                                        <div className="text-xs text-gray-500 line-clamp-1">{extra.description}</div>
+                                                        <div className="font-medium text-[#283862]">{service.title}</div>
+                                                        <div className="text-xs text-gray-500 line-clamp-1">{service.description}</div>
                                                     </div>
-                                                    {extra.popular && (
-                                                        <span className="px-2 py-1 bg-[#c23535]/10 text-[#c23535] text-[10px] uppercase font-bold rounded">Popular</span>
-                                                    )}
+                                                    {/* Assuming no 'popular' flag in service model for now, or use service.isFeatured if exists */}
                                                 </div>
                                                 <div className="flex items-center justify-between">
-                                                    <div className="text-lg font-bold text-[#283862]">+${extra.price}</div>
+                                                    <div className="text-lg font-bold text-[#283862]">+${service.price}</div> {/* Use dynamic price */}
                                                     <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#c23535] bg-[#c23535]' : 'border-gray-300'}`}>
                                                         {isSelected && <FaCheckCircle className="text-white text-xs" />}
                                                     </div>
