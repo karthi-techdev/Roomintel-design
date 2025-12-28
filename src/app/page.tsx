@@ -521,30 +521,36 @@ const prevSlide = () => {
               };
 
               return (
-                <motion.div
-                  key={room.id}
-                  initial="center"
-                  animate={position}
-                  variants={variants}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full rounded-md overflow-hidden shadow-xl"
+               <motion.div
+                    key={room.id}
+                    initial="center"
+                    animate={position}
+                    variants={variants}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute w-[80%] md:w-[60%] lg:w-[45%] h-full rounded-md overflow-visible shadow-xl"
                 >
-                  <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
-
-                  {/* Overlay for inactive slides */}
-                  {!isCenter && (
-                    <div
-                      className="absolute inset-0 bg-black/30 transition-colors flex items-center justify-center cursor-pointer group"
-                      onClick={isLeft ? prevSlideCarousel : nextSlideCarousel}
-                    >
-                      {/* Directional Arrow */}
-                      {isLeft ? (
-                        <BsArrowLeft className="hidden md:inline text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
-                      ) : (
-                        <BsArrowRight className="hidden md:inline text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
-                      )}
-                    </div>
-                  )}
+                    <img src={room.image} alt={room.name} className="w-full h-full object-cover" />
+                    {!isCenter && (
+                        <div
+                            className="absolute inset-0 bg-black/30 md:bg-black/30 transition-colors flex items-center justify-center cursor-pointer group"
+                            onClick={isLeft ? prevSlideCarousel : nextSlideCarousel}
+                        >
+                            {isLeft ? (
+                                <div className="absolute bottom-0 translate-y-full left-1/2 -translate-x-24 md:hidden">
+                                    <BsArrowLeft className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
+                                </div>
+                            ) : (
+                                <div className="absolute bottom-0 translate-y-full left-1/2 translate-x-24 md:hidden">
+                                    <BsArrowRight className="text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
+                                </div>
+                            )}
+                            {isLeft ? (
+                                <BsArrowLeft className="hidden md:block text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:-translate-x-2 duration-300 drop-shadow-lg" />
+                            ) : (
+                                <BsArrowRight className="hidden md:block text-white text-6xl opacity-90 group-hover:opacity-100 transition-all transform group-hover:translate-x-2 duration-300 drop-shadow-lg" />
+                            )}
+                        </div>
+                    )}
                 </motion.div>
               );
             })}
