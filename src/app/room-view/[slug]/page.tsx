@@ -43,11 +43,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     // --- STATE ---
 
     // Booking Widget State
-    const [bookingForm, setBookingForm] = useState({
-        name: '',
-        email: '',
-        phone: ''
-    });
+    // Removed unused bookingForm state
 
     const [room, setRoom] = useState<any>(null);
 
@@ -91,22 +87,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             }
         }
 
-        const fetchUser = () => {
-            const user = authService.getCurrentUser();
-            if (user) {
-                setBookingForm(prev => ({
-                    ...prev,
-                    name: user.name || (user.firstName ? `${user.firstName} ${user.lastName || ''}` : ''),
-                    email: user.email || '',
-                    phone: user.phone || ''
-                }));
-            }
-        };
-
         fetchBanner();
         fetchRoom();
         fetchFaqs();
-        fetchUser();
     }, [slug]);
 
     const [rooms, setRooms] = useState(1);
@@ -435,30 +418,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                 <div className="p-6 md:p-8 space-y-5">
                                     <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
 
-                                    <div className="space-y-4">
-                                        <input
-                                            type="text"
-                                            placeholder="Your Name"
-                                            value={bookingForm.name}
-                                            onChange={(e) => setBookingForm({ ...bookingForm, name: e.target.value })}
-                                            className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm text-white text-sm p-4 placeholder-gray-400 focus:outline-none focus:border-[#EDA337]"
-                                        />
-                                        <input
-                                            type="email"
-                                            placeholder="Your Email"
-                                            value={bookingForm.email}
-                                            onChange={(e) => setBookingForm({ ...bookingForm, email: e.target.value })}
-                                            className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm text-white text-sm p-4 placeholder-gray-400 focus:outline-none focus:border-[#EDA337]"
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Phone Number"
-                                            value={bookingForm.phone}
-                                            onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })}
-                                            className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm text-white text-sm p-4 placeholder-gray-400 focus:outline-none focus:border-[#EDA337]"
-                                        />
-                                    </div>
-
                                     <div className="space-y-4 pt-2">
                                         <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
                                             <span className="text-sm font-medium pl-1">Number</span>
@@ -513,8 +472,18 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     <button
                                         onClick={() => {
                                             // Create cart item object
+                                            // Calculate financials
+                                            const roomsCount = rooms;
+                                            const baseTotal = basePrice * roomsCount;
+                                            const taxes = baseTotal * 0.10;
+                                            const serviceCharge = baseTotal * 0.05;
+                                            const grandTotal = baseTotal + taxes + serviceCharge;
+
                                             const cartItem = {
+                                                roomId: room?._id,
                                                 roomSlug: slug,
+                                                // We keep these for LocalStorage (Anonymous users) display
+                                                // Backend will ignore them as they are not in schema anymore
                                                 roomName: room?.name || "Room",
                                                 roomTitle: room?.title || room?.name,
                                                 roomImage: room?.previewImage || room?.images?.[0] || "",
@@ -525,7 +494,15 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                     adults: room?.adults || 2, // Default adults from room or 2
                                                     children: children,
                                                 },
-                                                contact: bookingForm
+                                                financials: {
+                                                    baseTotal,
+                                                    extrasTotal: 0,
+                                                    taxes,
+                                                    serviceCharge,
+                                                    discountAmount: 0,
+                                                    grandTotal,
+                                                    currency: '$'
+                                                }
                                             };
 
                                             // Save to localStorage

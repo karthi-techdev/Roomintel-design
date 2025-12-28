@@ -1,18 +1,41 @@
 "use client";
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { FaCheck } from 'react-icons/fa';
 import { authService } from '../../api/authService';
 import { cartService } from '../../api/cartService';
+import { bookingService } from '../../api/bookingService';
+import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
 
 interface RoomCheckoutProps {
-    onBack: () => void;
-    onPlaceOrder: () => void;
+    onBack?: () => void;
+    onPlaceOrder?: () => void;
 }
 
 const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
+    const router = useRouter();
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [cartItem, setCartItem] = useState<any>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // Dates (If not in Cart)
+    const [dates, setDates] = useState({
+        checkIn: new Date().toISOString().split('T')[0],
+        checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    });
+
+    // Mapping for Country -> Phone Code (In real app, can come from DB or comprehensive lib)
+    const countryCodeMap: any = {
+        "India": "+91",
+        "United States": "+1",
+        "United Kingdom": "+44",
+        "Australia": "+61",
+        "Afghanistan": "+93",
+        "Albania": "+355",
+        "Canada": "+1"
+        // Add more as needed or use a library
+    };
 
     const [formData, setFormData] = useState({
         name: '',
@@ -22,18 +45,20 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         city: '',
         state: '',
         postcode: '',
-        email: 'vs@yopmail.com',
-        phone: '09789577062',
+        email: '',
+        phone: '',
         notes: ''
     });
 
+    const availableStates = formData.country
+        ? countryData.find((c: any) => c.name === formData.country)?.states || []
+        : [];
+
     useEffect(() => {
         const loadCheckoutData = async () => {
-            // 1. Get User Data
             const user = authService.getCurrentUser();
             let loadedCartItem: any = null;
 
-            // 2. Try LocalStorage FIRST
             if (typeof window !== 'undefined') {
                 const stored = localStorage.getItem('room_cart');
                 if (stored) {
@@ -43,9 +68,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 }
             }
 
-            // 3. If User Logged In, checking backend might be redundant IF we assume Cart Page syncs it.
-            // BUT, for safety, let's trust LocalStorage as the "immediate" state from Cart Page.
-            // If LocalStorage is empty but user is logged in, MAYBE fetch from backend (e.g. cross-device).
             if (!loadedCartItem && user) {
                 try {
                     const backendCartContainer = await cartService.getCart();
@@ -60,10 +82,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
             if (loadedCartItem) {
                 setCartItem(loadedCartItem);
-                // 3. Populate Form (Cart takes precedence for contact info if set, otherwise User)
+
+                // Handle populated roomId
+                const roomName = loadedCartItem.roomName || (loadedCartItem.roomId?.name) || "Room";
+
                 setFormData(prev => ({
                     ...prev,
-                    name: loadedCartItem?.contact?.name || user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ''}` : '') || '',
+                    name: loadedCartItem?.contact?.name || user?.name || '',
                     email: loadedCartItem?.contact?.email || user?.email || '',
                     phone: loadedCartItem?.contact?.phone || user?.phone || '',
                 }));
@@ -74,62 +99,150 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'country') {
+            const code = countryCodeMap[value] || "";
+            // Only set phone if it's currently empty, or we can just set formData.phonePrefix separate if desired. 
+            // Here we just pre-fill phone if empty or leave user to type.
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                state: '',
+                phone: prev.phone ? prev.phone : code // Optional: Don't overwrite if user already typed
+            }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
-    const handlePayment = async () => {
-        const formData: any = {
-            "orederId": "ORDER_123450",
-            "orederAmount": 80,
-            "orederCurrency": "INR",
-            "orederDetails": {
-                "customerId": "rahul_05",
-                "customerEmail": "test@gmail.com",
-                "customerPhone": "9361428950"
-            }
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setDates(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    };
+
+    const handlePlaceOrder = async () => {
+        if (!cartItem) return alert("Your cart is empty and valid booking details are missing.");
+        if (!formData.name || !formData.email || !formData.phone) {
+            return alert("Please fill in all required fields (Name, Email, Phone).");
         }
-        const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OTIxNjJiZGI4YzRjZGUxZDllZjJiN2QiLCJlbWFpbCI6ImFkbWluQGdtYWlsLmNvbSIsInJvbGVJZCI6IjY5MjE2Mjg1YjhjNGNkZTFkOWVmMmFkOSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc2NjQwMDI4MiwiZXhwIjoxNzY2NDg2NjgyfQ.Wc4xytWim_iCQeGm4HjeE3ZgKWmZDJSahJ6KmlOFWT8'
-        const headers: any = {
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token || ""}`,
-            }
+
+        // Ensure dates are valid
+        if (new Date(dates.checkIn) >= new Date(dates.checkOut)) {
+            return alert("Check-out date must be after check-in date.");
         }
+
+        setIsProcessing(true);
+
+        const totalAmount = cartItem.financials?.grandTotal || cartItem.price || 0;
+        const roomId = typeof cartItem.roomId === 'object' ? cartItem.roomId._id : cartItem.roomId;
+
+        const bookingPayload = {
+            guestName: formData.name,
+            guestEmail: formData.email,
+            guestPhone: formData.phone,
+            room: roomId,
+            checkIn: dates.checkIn,
+            checkOut: dates.checkOut,
+            totalAmount: totalAmount,
+            specialRequests: formData.notes,
+            billingAddress: {
+                street: formData.address,
+                city: formData.city,
+                state: formData.state,
+                country: formData.country,
+                zipCode: formData.postcode
+            },
+            paymentStatus: 'Pending',
+            paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
+            bookingStatus: 'Pending' // Or 'Confirmed' depending on business logic
+        };
+
         try {
-            const res = await axios.post("http://localhost:5000/api/v1/payment", formData, headers);
-            const order = await res.data;
-            const options = {
-                key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                amount: order.orederAmount * 100, // Amount in paise
-                currency: order.orederCurrency,
-                name: "RoomIntel",
-                description: "Booking Payment",
-                order_id: order.razorpayOrderId,
-                handler: function (response: any) {
-                    console.log("Payment Successful:", response);
-                    alert("Payment ID: " + response.razorpay_payment_id);
-                },
-                prefill: {
-                    name: "Rahul",
-                    email: formData.orederDetails.customerEmail,
-                    contact: formData.orederDetails.customerPhone,
-                },
-                theme: {
-                    color: "#3399cc",
-                },
-            };
+            if (paymentMethod === 'cash') {
+                // CASH FLOW
+                await bookingService.createBooking(bookingPayload);
+                const pointsEarned = Math.floor(totalAmount * 10);
+                alert(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                finalizeOrder();
 
-            if (typeof window !== "undefined" && window.Razorpay) {
-                const rzp = new window.Razorpay(options);
-                rzp.open();
+            } else if (paymentMethod === 'card') {
+                // RAZORPAY / ONLINE FLOW
+                const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
+
+                if (paymentRes.status === false) throw new Error(paymentRes.message);
+
+                const orderData = paymentRes.data; // Expected { razorpayOrderId: ..., amount: ... } provided by paymentService
+
+                const options = {
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Ensure env var is set
+                    amount: orderData.amount, // from backend (paise)
+                    currency: orderData.currency,
+                    name: "RoomIntel Booking",
+                    description: `Booking for ${cartItem.roomName || 'Room'}`,
+                    order_id: orderData.razorpayOrderId, // Backend returns this
+                    handler: async function (response: any) {
+                        console.log("Payment Successful:", response);
+
+                        // Update payload with payment success
+                        const paidPayload = {
+                            ...bookingPayload,
+                            paymentStatus: 'Paid',
+                            paymentMode: 'Card',
+                            // Could enable storing transaction ID in backend if expanded schema
+                        };
+
+                        try {
+                            await bookingService.createBooking(paidPayload);
+                            const pointsEarned = Math.floor(totalAmount * 10);
+                            alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                            finalizeOrder();
+                        } catch (err) {
+                            console.error("Failed to save booking after payment", err);
+                            alert("Payment successful but booking failed to save. Please contact support.");
+                            setIsProcessing(false);
+                        }
+                    },
+                    prefill: {
+                        name: formData.name,
+                        email: formData.email,
+                        contact: formData.phone,
+                    },
+                    theme: {
+                        color: "#EDA337",
+                    },
+                };
+
+                if (typeof window !== "undefined" && (window as any).Razorpay) {
+                    const rzp = new (window as any).Razorpay(options);
+                    rzp.on('payment.failed', function (response: any) {
+                        alert("Payment Failed: " + response.error.description);
+                        setIsProcessing(false);
+                    });
+                    rzp.open();
+                } else {
+                    alert("Razorpay SDK not loaded. Check connection.");
+                    setIsProcessing(false);
+                }
             } else {
-                alert("Razorpay SDK not loaded. Please check your internet connection.");
+                alert("Selected payment method not supported yet.");
+                setIsProcessing(false);
             }
-        } catch (error: any) {
-            console.error("Payment API error:", error.response?.data || error.message);
-        }
 
-    }
+        } catch (error: any) {
+            console.error("Order processing error:", error);
+            alert("Order failed: " + (error.response?.data?.message || error.message));
+            setIsProcessing(false);
+        }
+    };
+
+    const finalizeOrder = async () => {
+        // Clear Cart
+        localStorage.removeItem('room_cart');
+        setCartItem(null);
+        await cartService.clearCart();
+
+        // Redirect
+        router.push('/'); // Or to a 'success' page
+        setIsProcessing(false);
+    };
 
     return (
         <div className=" w-full   pb-20 min-h-screen">
@@ -142,7 +255,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 <div className="relative z-10">
                     <h1 className="text-4xl md:text-5xl noto-geogia-font font-bold mb-4">Room Checkout</h1>
                     <div className="flex justify-center items-center gap-2 text-xs font-bold tracking-widest uppercase text-gray-300">
-                        <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={onBack}>Home</span>
+                        <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={() => router.push('/')}>Home</span>
                         <span>/</span>
                         <span className="text-white">Room Checkout</span>
                     </div>
@@ -155,125 +268,95 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
-                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing Address</h2>
+                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name</label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
+
+                            {/* NEW: DATES SECTION */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
+                                    <input
+                                        type="date"
+                                        name="checkIn"
+                                        value={dates.checkIn}
+                                        onChange={handleDateChange}
+                                        className="w-full bg-white border border-gray-300 rounded-sm p-3 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337]"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-Out Date *</label>
+                                    <input
+                                        type="date"
+                                        name="checkOut"
+                                        value={dates.checkOut}
+                                        onChange={handleDateChange}
+                                        className="w-full bg-white border border-gray-300 rounded-sm p-3 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337]"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
+                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
+                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Company Name</label>
-                                <input
-                                    type="text"
-                                    name="company"
-                                    value={formData.company}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Country</label>
-                                <select
-                                    name="country"
-                                    value={formData.country}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
-                                >
-                                    <option value="">Select your country</option>
-                                    <option value="US">United States</option>
-                                    <option value="UK">United Kingdom</option>
-                                    <option value="IN">India</option>
-                                    <option value="AU">Australia</option>
-                                </select>
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={formData.address}
-                                    onChange={handleInputChange}
-                                    placeholder="Street address"
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
+                                <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Street address" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Country</label>
+                                    <select name="country" value={formData.country} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                        <option value="">Select your country</option>
+                                        {countryData.map((c: any, i: number) => (
+                                            <option key={i} value={c.name}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">State</label>
+                                    {availableStates.length > 0 ? (
+                                        <select name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                            <option value="">Select State</option>
+                                            {availableStates.map((s: any, i: number) => (
+                                                <option key={i} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <input type="text" name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
+                                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
+                                    <input type="text" name="postcode" value={formData.postcode} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
-                                <input
-                                    type="text"
-                                    name="city"
-                                    value={formData.city}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Special Requests</label>
+                                <textarea name="notes" value={formData.notes} onChange={handleInputChange} className="w-full h-32 bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm resize-none" placeholder="Notes about your stay, e.g. dietary requirements, late check-in." />
                             </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">State</label>
-                                <input
-                                    type="text"
-                                    name="state"
-                                    value={formData.state}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
-                                <input
-                                    type="text"
-                                    name="postcode"
-                                    value={formData.postcode}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address</label>
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={formData.email}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone</label>
-                                <input
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Order Notes</label>
-                                <textarea
-                                    name="notes"
-                                    value={formData.notes}
-                                    onChange={handleInputChange}
-                                    className="w-full h-32 bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm resize-none"
-                                    placeholder="Notes about your order, e.g. special notes for delivery."
-                                ></textarea>
-                            </div>
-
                         </form>
                     </div>
 
@@ -281,7 +364,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     <div className="w-full lg:w-1/3">
                         <div className="sticky top-24">
                             <div className="bg-[#283862] text-white p-8 rounded-sm shadow-xl border border-gray-700/50">
-                                <h3 className="text-2xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Your Order</h3>
+                                <h3 className="text-2xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Your Booking</h3>
 
                                 {cartItem ? (
                                     <>
@@ -301,18 +384,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         )}
                                         {cartItem.financials?.discountAmount > 0 && (
                                             <div className="flex justify-between items-start mb-2 text-sm text-green-400">
-                                                <span>Discount</span>
+                                                <span>Discount ({cartItem.promoCode})</span>
                                                 <span>-${cartItem.financials.discountAmount.toLocaleString()}</span>
                                             </div>
                                         )}
-                                        {/* Taxes & fees usually added to grand total, show breakdown if needed */}
                                         <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
                                             <span>Taxes & Fees</span>
                                             <span>+${((cartItem.financials?.taxes || 0) + (cartItem.financials?.serviceCharge || 0)).toLocaleString()}</span>
-                                        </div>
-
-                                        <div className="flex justify-between items-center mb-6 text-xs text-gray-400">
-                                            <span>Booking Date: {new Date().toLocaleDateString()}</span>
                                         </div>
 
                                         <div className="w-full h-[1px] bg-gray-600 mb-6"></div>
@@ -333,53 +411,25 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'cash' ? 'border-[#EDA337]' : 'border-gray-500'}`}>
                                             {paymentMethod === 'cash' && <div className="w-2 h-2 rounded-full bg-[#EDA337]"></div>}
                                         </div>
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="cash"
-                                            checked={paymentMethod === 'cash'}
-                                            onChange={() => setPaymentMethod('cash')}
-                                            className="hidden"
-                                        />
-                                        <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Cash</span>
-                                    </label>
-
-                                    <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'paypal' ? 'border-[#EDA337]' : 'border-gray-500'}`}>
-                                            {paymentMethod === 'paypal' && <div className="w-2 h-2 rounded-full bg-[#EDA337]"></div>}
-                                        </div>
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="paypal"
-                                            checked={paymentMethod === 'paypal'}
-                                            onChange={() => setPaymentMethod('paypal')}
-                                            className="hidden"
-                                        />
-                                        <span className={`text-sm font-medium ${paymentMethod === 'paypal' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Paypal</span>
+                                        <input type="radio" name="payment" value="cash" checked={paymentMethod === 'cash'} onChange={() => setPaymentMethod('cash')} className="hidden" />
+                                        <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Pay on Arrival (Cash/Card)</span>
                                     </label>
 
                                     <label className="flex items-center gap-3 cursor-pointer group">
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'card' ? 'border-[#EDA337]' : 'border-gray-500'}`}>
                                             {paymentMethod === 'card' && <div className="w-2 h-2 rounded-full bg-[#EDA337]"></div>}
                                         </div>
-                                        <input
-                                            type="radio"
-                                            name="payment"
-                                            value="card"
-                                            checked={paymentMethod === 'card'}
-                                            onChange={() => setPaymentMethod('card')}
-                                            className="hidden"
-                                        />
-                                        <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Credit Card</span>
+                                        <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="hidden" />
+                                        <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Online Payment (Razorpay)</span>
                                     </label>
                                 </div>
 
                                 <button
-                                    onClick={handlePayment}
-                                    className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg"
+                                    onClick={handlePlaceOrder}
+                                    disabled={!cartItem || isProcessing}
+                                    className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg ${isProcessing ? 'opacity-70 cursor-wait' : ''}`}
                                 >
-                                    Place Order
+                                    {isProcessing ? 'Processing...' : 'Place Booking'}
                                 </button>
                             </div>
                         </div>
