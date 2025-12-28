@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import Script from "next/script";
 import '@fontsource-variable/outfit';
 import '@fontsource-variable/noto-serif-georgian';
+import { ToastProvider } from "@/components/ui/Toast";
 
 
 export const metadata: Metadata = {
@@ -21,9 +22,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        {children}
-        <Footer/>
+        <ToastProvider>
+          <Navbar />
+          {children}
+          <Footer />
+        </ToastProvider>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" />
       </body>
     </html>

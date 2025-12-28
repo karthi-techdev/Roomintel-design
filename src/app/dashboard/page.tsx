@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   FaUser, 
   FaSuitcase, 
@@ -17,13 +18,11 @@ import {
   FaClock
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { authService } from '@/api/authService';
 
-interface DashboardProps {
-  onBack: () => void;
-  onLogout: () => void;
-}
 
-const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
+const Dashboard: React.FC = () => {
+    const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
 
   // --- MOCK DATA ---
@@ -66,10 +65,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
       daysLeft: 0
     }
   ];
-
+useEffect(() => {
+    if (!user) {
+      router.push('/');
+    }
+  }, [user, router]);
   // --- COUNTDOWN TIMER ---
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+const handleLogout = () => {
+    authService.logout();           // Clear localStorage
+    router.push('/');               // Redirect to home page
+    router.refresh();               // Optional: force refresh navbar state
+  };
   useEffect(() => {
     // Set target date to 2 days from now for demo purposes
     const targetDate = new Date();
@@ -188,7 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack, onLogout }) => {
                         <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
                         
                         <button 
-                            onClick={onLogout}
+                            onClick={handleLogout}
                             className="w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all rounded-md group"
                         >
                             <FaSignOutAlt className="text-gray-400 group-hover:text-red-500 transition-colors" /> 
