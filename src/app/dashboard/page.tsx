@@ -2,30 +2,45 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  FaUser, 
-  FaSuitcase, 
-  FaSignOutAlt, 
-  FaCamera, 
-  FaPhoneAlt, 
-  FaEnvelope, 
+import {
+  FaUser,
+  FaSuitcase,
+  FaSignOutAlt,
+  FaCamera,
+  FaPhoneAlt,
+  FaEnvelope,
   FaMapMarkerAlt,
   FaCalendarAlt,
   FaPen,
   FaConciergeBell,
   FaStar,
   FaReceipt,
-  FaClock
+  FaClock,
+  FaSave,
+  FaTimes
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore'; // adjust path if needed
+import { authService } from '@/api/authService';
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
 
+  // Dashboard Edit States
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState<{ name: string; phone: string; address: string; email: string }>({
+    name: '',
+    phone: '',
+    address: '',
+    email: '',
+  });
+  const [files, setFiles] = useState<{ avatar?: File, cover?: File }>({});
+  const [previews, setPreviews] = useState<{ avatar?: string, cover?: string }>({});
+  const [profileVersion, setProfileVersion] = useState(0);
   // Zustand auth state
-  const { user, isLoggedIn, logout, loadFromStorage } = useAuthStore();
+  const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -34,6 +49,18 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
+
+  // Sync formData with user when user loads
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        email: user.email || '',
+      });
+    }
+  }, [user]);
 
   // Redirect if not logged in
   useEffect(() => {
@@ -73,7 +100,93 @@ const Dashboard: React.FC = () => {
     router.refresh();
   };
 
-  // Mock bookings (replace with API later)
+  // --- Profile Edit Handlers ---
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev: { name: string; phone: string; address: string; email: string }) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFiles(prev => ({ ...prev, [type]: file }));
+      setPreviews(prev => ({ ...prev, [type]: URL.createObjectURL(file) }));
+
+      // If we are not in edit mode, we might want to toggle it or auto-save
+      // Here, let's just make sure we are "editing" if we change a picture
+      if (!isEditing) setIsEditing(true);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!isEditing) return;
+
+    try {
+      setIsSaving(true);
+
+      const data = new FormData();
+      data.append('name', formData.name.trim());
+      data.append('phone', formData.phone.trim());
+      data.append('address', formData.address.trim());
+
+      if (files.avatar) data.append('avatar', files.avatar);
+      if (files.cover) data.append('cover', files.cover);
+
+      const response = await authService.updateProfile(data);
+
+      if (response.status === true || response.data) {
+        const updatedUser = response.data;
+
+        // Update store with new user data
+        updateUser(updatedUser);
+
+        // Force image refresh by incrementing version
+        setProfileVersion(prev => prev + 1);
+
+        // Clear local previews and files
+        setPreviews({});
+        setFiles({});
+
+        // Exit edit mode
+        setIsEditing(false);
+
+        // Optional: success feedback
+        // toast({ title: "Success", description: "Profile updated successfully!", variant: "success" });
+      }
+    } catch (error: any) {
+      console.error('Failed to update profile:', error);
+      alert('Failed to update profile. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setFiles({});
+    setPreviews({});
+    // Reset formData to current user state
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        email: user.email || '',
+      });
+    }
+  };
+
+  const getImageUrl = (filename: string | undefined, fallback: string) => {
+    if (!filename) return fallback;
+
+    // If it's already a full URL (rare), return it
+    if (filename.startsWith('http')) return filename;
+
+    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:5000';
+    return `${baseUrl}/uploads/customers/${filename}`;
+  };
+
+  // Mock bookings
   const bookings = [
     {
       id: "BK-7829",
@@ -99,7 +212,6 @@ const Dashboard: React.FC = () => {
     }
   ];
 
-  // If still loading or not logged in
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -110,15 +222,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="bg-gray-50 w-full pb-20 min-h-screen">
-      {/* --- HERO HEADER --- */}
       <div className="relative bg-[#283862] h-[300px] md:h-[350px] overflow-hidden">
         <div className="absolute inset-0 opacity-30">
           <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#283862]/90"></div>
-        
+
         <div className="relative z-10 max-w-[1200px] mx-auto px-6 h-full flex flex-col justify-center items-center md:items-start pt-10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -136,37 +247,36 @@ const Dashboard: React.FC = () => {
 
       <div className="max-w-[1200px] mx-auto px-4 md:px-6 lg:px-8 -mt-16 md:-mt-20 relative z-20 pb-12">
         <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* --- SIDEBAR --- */}
+
           <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-            
-            {/* Profile Card */}
             <div className="bg-white rounded-lg shadow-xl overflow-hidden border border-gray-100">
               <div className="h-32 bg-gray-200 relative">
-                <img 
-                  src={user.cover || "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop"} 
-                  alt="Cover" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={previews.cover || getImageUrl(user.cover, "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop")}
+                  alt="Cover"
+                  className="w-full h-full object-cover"
                 />
-                <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white/40 transition-colors">
+                <label className="absolute top-4 right-4 bg-white/20 backdrop-blur-md p-2 rounded-full cursor-pointer hover:bg-white/40 transition-colors">
                   <FaPen className="text-white text-xs" />
-                </div>
+                  <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'cover')} />
+                </label>
               </div>
-              
+
               <div className="px-6 pb-8 relative text-center">
                 <div className="w-24 h-24 mx-auto -mt-12 mb-4 relative">
                   <div className="w-full h-full rounded-full p-1 bg-white shadow-md">
-                    <img 
-                      src={user.avatar || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop"} 
-                      alt="Profile" 
-                      className="w-full h-full rounded-full object-cover" 
+                    <img
+                      src={previews.avatar || getImageUrl(user.avatar, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop")}
+                      alt="Profile"
+                      className="w-full h-full rounded-full object-cover"
                     />
                   </div>
-                  <div className="absolute bottom-1 right-1 bg-[#EDA337] p-2 rounded-full cursor-pointer hover:bg-[#d8922f] border-2 border-white shadow-sm transition-colors">
+                  <label className="absolute bottom-1 right-1 bg-[#EDA337] p-2 rounded-full cursor-pointer hover:bg-[#d8922f] border-2 border-white shadow-sm transition-colors">
                     <FaCamera size={10} className="text-white" />
-                  </div>
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'avatar')} />
+                  </label>
                 </div>
-                
+
                 <h3 className="noto-geogia-font font-bold text-xl text-[#283862] mb-1">{user.name || 'User'}</h3>
                 <div className="inline-block px-3 py-1 bg-[#283862]/5 text-[#283862] text-[10px] font-bold uppercase tracking-widest rounded-full mb-6">
                   {user.status || 'Member'}
@@ -185,47 +295,43 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* Navigation Menu */}
             <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
               <div className="p-2 space-y-1">
-                <button 
+                <button
                   onClick={() => setActiveTab('profile')}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide transition-all rounded-md ${
-                    activeTab === 'profile' 
-                      ? 'bg-[#283862] text-white shadow-md' 
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-[#283862]'
-                  }`}
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide transition-all rounded-md ${activeTab === 'profile'
+                    ? 'bg-[#283862] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-[#283862]'
+                    }`}
                 >
-                  <FaUser className={activeTab === 'profile' ? 'text-[#EDA337]' : 'text-gray-400'} /> 
+                  <FaUser className={activeTab === 'profile' ? 'text-[#EDA337]' : 'text-gray-400'} />
                   Account Info
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setActiveTab('bookings')}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide transition-all rounded-md ${
-                    activeTab === 'bookings' 
-                      ? 'bg-[#283862] text-white shadow-md' 
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-[#283862]'
-                  }`}
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide transition-all rounded-md ${activeTab === 'bookings'
+                    ? 'bg-[#283862] text-white shadow-md'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-[#283862]'
+                    }`}
                 >
-                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} /> 
+                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} />
                   My Bookings
                 </button>
-                
+
                 <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
-                
-                <button 
+
+                <button
                   onClick={handleLogout}
                   className="w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide text-gray-500 hover:bg-red-50 hover:text-red-500 transition-all rounded-md group"
                 >
-                  <FaSignOutAlt className="text-gray-400 group-hover:text-red-500 transition-colors" /> 
+                  <FaSignOutAlt className="text-gray-400 group-hover:text-red-500 transition-colors" />
                   Logout
                 </button>
               </div>
             </div>
           </div>
 
-          {/* --- MAIN CONTENT --- */}
           <div className="flex-1">
             <motion.div
               key={activeTab}
@@ -240,9 +346,30 @@ const Dashboard: React.FC = () => {
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Profile Information</h2>
                       <p className="text-gray-400 text-sm mt-1">Update your account's profile information and email address.</p>
                     </div>
-                    <button className="hidden sm:block text-xs font-bold text-white bg-[#283862] px-6 py-3 rounded-md hover:bg-[#1a2542] transition-colors shadow-md">
-                      Edit Profile
-                    </button>
+                    {isEditing ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleCancelEdit}
+                          className="text-xs font-bold text-[#283862] border border-[#283862] px-4 py-2 rounded-md hover:bg-gray-50 transition-colors flex items-center gap-2"
+                        >
+                          <FaTimes /> Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={isSaving}
+                          className="text-xs font-bold text-white bg-[#283862] px-6 py-2 rounded-md hover:bg-[#1a2542] transition-colors shadow-md flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {isSaving ? 'Saving...' : <><FaSave /> Save Changes</>}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="text-xs font-bold text-white bg-[#283862] px-6 py-3 rounded-md hover:bg-[#1a2542] transition-colors shadow-md flex items-center gap-2"
+                      >
+                        <FaPen size={10} /> Edit Profile
+                      </button>
+                    )}
                   </div>
 
                   <div className="p-8">
@@ -253,11 +380,16 @@ const Dashboard: React.FC = () => {
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                             <FaUser />
                           </div>
-                          <input 
-                            type="text" 
-                            value={user.name || ''} 
-                            readOnly
-                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold cursor-not-allowed"
+                          <input
+                            type="text"
+                            name="name"
+                            value={formData.name || ''}
+                            onChange={handleInputChange}
+                            readOnly={!isEditing}
+                            className={`w-full rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold transition-all ${isEditing
+                              ? 'bg-white border-2 border-[#283862]/20 focus:border-[#283862] focus:ring-0 outline-none'
+                              : 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                              }`}
                           />
                         </div>
                       </div>
@@ -268,11 +400,12 @@ const Dashboard: React.FC = () => {
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                             <FaEnvelope />
                           </div>
-                          <input 
-                            type="email" 
-                            value={user.email || ''} 
+                          <input
+                            type="email"
+                            value={formData.email || ''}
                             readOnly
-                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold cursor-not-allowed"
+                            title="Email cannot be changed"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold cursor-not-allowed opacity-70"
                           />
                         </div>
                       </div>
@@ -283,32 +416,43 @@ const Dashboard: React.FC = () => {
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                             <FaPhoneAlt />
                           </div>
-                          <input 
-                            type="text" 
-                            value={user.phone || 'Not provided'} 
-                            readOnly
-                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold cursor-not-allowed"
+                          <input
+                            type="text"
+                            name="phone"
+                            value={formData.phone || ''}
+                            onChange={handleInputChange}
+                            readOnly={!isEditing}
+                            className={`w-full rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold transition-all ${isEditing
+                              ? 'bg-white border-2 border-[#283862]/20 focus:border-[#283862] focus:ring-0 outline-none'
+                              : 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                              }`}
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Location</label>
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Location / Address</label>
                         <div className="relative">
                           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                             <FaMapMarkerAlt />
                           </div>
-                          <input 
-                            type="text" 
-                            value={user.address || 'Not provided'} 
-                            readOnly
-                            className="w-full bg-gray-50 border border-gray-200 rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold cursor-not-allowed"
+                          <input
+                            type="text"
+                            name="address"
+                            value={formData.address || ''}
+                            onChange={handleInputChange}
+                            readOnly={!isEditing}
+                            placeholder={isEditing ? "Enter your address" : "Not provided"}
+                            className={`w-full rounded-md py-3 pl-11 pr-4 text-sm text-[#283862] font-semibold transition-all ${isEditing
+                              ? 'bg-white border-2 border-[#283862]/20 focus:border-[#283862] focus:ring-0 outline-none'
+                              : 'bg-gray-50 border border-gray-200 cursor-not-allowed'
+                              }`}
                           />
                         </div>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="bg-[#FAFAFA] p-8 border-t border-gray-100">
                     <h3 className="text-lg noto-geogia-font font-bold text-[#283862] mb-4 flex items-center gap-2">
                       <FaStar className="text-[#EDA337]" /> Membership Status
@@ -317,12 +461,15 @@ const Dashboard: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
                           <span className="text-gray-500">Current Points</span>
-                          <span className="text-[#283862]">{(user.points || 2450).toLocaleString()} / 5,000</span>
+                          <span className="text-[#283862]">{(user.points || 0).toLocaleString()} / 5,000</span>
                         </div>
                         <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-[#283862] to-[#c23535] w-[49%]"></div>
+                          <div
+                            className="h-full bg-gradient-to-r from-[#283862] to-[#c23535]"
+                            style={{ width: `${Math.min(((user.points || 0) / 5000) * 100, 100)}%` }}
+                          ></div>
                         </div>
-                        <p className="text-xs text-gray-400 mt-2">Earn {(5000 - (user.points || 2450)).toLocaleString()} more points to reach Platinum status.</p>
+                        <p className="text-xs text-gray-400 mt-2">Earn {Math.max(5000 - (user.points || 0), 0).toLocaleString()} more points to reach Platinum status.</p>
                       </div>
                       <div className="shrink-0">
                         <button className="text-xs font-bold text-[#283862] border border-[#283862] px-4 py-2 rounded-md hover:bg-[#283862] hover:text-white transition-colors">

@@ -15,6 +15,7 @@ interface AuthState {
   login: (payload: any) => Promise<void>;
   logout: () => void;
   loadFromStorage: () => void;
+  updateUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -74,5 +75,10 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoggedIn: true,
       });
     }
+  },
+
+  updateUser: (user) => {
+    localStorage.setItem("user", JSON.stringify(user));
+    set({ user });
   },
 }));
