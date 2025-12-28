@@ -29,6 +29,9 @@ export const siteService = {
         return response.data;
     },
 
-    // Settings
-   
+    // Services
+    getServices: async () => {
+        const response = await axiosInstance.get('/site/services');
+        return response.data;
+    }
 };

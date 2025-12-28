@@ -34,5 +34,10 @@ export const authService = {
             },
         });
         return response.data;
+    },
+
+    getProfile: async () => {
+        const response = await axiosInstance.get('/site/auth/me');
+        return response.data;
     }
 };
