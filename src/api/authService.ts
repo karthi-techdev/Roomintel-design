@@ -27,6 +27,15 @@ export const authService = {
         return null;
     },
 
+    updateProfile: async (data: any) => {
+        const response = await axiosInstance.patch('/site/auth/update-profile', data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+
     getProfile: async () => {
         const response = await axiosInstance.get('/site/auth/me');
         return response.data;

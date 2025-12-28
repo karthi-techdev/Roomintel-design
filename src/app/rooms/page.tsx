@@ -1,35 +1,18 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import Roombg from "../../../public/image/rooms-bg.jpg"
+import React, { useState, useMemo, useEffect } from 'react';
+import Roombg from "../../../public/image/rooms-bg.jpg";
 import { HiCursorArrowRays } from "react-icons/hi2";
 import { TfiStar } from "react-icons/tfi";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import { TbNorthStar } from "react-icons/tb";
-import { useEffect } from "react";
-
-
-
-import { FaChevronRight, FaFilter } from "react-icons/fa";
-
-import {
-  FaStar,
-  FaTh,
-  FaList,
-  FaChevronDown,
-  FaCheck
-} from 'react-icons/fa';
-import {
-  PiBed,
-  PiUsers,
-  PiArrowsOutSimple
-} from 'react-icons/pi';
+import { FaChevronRight, FaFilter, FaStar, FaTh, FaList, FaChevronDown, FaCheck } from "react-icons/fa";
+import { PiBed, PiUsers, PiArrowsOutSimple } from 'react-icons/pi';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { siteService } from '../../api/siteService';
+import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 
 // --- TYPES ---
-
 interface Room {
   id: string | number;
   slug: string;
@@ -48,17 +31,18 @@ interface Room {
 }
 
 // --- CONSTANTS ---
-// const categories = ["Business", "Classic", "Couple", "Family", "Luxury", "Terrace"];
 const locations = ["Argentina", "Australia", "Canada", "Germany", "United States"];
 const sizes = [100, 150, 200, 250];
 const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
 const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
+
 export default function RoomsGrid() {
   // --- STATE ---
+  const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+
 
   // Filters
   const [priceRange, setPriceRange] = useState(9900);
@@ -70,52 +54,38 @@ export default function RoomsGrid() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  // Initial Fetch
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch Categories
-        try {
-          const catData = await siteService.getCategories();
-          if (catData.success && Array.isArray(catData.data)) {
-            setCategories(catData.data.map((c: any) => c.name));
-          }
-        } catch (err) {
-          console.error("Failed to fetch categories:", err);
-        }
-
-        // Fetch Rooms
-        const data = await siteService.getRooms();
-
-        if (data.success && Array.isArray(data.data)) {
-          if (data.data.length === 0) console.warn("Backend returned 0 rooms");
-
-          const mappedRooms: Room[] = data.data.map((r: any) => ({
-            id: r._id,
-            slug: r.slug, // Map slug
-            name: r.name || r.title,
-            image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
-            price: r.price || 0,
-            rating: 5, // Mock data
-            reviews: 0, // Mock data
-            description: r.description,
-            size: parseInt(r.size) || 100,
-            beds: [{ count: 1, type: r.beds || "Standard" }],
-            adults: r.adults,
-            category: r.category?.name || "Uncategorized",
-            location: r.locationName || "Unknown",
-            date: r.createdAt || new Date().toISOString()
-          }));
-          setRooms(mappedRooms);
-        }
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchRooms();
+    fetchCategories();
   }, []);
+
+  // Map Data from Store
+  useEffect(() => {
+    if (rawCategories) {
+      setCategories(rawCategories.map((c: any) => c.name));
+    }
+
+    if (rawRooms) {
+      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => ({
+        id: r._id,
+        slug: r.slug,
+        name: r.name || r.title,
+        image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
+        price: r.price || 0,
+        rating: 5, // Mock data
+        reviews: 0, // Mock data
+        description: r.description,
+        size: parseInt(r.size) || 100,
+        beds: [{ count: 1, type: r.beds || "Standard" }], // Adjust based on actual data structure if needed
+        adults: r.adults,
+        category: r.category?.name || "Uncategorized",
+        location: r.locationName || "Unknown",
+        date: r.createdAt || new Date().toISOString()
+      }));
+      setRooms(mappedRooms);
+    }
+  }, [rawRooms, rawCategories, storeLoading]);
 
   useEffect(() => {
     if (isFilterOpen) {
@@ -276,7 +246,7 @@ export default function RoomsGrid() {
             Rooms Grid
           </h1>
           <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
-            <span className="hover:text-brand-red cursor-pointer transition-colors">Home</span>
+            <Link href="/"><span className="hover:text-brand-red cursor-pointer transition-colors">Home</span></Link>
             <span>/</span>
             <span>Rooms Grid</span>
           </div>

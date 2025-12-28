@@ -1,13 +1,13 @@
 "use client";
-import axios from 'axios';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaCheck } from 'react-icons/fa';
+
 import { authService } from '../../api/authService';
-import { cartService } from '../../api/cartService';
 import { bookingService } from '../../api/bookingService';
 import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
 import { showAlert } from '../../utils/alertStore';
+import { useCartStore } from '@/store/useCartStore';
 
 interface RoomCheckoutProps {
     onBack?: () => void;
@@ -16,17 +16,22 @@ interface RoomCheckoutProps {
 
 const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
     const router = useRouter();
+
+    // --- STORE ---
+    const { cartItems, fetchCart, clearCart } = useCartStore();
+    const cartItem = cartItems.length > 0 ? cartItems[0] : null;
+
+    // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
-    const [cartItem, setCartItem] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Dates (If not in Cart)
+    // Dates
     const [dates, setDates] = useState({
         checkIn: new Date().toISOString().split('T')[0],
         checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0]
     });
 
-    // Mapping for Country -> Phone Code (In real app, can come from DB or comprehensive lib)
+    // Mapping for Country -> Phone Code
     const countryCodeMap: any = {
         "India": "+91",
         "United States": "+1",
@@ -35,7 +40,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         "Afghanistan": "+93",
         "Albania": "+355",
         "Canada": "+1"
-        // Add more as needed or use a library
     };
 
     const [formData, setFormData] = useState({
@@ -58,57 +62,51 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         ? countryData.find((c: any) => c.name === formData.country)?.states || []
         : [];
 
+    // --- EFFECTS ---
+
+    // Load Cart
     useEffect(() => {
-        const loadCheckoutData = async () => {
-            const user = authService.getCurrentUser();
-            let loadedCartItem: any = null;
-
-            if (typeof window !== 'undefined') {
-                const stored = localStorage.getItem('room_cart');
-                if (stored) {
-                    try {
-                        loadedCartItem = JSON.parse(stored);
-                    } catch (e) { console.error("Parse error", e); }
-                }
-            }
-
-            if (!loadedCartItem && user) {
-                try {
-                    const backendCartContainer = await cartService.getCart();
-                    const backendItems = backendCartContainer?.data?.items;
-                    if (backendItems && backendItems.length > 0) {
-                        loadedCartItem = backendItems[0];
-                    }
-                } catch (e) {
-                    console.error("Backend fetch error", e);
-                }
-            }
-
-            if (loadedCartItem) {
-                setCartItem(loadedCartItem);
-
-                // Handle populated roomId
-                const roomName = loadedCartItem.roomName || (loadedCartItem.roomId?.name) || "Room";
-
-                setFormData(prev => ({
-                    ...prev,
-                    name: loadedCartItem?.contact?.name || user?.name || '',
-                    email: loadedCartItem?.contact?.email || user?.email || '',
-                    phone: loadedCartItem?.contact?.phone || user?.phone || '',
-                }));
-            }
-        };
-        loadCheckoutData();
+        fetchCart();
     }, []);
 
-    // Validation Functions
+    // Load Data from Cart & User
+    useEffect(() => {
+        if (cartItem) {
+            // Set Dates from Cart if available
+            if (cartItem.checkIn && cartItem.checkOut) {
+                setDates({
+                    checkIn: new Date(cartItem.checkIn).toISOString().split('T')[0],
+                    checkOut: new Date(cartItem.checkOut).toISOString().split('T')[0]
+                });
+            }
+
+            // Set User Data
+            const user = authService.getCurrentUser(); // Still good to check user for fallback
+            // Cart might have contact info if previously saved? Not in current CartItem but typically user data persists
+
+            setFormData(prev => {
+                // If form is already filled, don't overwrite with defaults unless empty
+                if (prev.email) return prev;
+
+                return {
+                    ...prev,
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    phone: user?.phone || '',
+                };
+            });
+        }
+    }, [cartItem]);
+
+
+    // --- VALIDATION ---
     const validateField = (name: string, value: string): string => {
         switch (name) {
             case 'name':
                 if (!value.trim()) return 'Name is required';
                 if (value.trim().length < 2) return 'Name must be at least 2 characters';
                 if (value.trim().length > 50) return 'Name must not exceed 50 characters';
-                if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters';
+                // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
                 return '';
 
             case 'email':
@@ -183,6 +181,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         return Object.keys(newErrors).length === 0;
     };
 
+    // --- HANDLERS ---
+
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         if (name === 'country') {
@@ -191,7 +191,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 ...prev,
                 [name]: value,
                 state: '',
-                phone: prev.phone ? prev.phone : code
+                phone: (!prev.phone || prev.phone === code) ? code : prev.phone // Simple logic to help user
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
@@ -223,6 +223,12 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         setTouched(prev => ({ ...prev, checkIn: true, checkOut: true }));
         const dateErrors = validateDates();
         setErrors(prev => ({ ...prev, ...dateErrors }));
+    };
+
+    const finalizeOrder = async () => {
+        await clearCart();
+        router.push('/');
+        setIsProcessing(false);
     };
 
     const handlePlaceOrder = async () => {
@@ -257,7 +263,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             },
             paymentStatus: 'Pending',
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
-            bookingStatus: 'Pending' // Or 'Confirmed' depending on business logic
+            bookingStatus: 'Pending'
         };
 
         try {
@@ -266,7 +272,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 await bookingService.createBooking(bookingPayload);
                 const pointsEarned = Math.floor(totalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                finalizeOrder();
+                await finalizeOrder();
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
@@ -274,15 +280,15 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                 if (paymentRes.status === false) throw new Error(paymentRes.message);
 
-                const orderData = paymentRes.data; // Expected { razorpayOrderId: ..., amount: ... } provided by paymentService
+                const orderData = paymentRes.data;
 
                 const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Ensure env var is set
-                    amount: orderData.amount, // from backend (paise)
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                    amount: orderData.amount,
                     currency: orderData.currency,
                     name: "RoomIntel Booking",
                     description: `Booking for ${cartItem.roomName || 'Room'}`,
-                    order_id: orderData.razorpayOrderId, // Backend returns this
+                    order_id: orderData.razorpayOrderId,
                     handler: async function (response: any) {
                         console.log("Payment Successful:", response);
 
@@ -291,14 +297,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             ...bookingPayload,
                             paymentStatus: 'Paid',
                             paymentMode: 'Card',
-                            // Could enable storing transaction ID in backend if expanded schema
                         };
 
                         try {
                             await bookingService.createBooking(paidPayload);
                             const pointsEarned = Math.floor(totalAmount * 10);
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                            finalizeOrder();
+                            await finalizeOrder();
                         } catch (err) {
                             console.error("Failed to save booking after payment", err);
                             showAlert.error("Payment successful but booking failed to save. Please contact support.");
@@ -338,16 +343,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         }
     };
 
-    const finalizeOrder = async () => {
-        // Clear Cart
-        localStorage.removeItem('room_cart');
-        setCartItem(null);
-        await cartService.clearCart();
-
-        // Redirect
-        router.push('/'); // Or to a 'success' page
-        setIsProcessing(false);
-    };
 
     return (
         <div className=" w-full   pb-20 min-h-screen">
@@ -377,7 +372,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                         <form className="space-y-6">
 
-                            {/* NEW: DATES SECTION */}
+                            {/* DATES SECTION */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
@@ -550,16 +545,16 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                             <span className="font-bold text-[#EDA337]">${cartItem.financials?.baseTotal?.toLocaleString()}</span>
                                         </div>
 
-                                        {cartItem.financials?.extrasTotal > 0 && (
+                                        {(cartItem.financials?.extrasTotal || 0) > 0 && (
                                             <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
                                                 <span>Extras</span>
-                                                <span>+${cartItem.financials.extrasTotal.toLocaleString()}</span>
+                                                <span>+${(cartItem.financials?.extrasTotal || 0).toLocaleString()}</span>
                                             </div>
                                         )}
-                                        {cartItem.financials?.discountAmount > 0 && (
+                                        {(cartItem.financials?.discountAmount || 0) > 0 && (
                                             <div className="flex justify-between items-start mb-2 text-sm text-green-400">
                                                 <span>Discount ({cartItem.promoCode})</span>
-                                                <span>-${cartItem.financials.discountAmount.toLocaleString()}</span>
+                                                <span>-${(cartItem.financials?.discountAmount || 0).toLocaleString()}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between items-start mb-2 text-sm text-gray-400">

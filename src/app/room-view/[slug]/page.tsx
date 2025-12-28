@@ -1,6 +1,5 @@
 "use client";
 
-
 import React, { useState, useRef, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,6 +11,7 @@ import {
     FaChevronLeft,
     FaChevronRight,
     FaTimes,
+    FaChevronDown
 } from 'react-icons/fa';
 import {
     PiCheckCircle,
@@ -21,17 +21,20 @@ import {
 } from 'react-icons/pi';
 import { BsGeoAlt, BsClock } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { siteService } from '../../../api/siteService';
-import { authService } from '../../../api/authService'; // Add authService import
+import { siteService } from '../../../api/siteService'; // Keep for faqs/banner if needed
 import RoomLightbox from '../../../components/room-view/RoomLightbox';
 import RoomImageGrid from '../../../components/room-view/RoomImageGrid';
 import RoomFaq from '../../../components/room-view/RoomFaq';
 import RoomAmenities from '../../../components/room-view/RoomAmenities';
-
+import { useRoomStore } from '@/store/useRoomStore';
+import { useCartStore } from '@/store/useCartStore';
 
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const router = useRouter();
+
+    const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
+    const { addToCart } = useCartStore();
 
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
@@ -41,11 +44,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const commentsRef = useRef<HTMLDivElement>(null);
 
     // --- STATE ---
-
-    // Booking Widget State
-    // Removed unused bookingForm state
-
-    const [room, setRoom] = useState<any>(null);
 
     // Fetch Banner and Room Data
     useEffect(() => {
@@ -60,20 +58,15 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             }
         };
 
-        const fetchRoom = async () => {
-            if (!slug) return;
+        const fetchBedConfig = async () => {
             try {
-                console.log("Fetching room for slug:", slug);
-                const data = await siteService.getRoomBySlug(slug);
-                console.log("Room API Response:", data);
-                if (data.success) {
-                    setRoom(data.data);
-                } else {
-                    console.error("Room fetch was unsuccessful:", data);
+                // Fetch config for beds
+                const res = await siteService.getConfigBySlug('bed-types');
+                // Check if status is true or success is true (handle various backend standards just in case)
+                if (res && (res.status === true || res.success === true) && res.data) {
+                    setBedConfig(res.data.configFields || []);
                 }
-            } catch (error) {
-                console.error("Failed to fetch room:", error);
-            }
+            } catch (e) { console.error("Failed to fetch bed config", e); }
         };
 
         const fetchFaqs = async () => {
@@ -88,11 +81,22 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
 
         fetchBanner();
-        fetchRoom();
+        fetchBedConfig();
+        if (slug) {
+            fetchRoomBySlug(slug);
+        }
         fetchFaqs();
-    }, [slug]);
+    }, [slug, fetchRoomBySlug]);
+
+    useEffect(() => {
+        if (room) {
+            setAdults(room.baseAdults || room.adults || 2);
+            setChildren(room.baseChildren || 0);
+        }
+    }, [room]);
 
     const [rooms, setRooms] = useState(1);
+    const [adults, setAdults] = useState(2);
     const [children, setChildren] = useState(0);
     const [checkInDate, setCheckInDate] = useState(new Date().toISOString().split('T')[0]);
     const [checkOutDate, setCheckOutDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
@@ -118,21 +122,32 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     // FAQ Data State
     const [faqData, setFaqData] = useState<{ question: string; answer: string }[]>([]);
 
+    // Config State
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+
     // --- CONSTANTS ---
 
     const basePrice = room ? room.price : 1590;
-    const childPrice = 150;
-    const totalPrice = (basePrice * rooms) + (children * childPrice);
+
+    // Config values
+    const maxAdults = room ? (room.maxAdults || 2) : 2;
+    const maxChildren = room ? (room.maxChildren || 1) : 1;
+    const baseAdults = room ? (room.baseAdults || 2) : 2;
+    const baseChildren = room ? (room.baseChildren || 0) : 0;
+    const extraAdultPrice = room ? (room.extraAdultPrice || 0) : 0;
+    const extraChildPrice = room ? (room.extraChildPrice || 0) : 0;
+
+    // Calculate per-room extras
+    const extraAdultsCount = Math.max(0, adults - baseAdults);
+    const extraChildrenCount = Math.max(0, children - baseChildren);
+    const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
+
+    const roomPricePerNight = basePrice + extrasPerRoom;
+    const totalPrice = roomPricePerNight * rooms;
 
     const roomImages = room && room.images ? room.images : [];
 
-    // Remove static amenities and nearby places
-    // Remove static related rooms if you want strictly dynamic data
-    // For now we will check if room has relatedRooms (not implemented in backend model yet usually)
-    // or just leave the related section empty/hidden if we strictly follow "dynamic data only".
-    // I will comment out the static list for now or empty it.
-    const relatedRooms: any[] = [];
-
+    const relatedRooms: any[] = []; // Placeholder
 
     // --- HANDLERS ---
 
@@ -153,36 +168,65 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         setLightboxOpen(false);
     };
 
-    const nextPhoto = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setPhotoIndex((prev) => (prev + 1) % roomImages.length);
+    const handleBookRoom = async () => {
+        if (!room) return;
+
+        const roomsCount = rooms;
+        const totalBase = roomPricePerNight * roomsCount;
+        const taxes = totalBase * 0.10;
+        const serviceCharge = totalBase * 0.05;
+        const grandTotal = totalBase + taxes + serviceCharge;
+
+
+        // Construct Cart Item matching usage in other components or define interface
+        // Assuming update to useCartStore handles this object
+        const cartItem: any = {
+            roomId: room._id,
+            roomSlug: slug,
+            roomName: room.name || room.title || "Room",
+            roomTitle: room.title || room.name,
+            roomImage: room.previewImage || room.images?.[0] || "",
+            price: basePrice,
+            checkIn: checkInDate,
+            checkOut: checkOutDate,
+            guests: {
+                adults: adults,
+                children: children
+            },
+            guestDetails: {
+                rooms: rooms,
+                adults: adults,
+                children: children
+            },
+            rateConfig: {
+                baseAdults,
+                baseChildren,
+                maxAdults,
+                maxChildren,
+                extraAdultPrice,
+                extraChildPrice
+            },
+            financials: {
+                baseTotal: totalBase,
+                extrasTotal: 0,
+                taxes: taxes,
+                serviceCharge: serviceCharge,
+                discountAmount: 0,
+                grandTotal: grandTotal,
+                currency: '$'
+            },
+            totalAmount: grandTotal,
+            quantity: 1
+        };
+
+        // If useCartStore uses a different structure, we should align.
+        // Based on previous file, it was saving a large object.
+        // For now, I will pass this object.
+
+        await addToCart(cartItem);
+        router.push('/room-cart');
     };
 
-    const prevPhoto = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setPhotoIndex((prev) => (prev - 1 + roomImages.length) % roomImages.length);
-    };
-
-    const nextRelated = () => {
-        setRelatedIndex((prev) => (prev + 1) % relatedRooms.length);
-    };
-
-    const prevRelated = () => {
-        setRelatedIndex((prev) => (prev - 1 + relatedRooms.length) % relatedRooms.length);
-    };
-
-    // Determine how many items to show based on screen width (simplified logic for React)
-    // For simplicity, we just slice the array. In a real responsive carousel, we might track window width.
-    // Here we will use a responsive grid inside the carousel view, showing 1, 2, or 3 items but shifting by 1 index.
-    const getVisibleRelatedRooms = () => {
-        const items = [];
-        for (let i = 0; i < 3; i++) {
-            items.push(relatedRooms[(relatedIndex + i) % relatedRooms.length]);
-        }
-        return items;
-    };
-
-    const visibleRelated = getVisibleRelatedRooms();
 
     if (!room) {
         return (
@@ -196,7 +240,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     }
 
     return (
-        <main className="w-full   pb-20">
+        <main className="w-full pb-20">
 
             {/* --- LIGHTBOX --- */}
             <RoomLightbox
@@ -206,7 +250,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                 photoIndex={photoIndex}
                 setPhotoIndex={setPhotoIndex}
             />
-
 
             {/* --- HEADER --- */}
             <section className="bg-[#283862] pt-32 pb-16 text-white text-center px-4 relative overflow-hidden">
@@ -281,7 +324,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     </div>
                                     <div>
                                         <div className="text-[10px] uppercase font-bold tracking-widest opacity-70">Size</div>
-                                        <div className="font-bold">{room ? room.size : "100"} m²</div>
+                                        <div className="font-bold">{room ? room.size.replace('m²', '').trim() : "100"} m²</div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -290,7 +333,27 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     </div>
                                     <div>
                                         <div className="text-[10px] uppercase font-bold tracking-widest opacity-70">Beds</div>
-                                        <div className="font-bold">{room ? room.beds : "2 Beds"}</div>
+                                        <div className="font-bold">
+                                            {(() => {
+                                                if (!room) return "2 Beds";
+
+                                                if (!room.beds || typeof room.beds !== 'string') return "2 Beds";
+
+                                                const bedIds = room.beds.split(',').map(s => s.trim());
+
+                                                if (bedConfig.length > 0) {
+                                                    const labels = bedIds.map(id => {
+                                                        // Ensure comparison is safe (strings)
+                                                        const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+                                                        return match ? match.value : id;
+                                                    });
+
+                                                    return labels.join(', ');
+                                                }
+
+                                                return room.beds;
+                                            })()}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -364,7 +427,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                         {/* Nearby */}
                         <div>
-                            {/* ... Keep Nearby as static or fetch ... */}
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Where To Go Nearby</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
                                 {room && room.landmarks && room.landmarks.length > 0 ? (
@@ -398,17 +460,12 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     Located just minutes from Siem Reap Town centre...
                                 </p>
                             )}
-                            {/* ... */}
                         </div>
-
-                        {/* Comments Section ... */}
-                        {/* ... */}
 
                     </div>
 
                     {/* --- RIGHT COLUMN: SIDEBAR --- */}
                     <aside className="lg:w-1/3 relative">
-                        {/* ... Sidebar Content ... */}
                         <div className="sticky top-24 space-y-8">
 
                             {/* Booking Widget */}
@@ -468,7 +525,31 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
 
                                         <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
-                                            <span className="text-sm font-medium pl-1">Children</span>
+                                            <span className="text-sm font-medium pl-1">Adults (per room)</span>
+                                            <div className="flex items-center gap-4 text-gray-300">
+                                                <button
+                                                    onClick={() => setAdults(Math.max(1, adults - 1))}
+                                                    className="hover:text-[#EDA337] transition-colors"
+                                                >
+                                                    <FaMinus size={10} />
+                                                </button>
+                                                <span className="text-sm font-bold w-4 text-center text-white">{adults}</span>
+                                                <button
+                                                    onClick={() => setAdults(Math.min(maxAdults, adults + 1))}
+                                                    className="hover:text-[#EDA337] transition-colors"
+                                                >
+                                                    <FaPlus size={10} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {extraAdultPrice > 0 && (
+                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
+                                                +${extraAdultPrice} per extra adult
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600 mt-2">
+                                            <span className="text-sm font-medium pl-1">Children (per room)</span>
                                             <div className="flex items-center gap-4 text-gray-300">
                                                 <button
                                                     onClick={() => setChildren(Math.max(0, children - 1))}
@@ -478,16 +559,18 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 </button>
                                                 <span className="text-sm font-bold w-4 text-center text-white">{children}</span>
                                                 <button
-                                                    onClick={() => setChildren(children + 1)}
+                                                    onClick={() => setChildren(Math.min(maxChildren, children + 1))}
                                                     className="hover:text-[#EDA337] transition-colors"
                                                 >
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
                                         </div>
-                                        <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                            x ${childPrice} = ${children * childPrice}
-                                        </div>
+                                        {extraChildPrice > 0 && (
+                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
+                                                +${extraChildPrice} per extra child
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="border-t border-gray-700 my-4 pt-4 flex justify-between font-bold text-lg text-[#EDA337]">
@@ -496,51 +579,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     </div>
 
                                     <button
-                                        onClick={() => {
-                                            // Create cart item object
-                                            // Calculate financials
-                                            const roomsCount = rooms;
-                                            const baseTotal = basePrice * roomsCount;
-                                            const taxes = baseTotal * 0.10;
-                                            const serviceCharge = baseTotal * 0.05;
-                                            const grandTotal = baseTotal + taxes + serviceCharge;
-
-                                            const cartItem = {
-                                                roomId: room?._id,
-                                                roomSlug: slug,
-                                                // We keep these for LocalStorage (Anonymous users) display
-                                                // Backend will ignore them as they are not in schema anymore
-                                                roomName: room?.name || "Room",
-                                                roomTitle: room?.title || room?.name,
-                                                roomImage: room?.previewImage || room?.images?.[0] || "",
-                                                price: basePrice,
-                                                amenities: room?.amenities || [],
-                                                checkIn: checkInDate,
-                                                checkOut: checkOutDate,
-                                                guestDetails: {
-                                                    rooms: rooms,
-                                                    adults: room?.adults || 2, // Default adults from room or 2
-                                                    children: children,
-                                                },
-                                                financials: {
-                                                    baseTotal,
-                                                    extrasTotal: 0,
-                                                    taxes,
-                                                    serviceCharge,
-                                                    discountAmount: 0,
-                                                    grandTotal,
-                                                    currency: '$'
-                                                }
-                                            };
-
-                                            // Save to localStorage
-                                            if (typeof window !== 'undefined') {
-                                                localStorage.setItem('room_cart', JSON.stringify(cartItem));
-                                            }
-
-                                            // Navigate to cart
-                                            router.push('/room-cart');
-                                        }}
+                                        onClick={handleBookRoom}
                                         className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md cursor-pointer"
                                     >
                                         Book This Room
@@ -562,7 +601,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             {/* Location Widget */}
                             <div className="bg-[#34425a] p-8 text-white rounded-sm shadow-xl border border-gray-700/50">
                                 <h3 className="text-xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Location</h3>
-                                {/* ... map image ... */}
                                 <div className="h-[200px] bg-gray-700 mb-6 overflow-hidden relative group cursor-pointer rounded-sm border border-gray-600">
                                     <img src={room && room.locationImage ? room.locationImage : "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2670&auto=format&fit=crop"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" alt="Map" />
                                 </div>
@@ -576,8 +614,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         </div>
                     </aside>
                 </div>
-
-                {/* ... Related Rooms ... */}
 
             </section>
         </main>
