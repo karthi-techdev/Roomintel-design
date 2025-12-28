@@ -27,5 +27,8 @@ export const siteService = {
     getFaqs: async () => {
         const response = await axiosInstance.get('/site/faqs');
         return response.data;
-    }
+    },
+
+    // Settings
+   
 };
