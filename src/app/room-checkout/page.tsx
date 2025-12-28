@@ -1,7 +1,9 @@
 "use client";
 import axios from 'axios';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCheck } from 'react-icons/fa';
+import { authService } from '../../api/authService';
+import { cartService } from '../../api/cartService';
 
 interface RoomCheckoutProps {
     onBack: () => void;
@@ -10,6 +12,8 @@ interface RoomCheckoutProps {
 
 const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
     const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [cartItem, setCartItem] = useState<any>(null);
+
     const [formData, setFormData] = useState({
         name: '',
         company: '',
@@ -22,6 +26,51 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         phone: '09789577062',
         notes: ''
     });
+
+    useEffect(() => {
+        const loadCheckoutData = async () => {
+            // 1. Get User Data
+            const user = authService.getCurrentUser();
+            let loadedCartItem: any = null;
+
+            // 2. Try LocalStorage FIRST
+            if (typeof window !== 'undefined') {
+                const stored = localStorage.getItem('room_cart');
+                if (stored) {
+                    try {
+                        loadedCartItem = JSON.parse(stored);
+                    } catch (e) { console.error("Parse error", e); }
+                }
+            }
+
+            // 3. If User Logged In, checking backend might be redundant IF we assume Cart Page syncs it.
+            // BUT, for safety, let's trust LocalStorage as the "immediate" state from Cart Page.
+            // If LocalStorage is empty but user is logged in, MAYBE fetch from backend (e.g. cross-device).
+            if (!loadedCartItem && user) {
+                try {
+                    const backendCartContainer = await cartService.getCart();
+                    const backendItems = backendCartContainer?.data?.items;
+                    if (backendItems && backendItems.length > 0) {
+                        loadedCartItem = backendItems[0];
+                    }
+                } catch (e) {
+                    console.error("Backend fetch error", e);
+                }
+            }
+
+            if (loadedCartItem) {
+                setCartItem(loadedCartItem);
+                // 3. Populate Form (Cart takes precedence for contact info if set, otherwise User)
+                setFormData(prev => ({
+                    ...prev,
+                    name: loadedCartItem?.contact?.name || user?.name || (user?.firstName ? `${user.firstName} ${user.lastName || ''}` : '') || '',
+                    email: loadedCartItem?.contact?.email || user?.email || '',
+                    phone: loadedCartItem?.contact?.phone || user?.phone || '',
+                }));
+            }
+        };
+        loadCheckoutData();
+    }, []);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -43,11 +92,11 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         const headers: any = {
             headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${token || ""}`, 
+                Authorization: `Bearer ${token || ""}`,
             }
         }
         try {
-            const res = await axios.post("http://localhost:8000/api/v1/payment", formData, headers);
+            const res = await axios.post("http://localhost:5000/api/v1/payment", formData, headers);
             const order = await res.data;
             const options = {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
@@ -234,21 +283,48 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             <div className="bg-[#283862] text-white p-8 rounded-sm shadow-xl border border-gray-700/50">
                                 <h3 className="text-2xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Your Order</h3>
 
-                                <div className="flex justify-between items-start mb-4 text-sm">
-                                    <span className="font-bold text-gray-300">City Double or Twin Room</span>
-                                    <span className="font-bold text-[#EDA337]">$6.510</span>
-                                </div>
+                                {cartItem ? (
+                                    <>
+                                        <div className="flex justify-between items-start mb-4 text-sm">
+                                            <div>
+                                                <div className="font-bold text-gray-300">{cartItem.roomName}</div>
+                                                <div className="text-xs text-gray-400">x {cartItem.guestDetails?.rooms || 1} Rooms</div>
+                                            </div>
+                                            <span className="font-bold text-[#EDA337]">${cartItem.financials?.baseTotal?.toLocaleString()}</span>
+                                        </div>
 
-                                <div className="flex justify-between items-center mb-6 text-xs text-gray-400">
-                                    <span>Booking Date: 0</span>
-                                </div>
+                                        {cartItem.financials?.extrasTotal > 0 && (
+                                            <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
+                                                <span>Extras</span>
+                                                <span>+${cartItem.financials.extrasTotal.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        {cartItem.financials?.discountAmount > 0 && (
+                                            <div className="flex justify-between items-start mb-2 text-sm text-green-400">
+                                                <span>Discount</span>
+                                                <span>-${cartItem.financials.discountAmount.toLocaleString()}</span>
+                                            </div>
+                                        )}
+                                        {/* Taxes & fees usually added to grand total, show breakdown if needed */}
+                                        <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
+                                            <span>Taxes & Fees</span>
+                                            <span>+${((cartItem.financials?.taxes || 0) + (cartItem.financials?.serviceCharge || 0)).toLocaleString()}</span>
+                                        </div>
 
-                                <div className="w-full h-[1px] bg-gray-600 mb-6"></div>
+                                        <div className="flex justify-between items-center mb-6 text-xs text-gray-400">
+                                            <span>Booking Date: {new Date().toLocaleDateString()}</span>
+                                        </div>
 
-                                <div className="flex justify-between items-center mb-8">
-                                    <span className="text-lg font-bold">Total</span>
-                                    <span className="text-xl font-bold text-[#EDA337]">$6.510</span>
-                                </div>
+                                        <div className="w-full h-[1px] bg-gray-600 mb-6"></div>
+
+                                        <div className="flex justify-between items-center mb-8">
+                                            <span className="text-lg font-bold">Total</span>
+                                            <span className="text-xl font-bold text-[#EDA337]">${cartItem.financials?.grandTotal?.toLocaleString()}</span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
+                                )}
 
                                 <h3 className="text-xl noto-geogia-font font-bold mb-6">Payment Method</h3>
 
