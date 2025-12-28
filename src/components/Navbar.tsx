@@ -25,17 +25,22 @@ import {
 } from 'react-icons/fa';
 import { useToast } from './ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { authService } from '../api/authService';
-import logoImg from "../../public/Navbar-Logo.png"
+import { useAuthStore } from "../store/useAuthStore";
+import logoImg from "../../public/Navbar-Logo.png";
 
 const Navbar: React.FC = () => {
     const pathname = usePathname();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    // Zustand auth state
+    const { user, isLoggedIn, login, register, logout, loadFromStorage } = useAuthStore();
+
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const router = useRouter();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -43,20 +48,17 @@ const Navbar: React.FC = () => {
         name: '',
         confirmPassword: ''
     });
+
     const [errors, setErrors] = useState({
         email: '',
         password: '',
         name: '',
         confirmPassword: ''
     });
+
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const { toast } = useToast();
-
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [user, setUser] = useState<any>(null);
 
     const getCurrentView = () => {
         const path = pathname || '/';
@@ -74,19 +76,17 @@ const Navbar: React.FC = () => {
 
     const currentView = getCurrentView();
 
+    // Load auth from storage on mount
+    useEffect(() => {
+        loadFromStorage();
+    }, [loadFromStorage]);
+
+    // Handle scroll effect
     useEffect(() => {
         const handleScroll = () => {
             setScrolled(window.scrollY > 50);
         };
         window.addEventListener('scroll', handleScroll);
-
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-        if (token && userData) {
-            setIsLoggedIn(true);
-            setUser(JSON.parse(userData));
-        }
-
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
@@ -97,108 +97,99 @@ const Navbar: React.FC = () => {
         setIsLoginOpen(true);
         setIsRegisterOpen(false);
         setIsMobileMenuOpen(false);
-        setErrors({ email: '', password: '', name: '', confirmPassword: '' });
-        setServerError('');
+        resetForm();
     };
 
     const openRegister = () => {
         setIsRegisterOpen(true);
         setIsLoginOpen(false);
         setIsMobileMenuOpen(false);
-        setErrors({ email: '', password: '', name: '', confirmPassword: '' });
-        setServerError('');
+        resetForm();
     };
 
     const closeAuth = () => {
         setIsLoginOpen(false);
         setIsRegisterOpen(false);
+        resetForm();
+    };
+
+    const resetForm = () => {
+        setFormData({ email: '', password: '', name: '', confirmPassword: '' });
         setErrors({ email: '', password: '', name: '', confirmPassword: '' });
         setServerError('');
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-        setErrors((prev) => ({ ...prev, [name]: '' })); 
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setErrors(prev => ({ ...prev, [name]: '' }));
         setServerError('');
     };
 
     const validateForm = () => {
-        const newErrors = { email: '', password: '', name: '', confirmPassword: '' };
-        let isValid = true;
+        const newErrors: typeof errors = { email: '', password: '', name: '', confirmPassword: '' };
+        let valid = true;
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!formData.email) {
-            newErrors.email = "Email is required";
-            isValid = false;
+
+        if (!formData.email.trim()) {
+            newErrors.email = 'Email is required';
+            valid = false;
         } else if (!emailRegex.test(formData.email)) {
-            newErrors.email = "Invalid email address";
-            isValid = false;
+            newErrors.email = 'Please enter a valid email address';
+            valid = false;
         }
 
         if (!formData.password) {
-            newErrors.password = "Password is required";
-            isValid = false;
+            newErrors.password = 'Password is required';
+            valid = false;
         } else if (formData.password.length < 6) {
-            newErrors.password = "Password must be at least 6 characters";
-            isValid = false;
+            newErrors.password = 'Password must be at least 6 characters long';
+            valid = false;
         }
 
-        if (!isLoginOpen) {
-            if (!formData.name) {
-                newErrors.name = "Name is required";
-                isValid = false;
-            } else if (formData.name.length < 2) {
-                newErrors.name = "Name must be at least 2 characters";
-                isValid = false;
+        if (isRegisterOpen) {
+            if (!formData.name.trim()) {
+                newErrors.name = 'Full name is required';
+                valid = false;
             }
 
             if (!formData.confirmPassword) {
-                newErrors.confirmPassword = "Confirm Password is required";
-                isValid = false;
+                newErrors.confirmPassword = 'Please confirm your password';
+                valid = false;
             } else if (formData.password !== formData.confirmPassword) {
-                newErrors.confirmPassword = "Passwords do not match";
-                isValid = false;
+                newErrors.confirmPassword = 'Passwords do not match';
+                valid = false;
             }
         }
 
         setErrors(newErrors);
-        return isValid;
+        return valid;
     };
 
-    const handleAuthSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAuthSubmit = async () => {
         if (!validateForm()) return;
 
         setLoading(true);
         setServerError('');
 
         try {
-            let data;
             if (isLoginOpen) {
-                data = await authService.login({
+                await login({
                     email: formData.email,
                     password: formData.password
                 });
             } else {
-                data = await authService.register({
+                await register({
                     email: formData.email,
                     password: formData.password,
                     name: formData.name
                 });
             }
 
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data.data));
-
-            setIsLoggedIn(true);
-            setUser(data.data);
             closeAuth();
             toast({ title: "Success", description: isLoginOpen ? "Login Successful" : "Registration Successful", variant: "success" });
-
-            setFormData({ email: '', password: '', name: '', confirmPassword: '' });
         } catch (err: any) {
-            console.error("Auth Error:", err);
             const errorMessage = err.response?.data?.message || err.message || 'Authentication failed';
             setServerError(errorMessage);
             toast({ title: "Error", description: errorMessage, variant: "destructive" });
@@ -208,9 +199,7 @@ const Navbar: React.FC = () => {
     };
 
     const handleLogout = () => {
-        authService.logout();
-        setIsLoggedIn(false);
-        setUser(null);
+        logout();
         router.push('/');
         router.refresh();
     };
@@ -236,19 +225,14 @@ const Navbar: React.FC = () => {
             >
 
                 {/* --- LOGO --- */}
-                <Link
-                    href="/"
-                    className="flex items-center gap-2 cursor-pointer z-50"
-                >
-                    {/* Using Next.js Image component */}
+                <Link href="/" className="flex items-center gap-2 cursor-pointer z-50">
                     <div className="relative">
                         <Image
                             src={logoImg}
                             alt="Room Intel Logo"
                             width={scrolled ? 120 : 150}
                             height={scrolled ? 200 : 200}
-                            className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '
-                                }`}
+                            className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '}`}
                             priority
                         />
                     </div>
@@ -261,8 +245,8 @@ const Navbar: React.FC = () => {
                             key={link.name}
                             href={link.href}
                             className={`relative font-bold text-[13px] max-[1250px]:text-[.65rem] tracking-widest uppercase transition-colors hover:text-[#c23535] ${currentView === link.view
-                                ? 'text-[#c23535]'
-                                : 'text-[#444]'
+                                    ? 'text-[#c23535]'
+                                    : 'text-[#444]'
                                 }`}
                         >
                             {link.name}
@@ -278,10 +262,9 @@ const Navbar: React.FC = () => {
 
                 {/* --- RIGHT ACTIONS --- */}
                 <div className="flex items-center gap-3 md:gap-5 ml-auto">
-
                     <div className="hidden lg:block h-6 w-[1px] bg-gray-200 mx-1"></div>
 
-                    {/* Auth Section (Login/Register OR My Account) */}
+                    {/* Auth Section */}
                     <div className="hidden lg:flex items-center gap-2">
                         {isLoggedIn ? (
                             <Link
@@ -291,14 +274,12 @@ const Navbar: React.FC = () => {
                                 <FaUserCircle size={16} /> My Account
                             </Link>
                         ) : (
-                            <>
-                                <button
-                                    onClick={openLogin}
-                                    className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
-                                >
-                                    <FaSignInAlt /> Login
-                                </button>
-                            </>
+                            <button
+                                onClick={openLogin}
+                                className="flex items-center gap-2 px-3 py-2 text-[12px] font-bold uppercase tracking-wide text-gray-600 hover:text-[#c23535] transition-colors"
+                            >
+                                <FaSignInAlt /> Login
+                            </button>
                         )}
                     </div>
 
@@ -311,12 +292,12 @@ const Navbar: React.FC = () => {
                         <span className="absolute top-1 right-0 bg-[#c23535] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">1</span>
                     </Link>
 
-                    {/* Reservation Button (Desktop) */}
+                    {/* Enquiry Button */}
                     <Link href="/contact-us" className="hidden flex items-center w-max lg:flex bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
                         Send an enquiry
                     </Link>
 
-                    {/* --- MOBILE TOGGLE --- */}
+                    {/* Mobile Toggle */}
                     <button
                         className="lg:hidden text-2xl text-gray-800 p-2 z-50 focus:outline-none"
                         onClick={toggleMenu}
@@ -326,6 +307,112 @@ const Navbar: React.FC = () => {
                 </div>
             </nav>
 
+            {/* --- MOBILE DRAWER --- */}
+            <AnimatePresence>
+                {isMobileMenuOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={toggleMenu}
+                            className="fixed inset-0 z-50000 bg-black/60 backdrop-blur-sm lg:hidden"
+                        />
+
+                        <motion.div
+                            initial={{ x: "100%" }}
+                            animate={{ x: 0 }}
+                            exit={{ x: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="fixed top-0 right-0 z-50001 h-full w-[300px] sm:w-[350px] bg-white shadow-2xl flex flex-col lg:hidden overflow-hidden"
+                        >
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
+                                <div className="relative">
+                                    <Image
+                                        src="/Room-intel-logo2.png"
+                                        alt="Room Intel Logo"
+                                        width={40}
+                                        height={40}
+                                        className="h-10 w-auto object-contain"
+                                    />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">
+                                        Bluebell
+                                    </span>
+                                    <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
+                                        Resort
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="p-6 flex-1 overflow-y-auto">
+                                <div className="flex flex-col gap-1 mb-8">
+                                    {navLinks.map((link) => (
+                                        <Link
+                                            key={link.name}
+                                            href={link.href}
+                                            onClick={toggleMenu}
+                                            className={`flex items-center justify-between py-3 px-2 border-b border-gray-50 text-sm font-bold tracking-widest uppercase transition-colors ${currentView === link.view ? 'text-[#c23535] bg-red-50/50 pl-4 border-l-4 border-l-[#c23535]' : 'text-gray-700 hover:text-[#c23535] hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {link.name}
+                                            <FaChevronRight className={`text-xs ${currentView === link.view ? 'text-[#c23535]' : 'text-gray-300'}`} />
+                                        </Link>
+                                    ))}
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 mb-8">
+                                    {isLoggedIn ? (
+                                        <Link
+                                            href="/dashboard"
+                                            onClick={toggleMenu}
+                                            className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
+                                        >
+                                            <FaUserCircle size={16} /> My Account
+                                        </Link>
+                                    ) : (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                onClick={openLogin}
+                                                className="h-12 border border-gray-200 rounded-sm font-bold text-xs uppercase tracking-wider text-gray-700 hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <FaSignInAlt /> Login
+                                            </button>
+                                            <button
+                                                onClick={openRegister}
+                                                className="h-12 bg-[#283862] text-white rounded-sm font-bold text-xs uppercase tracking-wider hover:bg-[#c23535] transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <FaUserPlus /> Register
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col gap-3 mt-auto">
+                                    <button className="w-full h-12 bg-[#c23535] text-white rounded-sm font-bold text-xs uppercase tracking-wider shadow-md hover:bg-[#c23535] transition-colors">
+                                        Book A Reservation
+                                    </button>
+                                </div>
+
+                                <div className="flex justify-center gap-6 mt-8 pt-6 border-t border-gray-100 text-gray-400">
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#3b5998] hover:text-white transition-all cursor-pointer">
+                                        <FaFacebookF />
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#E1306C] hover:text-white transition-all cursor-pointer">
+                                        <FaInstagram />
+                                    </div>
+                                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-[#00aff0] hover:text-white transition-all cursor-pointer">
+                                        <FaSkype />
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* --- AUTH POPUPS --- */}
             <AnimatePresence>
                 {(isLoginOpen || isRegisterOpen) && (
                     <div className="fixed inset-0 z-[5000000] flex items-center justify-center p-4">
@@ -343,7 +430,6 @@ const Navbar: React.FC = () => {
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
                             className="relative w-full max-w-[450px] bg-white rounded-sm shadow-2xl overflow-hidden"
                         >
-                            {/* Close Button */}
                             <button
                                 onClick={closeAuth}
                                 className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-[#c23535] hover:text-white transition-colors"
@@ -359,54 +445,46 @@ const Navbar: React.FC = () => {
                                         <p className="text-gray-500 text-sm mt-2">Log in to your account to continue</p>
                                     </div>
 
-                                    <form className="space-y-5" onSubmit={handleAuthSubmit}>
-                                        {serverError && (
-                                            <div className="text-red-500 text-sm text-center">{serverError}</div>
-                                        )}
+                                    {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}
 
-                                        {/* Email */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaEnvelope />
-                                                </div>
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    placeholder="Email Address"
-                                                    className={`w-full h-12 pl-10 pr-4 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.email ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.email}
-                                                    onChange={handleInputChange}
-                                                />
+                                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaEnvelope />
                                             </div>
-                                            {errors.email && <p className="text-red-500 text-xs pl-2">{errors.email}</p>}
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="Email Address"
+                                                className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
                                         </div>
 
-                                        {/* Password */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaLock />
-                                                </div>
-                                                <input
-                                                    type={showPassword ? "text" : "password"}
-                                                    name="password"
-                                                    placeholder="Password"
-                                                    className={`w-full h-12 pl-10 pr-10 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.password ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.password}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#c23535]"
-                                                >
-                                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaLock />
                                             </div>
-                                            {errors.password && <p className="text-red-500 text-xs pl-2">{errors.password}</p>}
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                placeholder="Password"
+                                                className={`w-full h-12 pl-10 pr-10 bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#c23535]"
+                                            >
+                                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                            </button>
+                                            {errors.password && <p className="text-red-500 text-xs mt-1 pl-2">{errors.password}</p>}
                                         </div>
 
                                         <div className="flex justify-between items-center text-xs text-gray-500">
@@ -416,10 +494,7 @@ const Navbar: React.FC = () => {
                                             <a href="#" className="hover:text-[#c23535]">Forgot Password?</a>
                                         </div>
 
-                                        <button
-                                            disabled={loading}
-                                            className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70"
-                                        >
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
                                             {loading ? 'Logging in...' : 'Login'}
                                         </button>
                                     </form>
@@ -436,110 +511,86 @@ const Navbar: React.FC = () => {
                                         <p className="text-gray-500 text-sm mt-2">Register to get exclusive offers</p>
                                     </div>
 
-                                    <form className="space-y-5" onSubmit={handleAuthSubmit}>
-                                        {serverError && (
-                                            <div className="text-red-500 text-sm text-center">{serverError}</div>
-                                        )}
+                                    {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}
 
-                                        {/* Name */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaUser />
-                                                </div>
-                                                <input
-                                                    type="text"
-                                                    name="name"
-                                                    placeholder="Full Name"
-                                                    className={`w-full h-12 pl-10 pr-4 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.name ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.name}
-                                                    onChange={handleInputChange}
-                                                />
+                                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleAuthSubmit(); }}>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaUser />
                                             </div>
-                                            {errors.name && <p className="text-red-500 text-xs pl-2">{errors.name}</p>}
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                placeholder="Full Name"
+                                                className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.name ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            {errors.name && <p className="text-red-500 text-xs mt-1 pl-2">{errors.name}</p>}
                                         </div>
 
-                                        {/* Email */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaEnvelope />
-                                                </div>
-                                                <input
-                                                    type="email"
-                                                    name="email"
-                                                    placeholder="Email Address"
-                                                    className={`w-full h-12 pl-10 pr-4 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.email ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.email}
-                                                    onChange={handleInputChange}
-                                                />
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaEnvelope />
                                             </div>
-                                            {errors.email && <p className="text-red-500 text-xs pl-2">{errors.email}</p>}
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                placeholder="Email Address"
+                                                className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
                                         </div>
 
-                                        {/* Password */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaLock />
-                                                </div>
-                                                <input
-                                                    type={showPassword ? "text" : "password"}
-                                                    name="password"
-                                                    placeholder="Password"
-                                                    className={`w-full h-12 pl-10 pr-10 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.password ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.password}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassword(!showPassword)}
-                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#c23535]"
-                                                >
-                                                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaLock />
                                             </div>
-                                            {errors.password && <p className="text-red-500 text-xs pl-2">{errors.password}</p>}
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                placeholder="Password"
+                                                className={`w-full h-12 pl-10 pr-10 bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.password}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#c23535]"
+                                            >
+                                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                                            </button>
+                                            {errors.password && <p className="text-red-500 text-xs mt-1 pl-2">{errors.password}</p>}
                                         </div>
 
-                                        {/* Confirm Password */}
-                                        <div className="space-y-1">
-                                            <div className="relative">
-                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                                                    <FaLock />
-                                                </div>
-                                                <input
-                                                    type={showConfirmPassword ? "text" : "password"}
-                                                    name="confirmPassword"
-                                                    placeholder="Confirm Password"
-                                                    className={`w-full h-12 pl-10 pr-10 bg-gray-50 border rounded-sm focus:outline-none focus:bg-white transition-colors text-sm ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200 focus:border-[#c23535]'
-                                                        }`}
-                                                    value={formData.confirmPassword}
-                                                    onChange={handleInputChange}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#c23535]"
-                                                >
-                                                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                                                </button>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                                <FaLock />
                                             </div>
-                                            {errors.confirmPassword && <p className="text-red-500 text-xs pl-2">{errors.confirmPassword}</p>}
+                                            <input
+                                                type="password"
+                                                name="confirmPassword"
+                                                placeholder="Confirm Password"
+                                                className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
+                                                value={formData.confirmPassword}
+                                                onChange={handleInputChange}
+                                                
+                                            />
+                                            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 pl-2">{errors.confirmPassword}</p>}
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]"/>
+                                            <input type="checkbox" className="accent-[#c23535]"  />
                                             <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
-                                        <button
-                                            disabled={loading}
-                                            className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70"
-                                        >
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
                                             {loading ? 'Creating Account...' : 'Create Account'}
                                         </button>
                                     </form>
