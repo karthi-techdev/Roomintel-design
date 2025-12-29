@@ -3,34 +3,22 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  FaUser,
-  FaSuitcase,
-  FaSignOutAlt,
-  FaCamera,
-  FaPhoneAlt,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaCalendarAlt,
-  FaPen,
-  FaConciergeBell,
-  FaStar,
-  FaReceipt,
-  FaClock,
-  FaSave,
-  FaTimes
+  FaUser, FaSuitcase, FaSignOutAlt, FaCamera, FaPhoneAlt, FaEnvelope,
+  FaMapMarkerAlt, FaCalendarAlt, FaPen, FaConciergeBell, FaStar,
+  FaReceipt, FaClock, FaSave, FaTimes
 } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
 import { membershipService } from '@/api/membershipService';
+import { showAlert } from '@/utils/alertStore';
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
 
   // --- State Management ---
-  // Auth & Profile
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -50,7 +38,7 @@ const Dashboard: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // --- Data Fetching ---
+  // --- Effects ---
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
@@ -85,7 +73,12 @@ const Dashboard: React.FC = () => {
               image: bk.room?.images?.[0] || bk.room?.image || "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop",
               checkIn: new Date(bk.checkIn).toLocaleDateString(),
               checkOut: new Date(bk.checkOut).toLocaleDateString(),
-              guests: `${bk.guestDetails?.adults || 0} Adults, ${bk.guestDetails?.children || 0} Child`,
+              guests: Array.isArray(bk.guestDetails)
+                ? bk.guestDetails.map((g: any) => `${g.value} ${g.key || g.label || 'Guests'}`).join(', ')
+                : [
+                  (bk.guestDetails?.adults || 0) > 0 ? `${bk.guestDetails?.adults} Adult${(bk.guestDetails?.adults || 0) > 1 ? 's' : ''}` : null,
+                  (bk.guestDetails?.children || 0) > 0 ? `${bk.guestDetails?.children} Child${(bk.guestDetails?.children || 0) !== 1 ? 'ren' : ''}` : null
+                ].filter(Boolean).join(', ') || '0 Guests',
               price: `$${bk.totalAmount}`,
               status: bk.bookingStatus || "Upcoming",
               features: [],
@@ -190,10 +183,11 @@ const Dashboard: React.FC = () => {
         setPreviews({});
         setFiles({});
         setIsEditing(false);
+        showAlert.success("Profile updated successfully!");
       }
     } catch (error) {
       console.error('Failed to update profile:', error);
-      alert('Failed to update profile. Please try again.');
+      showAlert.error('Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -220,7 +214,7 @@ const Dashboard: React.FC = () => {
       const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
 
       if (paymentRes.status === false) {
-        alert(paymentRes.message);
+        showAlert.error(paymentRes.message);
         return;
       }
 
@@ -233,7 +227,7 @@ const Dashboard: React.FC = () => {
         description: `Payment for ${booking.roomName}`,
         order_id: orderData.razorpayOrderId,
         handler: function (response: any) {
-          alert(`Payment Successful! ID: ${response.razorpay_payment_id}`);
+          showAlert.success(`Payment Successful! ID: ${response.razorpay_payment_id}`);
           window.location.reload();
         },
         prefill: {
@@ -246,12 +240,15 @@ const Dashboard: React.FC = () => {
 
       if (typeof window !== "undefined" && (window as any).Razorpay) {
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          showAlert.error("Payment Failed: " + response.error.description);
+        });
         rzp.open();
       } else {
-        alert("Razorpay SDK not loaded.");
+        showAlert.error("Razorpay SDK not loaded.");
       }
     } catch (error: any) {
-      alert("Payment failed: " + (error.message || "Unknown error"));
+      showAlert.error("Payment failed: " + (error.message || "Unknown error"));
     }
   };
 
@@ -260,11 +257,11 @@ const Dashboard: React.FC = () => {
     try {
       const result = await bookingService.cancelBooking(bookingId);
       if (result.status) {
-        alert("Booking cancelled successfully");
+        showAlert.success("Booking cancelled successfully");
         window.location.reload();
       }
     } catch (error: any) {
-      alert("Failed to cancel: " + (error.message || "Unknown error"));
+      showAlert.error("Failed to cancel: " + (error.message || "Unknown error"));
     }
   };
 
@@ -291,7 +288,6 @@ const Dashboard: React.FC = () => {
     return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
   };
 
-  // Filtered bookings
   const filteredBookings = bookings.filter(b => {
     if (bookingFilter === 'all') return true;
     if (bookingFilter === 'upcoming') return ['Upcoming', 'Confirmed', 'Pending'].includes(b.status);

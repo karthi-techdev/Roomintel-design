@@ -1,12 +1,13 @@
 "use client";
-import axios from 'axios';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaCheck } from 'react-icons/fa';
+
 import { authService } from '../../api/authService';
-import { cartService } from '../../api/cartService';
 import { bookingService } from '../../api/bookingService';
 import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
+import { showAlert } from '../../utils/alertStore';
+import { useCartStore } from '@/store/useCartStore';
 
 interface RoomCheckoutProps {
     onBack?: () => void;
@@ -15,17 +16,22 @@ interface RoomCheckoutProps {
 
 const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
     const router = useRouter();
+
+    // --- STORE ---
+    const { cartItems, fetchCart, clearCart } = useCartStore();
+    const cartItem = cartItems.length > 0 ? cartItems[0] : null;
+
+    // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
-    const [cartItem, setCartItem] = useState<any>(null);
     const [isProcessing, setIsProcessing] = useState(false);
 
-    // Dates (If not in Cart)
+    // Dates
     const [dates, setDates] = useState({
         checkIn: new Date().toISOString().split('T')[0],
         checkOut: new Date(Date.now() + 86400000).toISOString().split('T')[0]
     });
 
-    // Mapping for Country -> Phone Code (In real app, can come from DB or comprehensive lib)
+    // Mapping for Country -> Phone Code
     const countryCodeMap: any = {
         "India": "+91",
         "United States": "+1",
@@ -34,7 +40,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         "Afghanistan": "+93",
         "Albania": "+355",
         "Canada": "+1"
-        // Add more as needed or use a library
     };
 
     const [formData, setFormData] = useState({
@@ -50,83 +55,189 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         notes: ''
     });
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
     const availableStates = formData.country
         ? countryData.find((c: any) => c.name === formData.country)?.states || []
         : [];
 
+    // --- EFFECTS ---
+
+    // Load Cart
     useEffect(() => {
-        const loadCheckoutData = async () => {
-            const user = authService.getCurrentUser();
-            let loadedCartItem: any = null;
-
-            if (typeof window !== 'undefined') {
-                const stored = localStorage.getItem('room_cart');
-                if (stored) {
-                    try {
-                        loadedCartItem = JSON.parse(stored);
-                    } catch (e) { console.error("Parse error", e); }
-                }
-            }
-
-            if (!loadedCartItem && user) {
-                try {
-                    const backendCartContainer = await cartService.getCart();
-                    const backendItems = backendCartContainer?.data?.items;
-                    if (backendItems && backendItems.length > 0) {
-                        loadedCartItem = backendItems[0];
-                    }
-                } catch (e) {
-                    console.error("Backend fetch error", e);
-                }
-            }
-
-            if (loadedCartItem) {
-                setCartItem(loadedCartItem);
-
-                // Handle populated roomId
-                const roomName = loadedCartItem.roomName || (loadedCartItem.roomId?.name) || "Room";
-
-                setFormData(prev => ({
-                    ...prev,
-                    name: loadedCartItem?.contact?.name || user?.name || '',
-                    email: loadedCartItem?.contact?.email || user?.email || '',
-                    phone: loadedCartItem?.contact?.phone || user?.phone || '',
-                }));
-            }
-        };
-        loadCheckoutData();
+        fetchCart();
     }, []);
+
+    // Load Data from Cart & User
+    useEffect(() => {
+        if (cartItem) {
+            // Set Dates from Cart if available
+            if (cartItem.checkIn && cartItem.checkOut) {
+                setDates({
+                    checkIn: new Date(cartItem.checkIn).toISOString().split('T')[0],
+                    checkOut: new Date(cartItem.checkOut).toISOString().split('T')[0]
+                });
+            }
+
+            // Set User Data
+            const user = authService.getCurrentUser(); // Still good to check user for fallback
+            // Cart might have contact info if previously saved? Not in current CartItem but typically user data persists
+
+            setFormData(prev => {
+                // If form is already filled, don't overwrite with defaults unless empty
+                if (prev.email) return prev;
+
+                return {
+                    ...prev,
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    phone: user?.phone || '',
+                };
+            });
+        }
+    }, [cartItem]);
+
+
+    // --- VALIDATION ---
+    const validateField = (name: string, value: string): string => {
+        switch (name) {
+            case 'name':
+                if (!value.trim()) return 'Name is required';
+                if (value.trim().length < 2) return 'Name must be at least 2 characters';
+                if (value.trim().length > 50) return 'Name must not exceed 50 characters';
+                // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
+                return '';
+
+            case 'email':
+                if (!value.trim()) return 'Email is required';
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(value)) return 'Please enter a valid email address';
+                return '';
+
+            case 'phone':
+                if (!value.trim()) return 'Phone number is required';
+                const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
+                if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number (10-15 digits)';
+                return '';
+
+            case 'postcode':
+                if (value && !/^[a-zA-Z0-9\s\-]{3,10}$/.test(value)) return 'Please enter a valid postcode';
+                return '';
+
+            default:
+                return '';
+        }
+    };
+
+    const validateDates = (): { checkIn: string; checkOut: string } => {
+        const errors = { checkIn: '', checkOut: '' };
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const checkInDate = new Date(dates.checkIn);
+        const checkOutDate = new Date(dates.checkOut);
+
+        if (checkInDate < today) {
+            errors.checkIn = 'Check-in date cannot be in the past';
+        }
+
+        if (checkOutDate <= checkInDate) {
+            errors.checkOut = 'Check-out date must be after check-in date';
+        }
+
+        return errors;
+    };
+
+    const validateForm = (): boolean => {
+        const newErrors: Record<string, string> = {};
+
+        // Validate required fields
+        newErrors.name = validateField('name', formData.name);
+        newErrors.email = validateField('email', formData.email);
+        newErrors.phone = validateField('phone', formData.phone);
+        newErrors.postcode = validateField('postcode', formData.postcode);
+
+        // Validate dates
+        const dateErrors = validateDates();
+        newErrors.checkIn = dateErrors.checkIn;
+        newErrors.checkOut = dateErrors.checkOut;
+
+        // Remove empty errors
+        Object.keys(newErrors).forEach(key => {
+            if (!newErrors[key]) delete newErrors[key];
+        });
+
+        setErrors(newErrors);
+        setTouched({
+            name: true,
+            email: true,
+            phone: true,
+            checkIn: true,
+            checkOut: true,
+            postcode: true
+        });
+
+        return Object.keys(newErrors).length === 0;
+    };
+
+    // --- HANDLERS ---
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         if (name === 'country') {
             const code = countryCodeMap[value] || "";
-            // Only set phone if it's currently empty, or we can just set formData.phonePrefix separate if desired. 
-            // Here we just pre-fill phone if empty or leave user to type.
             setFormData(prev => ({
                 ...prev,
                 [name]: value,
                 state: '',
-                phone: prev.phone ? prev.phone : code // Optional: Don't overwrite if user already typed
+                phone: (!prev.phone || prev.phone === code) ? code : prev.phone // Simple logic to help user
             }));
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
+
+        // Clear error when user starts typing
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const handleBlur = (fieldName: string) => {
+        setTouched(prev => ({ ...prev, [fieldName]: true }));
+        const error = validateField(fieldName, formData[fieldName as keyof typeof formData] as string);
+        setErrors(prev => ({ ...prev, [fieldName]: error }));
     };
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDates(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setDates(prev => ({ ...prev, [name]: value }));
+
+        // Clear date errors when user changes dates
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: '' }));
+        }
+    };
+
+    const handleDateBlur = () => {
+        setTouched(prev => ({ ...prev, checkIn: true, checkOut: true }));
+        const dateErrors = validateDates();
+        setErrors(prev => ({ ...prev, ...dateErrors }));
+    };
+
+    const finalizeOrder = async () => {
+        await clearCart();
+        router.push('/');
+        setIsProcessing(false);
     };
 
     const handlePlaceOrder = async () => {
-        if (!cartItem) return alert("Your cart is empty and valid booking details are missing.");
-        if (!formData.name || !formData.email || !formData.phone) {
-            return alert("Please fill in all required fields (Name, Email, Phone).");
-        }
+        if (!cartItem) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
-        // Ensure dates are valid
-        if (new Date(dates.checkIn) >= new Date(dates.checkOut)) {
-            return alert("Check-out date must be after check-in date.");
+        // Validate form
+        if (!validateForm()) {
+            showAlert.error("Please fix the errors in the form before proceeding.");
+            return;
         }
 
         setIsProcessing(true);
@@ -152,7 +263,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             },
             paymentStatus: 'Pending',
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
-            bookingStatus: 'Pending' // Or 'Confirmed' depending on business logic
+            bookingStatus: 'Pending'
         };
 
         try {
@@ -160,8 +271,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 // CASH FLOW
                 await bookingService.createBooking(bookingPayload);
                 const pointsEarned = Math.floor(totalAmount * 10);
-                alert(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                finalizeOrder();
+                showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                await finalizeOrder();
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
@@ -169,15 +280,15 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                 if (paymentRes.status === false) throw new Error(paymentRes.message);
 
-                const orderData = paymentRes.data; // Expected { razorpayOrderId: ..., amount: ... } provided by paymentService
+                const orderData = paymentRes.data;
 
                 const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, // Ensure env var is set
-                    amount: orderData.amount, // from backend (paise)
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                    amount: orderData.amount,
                     currency: orderData.currency,
                     name: "RoomIntel Booking",
                     description: `Booking for ${cartItem.roomName || 'Room'}`,
-                    order_id: orderData.razorpayOrderId, // Backend returns this
+                    order_id: orderData.razorpayOrderId,
                     handler: async function (response: any) {
                         console.log("Payment Successful:", response);
 
@@ -186,17 +297,16 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             ...bookingPayload,
                             paymentStatus: 'Paid',
                             paymentMode: 'Card',
-                            // Could enable storing transaction ID in backend if expanded schema
                         };
 
                         try {
                             await bookingService.createBooking(paidPayload);
                             const pointsEarned = Math.floor(totalAmount * 10);
-                            alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                            finalizeOrder();
+                            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                            await finalizeOrder();
                         } catch (err) {
                             console.error("Failed to save booking after payment", err);
-                            alert("Payment successful but booking failed to save. Please contact support.");
+                            showAlert.error("Payment successful but booking failed to save. Please contact support.");
                             setIsProcessing(false);
                         }
                     },
@@ -213,36 +323,26 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 if (typeof window !== "undefined" && (window as any).Razorpay) {
                     const rzp = new (window as any).Razorpay(options);
                     rzp.on('payment.failed', function (response: any) {
-                        alert("Payment Failed: " + response.error.description);
+                        showAlert.error("Payment Failed: " + response.error.description);
                         setIsProcessing(false);
                     });
                     rzp.open();
                 } else {
-                    alert("Razorpay SDK not loaded. Check connection.");
+                    showAlert.error("Razorpay SDK not loaded. Check connection.");
                     setIsProcessing(false);
                 }
             } else {
-                alert("Selected payment method not supported yet.");
+                showAlert.warning("Selected payment method not supported yet.");
                 setIsProcessing(false);
             }
 
         } catch (error: any) {
             console.error("Order processing error:", error);
-            alert("Order failed: " + (error.response?.data?.message || error.message));
+            showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
             setIsProcessing(false);
         }
     };
 
-    const finalizeOrder = async () => {
-        // Clear Cart
-        localStorage.removeItem('room_cart');
-        setCartItem(null);
-        await cartService.clearCart();
-
-        // Redirect
-        router.push('/'); // Or to a 'success' page
-        setIsProcessing(false);
-    };
 
     return (
         <div className=" w-full   pb-20 min-h-screen">
@@ -272,7 +372,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                         <form className="space-y-6">
 
-                            {/* NEW: DATES SECTION */}
+                            {/* DATES SECTION */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
@@ -281,8 +381,16 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         name="checkIn"
                                         value={dates.checkIn}
                                         onChange={handleDateChange}
-                                        className="w-full bg-white border border-gray-300 rounded-sm p-3 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337]"
+                                        onBlur={handleDateBlur}
+                                        min={new Date().toISOString().split('T')[0]}
+                                        className={`w-full bg-white border rounded-sm p-3 text-sm text-[#283862] focus:outline-none ${touched.checkIn && errors.checkIn
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-gray-300 focus:border-[#EDA337]'
+                                            }`}
                                     />
+                                    {touched.checkIn && errors.checkIn && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.checkIn}</p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-Out Date *</label>
@@ -291,25 +399,73 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         name="checkOut"
                                         value={dates.checkOut}
                                         onChange={handleDateChange}
-                                        className="w-full bg-white border border-gray-300 rounded-sm p-3 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337]"
+                                        onBlur={handleDateBlur}
+                                        min={dates.checkIn}
+                                        className={`w-full bg-white border rounded-sm p-3 text-sm text-[#283862] focus:outline-none ${touched.checkOut && errors.checkOut
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-gray-300 focus:border-[#EDA337]'
+                                            }`}
                                     />
+                                    {touched.checkOut && errors.checkOut && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.checkOut}</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
-                                    <input type="text" name="name" value={formData.name} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                        onBlur={() => handleBlur('name')}
+                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.name && errors.name
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-gray-300 focus:border-[#EDA337]'
+                                            }`}
+                                    />
+                                    {touched.name && errors.name && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
-                                    <input type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        onBlur={() => handleBlur('email')}
+                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.email && errors.email
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-gray-300 focus:border-[#EDA337]'
+                                            }`}
+                                    />
+                                    {touched.email && errors.email && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                <input
+                                    type="tel"
+                                    name="phone"
+                                    value={formData.phone}
+                                    onChange={handleInputChange}
+                                    onBlur={() => handleBlur('phone')}
+                                    placeholder="+1 234 567 8900"
+                                    className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.phone && errors.phone
+                                        ? 'border-red-500 focus:border-red-500'
+                                        : 'border-gray-300 focus:border-[#EDA337]'
+                                        }`}
+                                />
+                                {touched.phone && errors.phone && (
+                                    <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                                )}
                             </div>
 
                             <div className="space-y-2">
@@ -349,7 +505,20 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
-                                    <input type="text" name="postcode" value={formData.postcode} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    <input
+                                        type="text"
+                                        name="postcode"
+                                        value={formData.postcode}
+                                        onChange={handleInputChange}
+                                        onBlur={() => handleBlur('postcode')}
+                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.postcode && errors.postcode
+                                            ? 'border-red-500 focus:border-red-500'
+                                            : 'border-gray-300 focus:border-[#EDA337]'
+                                            }`}
+                                    />
+                                    {touched.postcode && errors.postcode && (
+                                        <p className="text-xs text-red-500 mt-1">{errors.postcode}</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -376,16 +545,16 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                             <span className="font-bold text-[#EDA337]">${cartItem.financials?.baseTotal?.toLocaleString()}</span>
                                         </div>
 
-                                        {cartItem.financials?.extrasTotal > 0 && (
+                                        {(cartItem.financials?.extrasTotal || 0) > 0 && (
                                             <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
                                                 <span>Extras</span>
-                                                <span>+${cartItem.financials.extrasTotal.toLocaleString()}</span>
+                                                <span>+${(cartItem.financials?.extrasTotal || 0).toLocaleString()}</span>
                                             </div>
                                         )}
-                                        {cartItem.financials?.discountAmount > 0 && (
+                                        {(cartItem.financials?.discountAmount || 0) > 0 && (
                                             <div className="flex justify-between items-start mb-2 text-sm text-green-400">
                                                 <span>Discount ({cartItem.promoCode})</span>
-                                                <span>-${cartItem.financials.discountAmount.toLocaleString()}</span>
+                                                <span>-${(cartItem.financials?.discountAmount || 0).toLocaleString()}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between items-start mb-2 text-sm text-gray-400">

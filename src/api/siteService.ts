@@ -33,5 +33,11 @@ export const siteService = {
     getServices: async () => {
         const response = await axiosInstance.get('/site/services');
         return response.data;
+    },
+
+    // Config
+    getConfigBySlug: async (slug: string) => {
+        const response = await axiosInstance.get(`/site/config/${slug}`);
+        return response.data;
     }
 };
