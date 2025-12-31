@@ -11,7 +11,8 @@ import { PiBed, PiUsers, PiArrowsOutSimple } from 'react-icons/pi';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
-
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -42,7 +43,8 @@ export default function RoomsGrid() {
   const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-
+  const router = useRouter();
+  const { isLoggedIn } = useAuthStore();
 
   // Filters
   const [priceRange, setPriceRange] = useState(9900);
@@ -77,7 +79,7 @@ export default function RoomsGrid() {
         reviews: 0, // Mock data
         description: r.description,
         size: parseInt(r.size) || 100,
-        beds: [{ count: 1, type: r.beds || "Standard" }], // Adjust based on actual data structure if needed
+        beds: [{ count: 1, type: r.beds || "Standard" }],
         adults: r.adults,
         category: r.category?.name || "Uncategorized",
         location: r.locationName || "Unknown",
@@ -262,7 +264,7 @@ export default function RoomsGrid() {
 
 
 
-          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12">
+          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12 sticky top-24 h-fit">
 
             {/* Price Filter */}
             <div className="bg-white">
@@ -365,6 +367,7 @@ export default function RoomsGrid() {
 
               <div className="space-y-4">
                 {bedsOptions.map((bed, idx) => {
+
                   const isChecked = selectedBeds.includes(bed);
 
                   return (
@@ -806,9 +809,10 @@ export default function RoomsGrid() {
                           </div>
 
                           {room.beds.map((bed, idx) => (
+                            console.log('bed', bed),
                             <div key={idx} className="flex gap-[5px] items-center">
                               <PiBed className="text-[12px] text-[#c23535]" />
-                              <span className='text-[10px]'>Beds: {bed.count} {bed.type}</span>
+                              <span className='text-[10px]'>Beds:{bed.type}</span>
                             </div>
                           ))}
 
@@ -817,8 +821,19 @@ export default function RoomsGrid() {
                             <span className='text-[10px]'>Adults: {room.adults} Adults</span>
                           </div>
                         </div>
-                        <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <Link href={`/room-view/${room.slug}`} className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]">Book Now</Link>
+                        <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                          <button
+                            onClick={() => {
+                              if (isLoggedIn) {
+                                router.push(`/room-view/${room.slug}`);
+                              } else {
+                                useAuthStore.getState().openLoginModal();
+                              }
+                            }}
+                            className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]"
+                          >
+                            Book Now
+                          </button>
                         </div>
 
                       </div>

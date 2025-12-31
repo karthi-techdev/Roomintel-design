@@ -10,12 +10,9 @@ const getCart = async () => {
     }
 };
 
-const syncCart = async (cartItem: any) => {
+const syncCart = async (items: any[]) => {
     try {
-        // Wrap single item in array or send structure matching backend
         // Backend CartController expects { items: [...] }
-        // Frontend 'cartItem' is a single object currently
-        const items = cartItem ? [cartItem] : [];
         const response = await axiosInstance.post('/site/cart/sync', { items });
         return response.data;
     } catch (error) {

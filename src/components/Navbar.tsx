@@ -99,7 +99,18 @@ const Navbar: React.FC = () => {
         setIsMobileMenuOpen(false);
         resetForm();
     };
+// Inside Navbar component
+useEffect(() => {
+  const handleOpenLogin = () => {
+    openLogin(); // This opens your existing login modal
+  };
 
+  window.addEventListener('open-login-modal', handleOpenLogin);
+
+  return () => {
+    window.removeEventListener('open-login-modal', handleOpenLogin);
+  };
+}, [openLogin]);
     const openRegister = () => {
         setIsRegisterOpen(true);
         setIsLoginOpen(false);
@@ -420,7 +431,6 @@ const Navbar: React.FC = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={closeAuth}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
 
@@ -428,6 +438,7 @@ const Navbar: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="relative w-full max-w-[450px] bg-white rounded-sm shadow-2xl overflow-hidden"
                         >
                             <button

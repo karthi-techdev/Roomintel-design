@@ -17,6 +17,7 @@ import {
     FaShoppingCart,
     FaTimes
 } from 'react-icons/fa';
+import { PiArrowsOutSimple, PiBed, PiUsers } from 'react-icons/pi';
 import { siteService } from '../../api/siteService';
 import { useCartStore, CartItem } from '@/store/useCartStore';
 
@@ -24,18 +25,14 @@ export default function RoomCart() {
     const router = useRouter();
 
     // --- STORE ---
-    const { cartItems, loading, fetchCart, updateCartItem, removeFromCart } = useCartStore();
-    const cartItem = cartItems.length > 0 ? cartItems[0] : null;
+    const { cartItems, loading, fetchCart, updateCartItem, removeFromCart, addToCart } = useCartStore();
 
     // --- LOCAL STATE ---
     const [availableServices, setAvailableServices] = useState<any[]>([]);
+    const [allRooms, setAllRooms] = useState<any[]>([]);
+    const [roomsLoading, setRoomsLoading] = useState(false);
 
-    // Editable fields
-    const [adults, setAdults] = useState(2);
-    const [children, setChildren] = useState(0);
-    const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
-
-    // Promo/Alert
+    // Alert/Promo
     const [promoCode, setPromoCode] = useState('');
     const [appliedPromo, setAppliedPromo] = useState<{ code: string, discountAmount: number } | null>(null);
     const [isApplyingPromo, setIsApplyingPromo] = useState(false);
@@ -43,7 +40,9 @@ export default function RoomCart() {
 
     // UI State
     const [showMobileCheckout, setShowMobileCheckout] = useState(false);
-    const [showSummaryModal, setShowSummaryModal] = useState(false);
+
+    // Helper
+    const fmt = (amount: number) => `₹${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     // --- EFFECTS ---
 
@@ -62,28 +61,25 @@ export default function RoomCart() {
                 console.error("Error fetching services", e);
             }
         };
+
+        // Fetch All Rooms
+        const fetchRooms = async () => {
+            setRoomsLoading(true);
+            try {
+                const res = await siteService.getRooms();
+                if (res && res.data) {
+                    setAllRooms(res.data);
+                }
+            } catch (e) {
+                console.error("Error fetching rooms", e);
+            } finally {
+                setRoomsLoading(false);
+            }
+        };
+
         fetchServices();
+        fetchRooms();
     }, []);
-
-    // Sync Store -> Local State
-    useEffect(() => {
-        if (cartItem) {
-            setAdults(cartItem.guestDetails?.adults || cartItem.guests?.adults || 2);
-            setChildren(cartItem.guestDetails?.children || cartItem.guests?.children || 0);
-
-            if (cartItem.selectedExtras) {
-                setSelectedExtras(new Set(cartItem.selectedExtras));
-            }
-
-            if (cartItem.promoCode) {
-                setPromoCode(cartItem.promoCode);
-                setAppliedPromo({
-                    code: cartItem.promoCode,
-                    discountAmount: cartItem.financials?.discountAmount || 0
-                });
-            }
-        }
-    }, [cartItem]); // Only run when cartItem object reference changes (loaded)
 
     // Scroll Handler
     useEffect(() => {
@@ -100,52 +96,82 @@ export default function RoomCart() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // --- CALCULATIONS ---
-    const roomPrice = cartItem ? cartItem.price : 0;
-    const roomsCount = cartItem?.guestDetails?.rooms || 1;
+    // Aggregate calculations for all items
+    const totals = cartItems.reduce((acc, item) => {
+        const roomPrice = item.price || 0;
+        const roomsCount = item.guestDetails?.rooms || 1;
 
-    // Calculate Occupancy Extras
-    const config = cartItem?.rateConfig;
-    let occupancySurcharge = 0;
+        // Occupancy Surcharge per item
+        const config = item.rateConfig;
+        let occupancySurcharge = 0;
+        if (config) {
+            const adults = item.guestDetails?.adults || 2;
+            const children = item.guestDetails?.children || 0;
+            const extraAdults = Math.max(0, adults - (config.baseAdults ?? 2));
+            const extraChildren = Math.max(0, children - (config.baseChildren ?? 0));
+            occupancySurcharge = (extraAdults * (config.extraAdultPrice ?? 0)) + (extraChildren * (config.extraChildPrice ?? 0));
+        }
 
-    // Determine limits
-    const maxAdults = config?.maxAdults || 10;
-    const maxChildren = config?.maxChildren || 10;
+        const itemBaseTotal = (roomPrice + occupancySurcharge) * roomsCount;
 
-    if (config) {
-        const extraAdults = Math.max(0, adults - (config.baseAdults ?? 2));
-        const extraChildren = Math.max(0, children - (config.baseChildren ?? 0));
-        occupancySurcharge = (extraAdults * (config.extraAdultPrice ?? 0)) + (extraChildren * (config.extraChildPrice ?? 0));
-    } else {
-        // Legacy fallback if needed, or just 0
-        // Previously RoomView added childPrice * children to total, but RoomCart ignored it in recalculation?
-        // Let's assume 0 if no config to avoid weird jumps.
-    }
+        // Extras per item
+        const extrasTotal = (item.selectedExtras || []).reduce((eAcc, extraName) => {
+            const extra = availableServices.find(e => e.title === extraName);
+            return eAcc + (extra ? extra.price : 0);
+        }, 0);
 
-    const baseTotal = (roomPrice + occupancySurcharge) * roomsCount;
+        return {
+            baseTotal: acc.baseTotal + itemBaseTotal,
+            extrasTotal: acc.extrasTotal + extrasTotal,
+            roomsCount: acc.roomsCount + roomsCount
+        };
+    }, { baseTotal: 0, extrasTotal: 0, roomsCount: 0 });
 
-    const extrasTotal = Array.from(selectedExtras).reduce((acc, extraName) => {
-        const extra = availableServices.find(e => e.title === extraName);
-        return acc + (extra ? extra.price : 0);
-    }, 0);
-
-    const taxes = baseTotal * 0.10; // 10% tax
-    const serviceCharge = baseTotal * 0.05; // 5% service charge
+    const taxes = totals.baseTotal * 0.10; // 10% tax
+    const serviceCharge = totals.baseTotal * 0.05; // 5% service charge
 
     const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0;
-    const grandTotal = Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge - discountAmount);
+    const grandTotal = Math.max(0, totals.baseTotal + totals.extrasTotal + taxes + serviceCharge - discountAmount);
 
 
     // --- HANDLERS ---
 
-    const toggleExtra = (extraName: string) => {
-        const newExtras = new Set(selectedExtras);
-        if (newExtras.has(extraName)) {
-            newExtras.delete(extraName);
-        } else {
-            newExtras.add(extraName);
-        }
-        setSelectedExtras(newExtras);
+    const handleAddRoom = async (room: any) => {
+        // Default dates from existing items or tomorrow
+        const checkIn = cartItems.length > 0 ? cartItems[0].checkIn : new Date(Date.now() + 86400000).toISOString();
+        const checkOut = cartItems.length > 0 ? cartItems[0].checkOut : new Date(Date.now() + 86400000 * 2).toISOString();
+
+        const newItem: CartItem = {
+            roomId: room._id,
+            roomName: room.title,
+            roomTitle: room.title,
+            price: room.price,
+            image: room.images?.[0],
+            checkIn,
+            checkOut,
+            guestDetails: {
+                rooms: 1,
+                adults: room.baseAdults || 2,
+                children: room.baseChildren || 0
+            },
+            rateConfig: {
+                baseAdults: room.baseAdults || 2,
+                baseChildren: room.baseChildren || 0,
+                extraAdultPrice: room.extraAdultPrice || 0,
+                extraChildPrice: room.extraChildPrice || 0,
+                maxAdults: room.maxAdults || 4,
+                maxChildren: room.maxChildren || 2
+            },
+            amenities: room.amenities
+        };
+
+        await addToCart(newItem);
+        setAlertState({
+            type: 'success',
+            title: 'Room Added',
+            message: `${room.title} has been added to your cart.`
+        });
+        setTimeout(() => setAlertState(null), 3000);
     };
 
     const handleApplyPromo = async () => {
@@ -155,8 +181,7 @@ export default function RoomCart() {
         setAlertState(null);
 
         try {
-            // Validate against CURRENT totals
-            const result = await promoCodeService.validatePromoCode(promoCode, baseTotal);
+            const result = await promoCodeService.validatePromoCode(promoCode, totals.baseTotal);
 
             if (result.valid) {
                 const discount = result.discountAmount || 0;
@@ -165,39 +190,12 @@ export default function RoomCart() {
                     discountAmount: discount
                 });
 
-                // Update Store
-                if (cartItem) {
-                    const updatedItem: CartItem = {
-                        ...cartItem,
-                        promoCode: promoCode.toUpperCase(),
-                        financials: {
-                            ...(cartItem.financials || {} as any),
-                            baseTotal,
-                            extrasTotal,
-                            taxes,
-                            serviceCharge,
-                            discountAmount: discount,
-                            grandTotal: Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge - discount),
-                            currency: '$'
-                        },
-                        // We also save current guest/extra state just in case
-                        guestDetails: {
-                            rooms: roomsCount,
-                            adults,
-                            children
-                        },
-                        selectedExtras: Array.from(selectedExtras)
-                    };
-                    await updateCartItem(updatedItem);
-                }
-
                 setAlertState({
                     type: 'success',
                     title: 'Success!',
                     message: `Promo code applied! You saved ${fmt(result.discountAmount || 0)}`
                 });
 
-                // User requirement: Increment usage on apply
                 promoCodeService.applyPromoUsage(promoCode.toUpperCase());
             } else {
                 setAppliedPromo(null);
@@ -221,38 +219,10 @@ export default function RoomCart() {
 
     const handleRemovePromo = async () => {
         if (appliedPromo) {
-            // User requirement: Decrement usage on remove
             promoCodeService.removePromoUsage(appliedPromo.code);
         }
         setAppliedPromo(null);
         setPromoCode('');
-
-        if (cartItem) {
-            const updatedItem: CartItem = {
-                ...cartItem,
-                promoCode: undefined, // undefined is fine, JSON will strip it or we just ignore
-                financials: {
-                    ...(cartItem.financials || {} as any),
-                    baseTotal,
-                    extrasTotal,
-                    taxes,
-                    serviceCharge,
-                    discountAmount: 0,
-                    grandTotal: Math.max(0, baseTotal + extrasTotal + taxes + serviceCharge),
-                    currency: '$'
-                },
-                guestDetails: {
-                    rooms: roomsCount,
-                    adults,
-                    children
-                },
-                selectedExtras: Array.from(selectedExtras)
-            };
-            // Manually deleting a property depends on TS strictness, easier to just set undefined
-            // delete updatedItem.promoCode; 
-
-            await updateCartItem(updatedItem);
-        }
 
         setAlertState({
             type: 'default',
@@ -263,48 +233,60 @@ export default function RoomCart() {
     };
 
     const handleCheckout = async () => {
-        if (cartItem) {
-            const updatedItem: CartItem = {
-                ...cartItem,
-                guestDetails: {
-                    rooms: roomsCount,
-                    adults,
-                    children
-                },
-                financials: {
-                    ...(cartItem.financials || {} as any),
-                    baseTotal,
-                    extrasTotal,
-                    taxes,
-                    serviceCharge,
-                    discountAmount,
-                    grandTotal,
-                    currency: '$'
-                },
-                selectedExtras: Array.from(selectedExtras)
-            };
-
-            await updateCartItem(updatedItem);
-        }
+        // Note: Individual item financials aren't critical for next page if we pass totals, 
+        // but we sync them in useCartStore via updateCartItem if needed.
         router.push('/room-checkout');
     };
 
-    const handleRemove = async () => {
-        if (cartItem && cartItem._id) {
-            await removeFromCart(cartItem._id);
-        } else if (cartItem) {
-            // Fallback if no ID (local storage only)
-            await removeFromCart('local');
-        }
-        setAppliedPromo(null);
-        setSelectedExtras(new Set());
+    const handleRemove = async (itemId: string) => {
+        await removeFromCart(itemId);
     };
 
-    // Helper to format currency
-    const fmt = (amount: number) => `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const handleUpdateGuests = async (index: number, adults: number, children: number) => {
+        const item = cartItems[index];
+        const updatedItem = {
+            ...item,
+            guestDetails: {
+                rooms: item.guestDetails?.rooms || 1,
+                adults: adults || 2,
+                children: children || 0
+            }
+        };
+        await updateCartItem(updatedItem);
+    };
+
+    const handleUpdateRooms = async (index: number, rooms: number) => {
+        const item = cartItems[index];
+        const updatedItem = {
+            ...item,
+            guestDetails: {
+                rooms: Math.max(1, rooms),
+                adults: item.guestDetails?.adults ?? 2,
+                children: item.guestDetails?.children ?? 0
+            }
+        };
+        await updateCartItem(updatedItem);
+    };
+
+    const toggleExtra = async (index: number, extraName: string) => {
+        const item = cartItems[index];
+        const currentExtras = new Set(item.selectedExtras || []);
+        if (currentExtras.has(extraName)) {
+            currentExtras.delete(extraName);
+        } else {
+            currentExtras.add(extraName);
+        }
+
+        const updatedItem = {
+            ...item,
+            selectedExtras: Array.from(currentExtras)
+        };
+        await updateCartItem(updatedItem);
+    };
 
 
-    // --- RENDER ---
+
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
             {/* --- HEADER --- */}
@@ -329,7 +311,7 @@ export default function RoomCart() {
                     <div className="flex justify-center items-center py-20">
                         <div className="w-12 h-12 border-4 border-[#283862] border-t-transparent rounded-full animate-spin"></div>
                     </div>
-                ) : !cartItem ? (
+                ) : cartItems.length === 0 ? (
                     <div className="text-center py-20 bg-white rounded-xl shadow-sm border border-gray-100">
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
                             <FaShoppingCart className="text-3xl" />
@@ -337,7 +319,7 @@ export default function RoomCart() {
                         <h2 className="text-2xl font-bold text-[#283862] mb-2">Your Cart is Empty</h2>
                         <p className="text-gray-500 mb-8">Looks like you haven't added any rooms yet.</p>
                         <button
-                            onClick={() => router.push('/')}
+                            onClick={() => router.push('/rooms')}
                             className="px-8 py-3 bg-[#c23535] text-white font-bold rounded-lg hover:bg-[#a82d2d] transition-colors"
                         >
                             Browse Rooms
@@ -346,212 +328,189 @@ export default function RoomCart() {
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
                         {/* Main Cart Section */}
-                        <div className="lg:col-span-2 space-y-6">
-                            {/* Room Card */}
-                            <div className="bg-white rounded-xl lg:rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors">
-                                <div className="p-4 sm:p-6">
-                                    {/* Top Section */}
-                                    <div className="flex items-start justify-between mb-4 lg:mb-6">
-                                        <div className="flex-1">
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                <span className="px-3 py-1 bg-[#c23535]/10 text-[#c23535] text-xs font-bold rounded-full">
-                                                    SELECTED ROOM
-                                                </span>
-                                                <span className="hidden sm:inline text-sm text-gray-500">•</span>
-                                                <span className="flex items-center gap-1 text-sm text-gray-500">
-                                                    <FaCalendarDay className="text-[#c23535]" />
-                                                    {cartItem.checkIn && cartItem.checkOut
-                                                        ? `${new Date(cartItem.checkIn).toLocaleDateString()} - ${new Date(cartItem.checkOut).toLocaleDateString()}`
-                                                        : new Date(Date.now() + 86400000).toLocaleDateString()
-                                                    }
-                                                </span>
-                                            </div>
-                                            <h2 className="text-xl lg:text-2xl font-bold text-[#283862]">{cartItem.roomName}</h2>
-                                            <p className="text-gray-600 mt-2 text-sm lg:text-base">
-                                                {cartItem.roomTitle !== cartItem.roomName ? cartItem.roomTitle : "Excellent Choice!"}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={handleRemove}
-                                            className="text-gray-400 hover:text-[#c23535] p-2 rounded-lg hover:bg-red-50 cursor-pointer transition-colors flex-shrink-0 ml-2">
-                                            <FaTrash className="text-lg" />
-                                        </button>
-                                    </div>
-
-                                    {/* Room Details Grid */}
-                                    <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 mb-6">
-                                        {/* Image */}
-                                        <div className="lg:col-span-1">
-                                            <div className="relative h-56 sm:h-64 lg:h-72 rounded-lg overflow-hidden">
-                                                <img
-                                                    src={cartItem.roomImage || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=800&auto=format&fit=crop"}
-                                                    alt="Room"
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute bottom-4 left-4">
-                                                    <div className="bg-black/70 text-white px-3 py-1 rounded-full text-sm">
-                                                        {fmt(roomPrice)}/night
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Guest Controls */}
-                                        <div className="lg:col-span-2">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-                                                <div className="space-y-3">
-                                                    <label className="flex items-center gap-2 font-medium text-gray-700">
-                                                        <FaUserFriends className="text-[#c23535]" />
-                                                        Adults
-                                                    </label>
-                                                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1">
-                                                        <button
-                                                            onClick={() => setAdults(Math.max(1, adults - 1))}
-                                                            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-gray-600 hover:text-[#c23535] hover:bg-white rounded-lg transition-all"
-                                                        >
-                                                            <FaMinus />
-                                                        </button>
-                                                        <div className="text-center">
-                                                            <div className="text-2xl sm:text-3xl font-bold text-[#283862]">{adults}</div>
-                                                            <div className="text-xs text-gray-500">Adult{adults !== 1 ? 's' : ''}</div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => setAdults(Math.min(maxAdults, adults + 1))}
-                                                            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-gray-600 hover:text-[#c23535] hover:bg-white rounded-lg transition-all"
-                                                        >
-                                                            <FaPlus />
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-3">
-                                                    <label className="flex items-center gap-2 font-medium text-gray-700">
-                                                        <FaChild className="text-[#c23535]" />
-                                                        Children
-                                                    </label>
-                                                    <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1">
-                                                        <button
-                                                            onClick={() => setChildren(Math.max(0, children - 1))}
-                                                            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-gray-600 hover:text-[#c23535] hover:bg-white rounded-lg transition-all"
-                                                        >
-                                                            <FaMinus />
-                                                        </button>
-                                                        <div className="text-center">
-                                                            <div className="text-2xl sm:text-3xl font-bold text-[#283862]">{children}</div>
-                                                            <div className="text-xs text-gray-500">Child{children !== 1 ? 'ren' : ''}</div>
-                                                        </div>
-                                                        <button
-                                                            onClick={() => setChildren(Math.min(maxChildren, children + 1))}
-                                                            className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center text-gray-600 hover:text-[#c23535] hover:bg-white rounded-lg transition-all"
-                                                        >
-                                                            <FaPlus />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Room Features */}
-                                            <div className="mt-6 lg:mt-8 grid grid-cols-2 gap-3">
-                                                {(cartItem.amenities && cartItem.amenities.length > 0 ? cartItem.amenities : [
-                                                    { name: 'Free WiFi' },
-                                                    { name: 'Breakfast' },
-                                                    { name: 'Parking' },
-                                                    { name: 'Pool Access' },
-                                                ]).slice(0, 8).map((feature: any, idx: number) => (
-                                                    <div key={idx} className="flex items-center gap-2">
-                                                        <span className="text-green-500 font-bold">✓</span>
-                                                        <span className="text-sm text-gray-600 truncate">{feature.name || feature.title || "Amenity"}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Price Breakdown */}
-                                    <div className="border-t border-gray-200 pt-4 lg:pt-6">
-                                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                            <div>
-                                                <div className="text-sm text-gray-500">Room Charges</div>
-                                                <div className="text-xl lg:text-2xl font-bold text-[#283862] text-nowrap">{fmt(roomPrice + occupancySurcharge)} <span className="text-sm font-normal text-gray-400">x {roomsCount} room(s)</span></div>
-                                                {occupancySurcharge > 0 && (
-                                                    <div className="text-xs text-gray-400">Includes {fmt(occupancySurcharge)} occupant fees</div>
-                                                )}
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm text-gray-500">Subtotal</div>
-                                                <div className="text-xl lg:text-2xl font-bold text-[#c23535]">{fmt(baseTotal)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                        <div className="lg:col-span-2 space-y-8">
+                            {/* Cart Items List */}
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between px-2">
+                                    <h3 className="text-xl font-bold text-[#283862]">Your Selection</h3>
+                                    <span className="bg-[#c23535] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{totals.roomsCount} {totals.roomsCount === 1 ? 'ROOM' : 'ROOMS'}</span>
                                 </div>
-                            </div>
+                                {cartItems.map((item, index) => {
+                                    const config = item.rateConfig;
+                                    const occupancySurcharge = config ? (
+                                        (Math.max(0, (item.guestDetails?.adults || 2) - (config.baseAdults ?? 2)) * (config.extraAdultPrice ?? 0)) +
+                                        (Math.max(0, (item.guestDetails?.children || 0) - (config.baseChildren ?? 0)) * (config.extraChildPrice ?? 0))
+                                    ) : 0;
+                                    const itemBaseTotal = (item.price + occupancySurcharge) * (item.guestDetails?.rooms || 1);
 
-                            {/* Extras Section */}
-                            <div className="bg-white rounded-xl lg:rounded-2xl border border-gray-200 p-4 lg:p-6">
-                                <h3 className="text-lg font-bold text-[#283862] mb-4">Enhance Your Stay</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {availableServices.map((service: any, idx: number) => {
-                                        const isSelected = selectedExtras.has(service.title);
-                                        return (
-                                            <div
-                                                key={idx}
-                                                onClick={() => toggleExtra(service.title)}
-                                                className={`border rounded-lg p-4 cursor-pointer transition-all ${isSelected ? 'border-[#c23535] bg-[#c23535]/5 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}
+                                    return (
+                                        <div key={item._id || index} className="bg-white rounded-xl lg:rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-colors shadow-sm">
+                                            <div className="p-4 sm:p-6">
+                                                <div className="flex items-start justify-between mb-4">
+                                                    <div className="flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                            <span className="px-3 py-1 bg-[#c23535]/10 text-[#c23535] text-[10px] font-bold rounded-full uppercase">Room {index + 1}</span>
+                                                            <span className="flex items-center gap-1 text-sm text-gray-500">
+                                                                <FaCalendarDay className="text-[#c23535]" />
+                                                                {item.checkIn && item.checkOut
+                                                                    ? `${new Date(item.checkIn).toLocaleDateString()} - ${new Date(item.checkOut).toLocaleDateString()}`
+                                                                    : 'Dates not set'
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                        <h2 className="text-lg lg:text-xl font-bold text-[#283862]">{item.roomName}</h2>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemove(item._id || item.roomId)}
+                                                        className="text-gray-400 hover:text-[#c23535] p-2 rounded-lg hover:bg-red-50 cursor-pointer transition-colors"
+                                                    >
+                                                        <FaTrash className="text-base" />
+                                                    </button>
+                                                </div>
+
+                                                <div className="flex flex-col sm:flex-row gap-6 mb-6">
+                                                    <div className="w-full sm:w-40 h-32 rounded-lg overflow-hidden shrink-0">
+                                                        <img src={item.image || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400&auto=format&fit=crop"} alt="Room" className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div className="flex-1 space-y-4">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Rooms</label>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) - 1)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
+                                                                    <span className="font-bold text-[#283862]">{item.guestDetails?.rooms || 1}</span>
+                                                                    <button onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) + 1)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Adults</label>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleUpdateGuests(index, Math.max(1, (item.guestDetails?.adults || 2) - 1), item.guestDetails?.children || 0)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
+                                                                    <span className="font-bold text-[#283862]">{item.guestDetails?.adults || 2}</span>
+                                                                    <button onClick={() => handleUpdateGuests(index, Math.min(config?.maxAdults || 10, (item.guestDetails?.adults || 2) + 1), item.guestDetails?.children || 0)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Children</label>
+                                                                <div className="flex items-center gap-3">
+                                                                    <button onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.max(0, (item.guestDetails?.children || 0) - 1))} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
+                                                                    <span className="font-bold text-[#283862]">{item.guestDetails?.children || 0}</span>
+                                                                    <button onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.min(config?.maxChildren || 10, (item.guestDetails?.children || 0) + 1))} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Individual Extras per room */}
+                                                        <div>
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase block mb-2">Room Service Extras</label>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {availableServices.map((service, sIdx) => {
+                                                                    const isSelected = (item.selectedExtras || []).includes(service.title);
+                                                                    return (
+                                                                        <button
+                                                                            key={sIdx}
+                                                                            onClick={() => toggleExtra(index, service.title)}
+                                                                            className={`px-3 py-1 text-[10px] font-bold rounded-full border transition-all ${isSelected ? 'bg-[#c23535] border-[#c23535] text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
+                                                                        >
+                                                                            {service.title} (₹{service.price})
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-dotted border-gray-200 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm">
+                                                    <div className="text-gray-500 whitespace-nowrap">
+                                                        ({fmt(item.price)} + {fmt(occupancySurcharge)}) × {item.guestDetails?.rooms || 1} Rooms
+                                                    </div>
+                                                    <div className="font-bold text-[#283862]">Subtotal: {fmt(itemBaseTotal)}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {/* Available Rooms Section */}
+                            <div className="bg-white rounded-xl lg:rounded-2xl border border-gray-200 p-6 shadow-sm">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-bold text-[#283862]">Available Rooms</h3>
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Select to add</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {roomsLoading ? (
+                                        <div className="col-span-full py-4 text-center text-gray-400">Loading rooms...</div>
+                                    ) : allRooms.filter(r => !cartItems.some(ci => ci.roomId === r._id)).map((room, idx) => (
+                                        <div key={idx} className="group relative flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:border-[#c23535] hover:shadow-md transition-all">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden shrink-0">
+                                                <img src={room.images?.[0] || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=200&auto=format&fit=crop"} alt={room.title} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h4 className="font-bold text-[#283862] text-sm truncate">{room.title}</h4>
+                                                    <div className="text-[#c23535] font-bold text-sm">₹{room.price}</div>
+                                                </div>
+                                                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-400">
+                                                    <span className="flex items-center gap-1"><PiArrowsOutSimple /> {room.size}</span>
+                                                    <span className="flex items-center gap-1"><PiBed /> {room.beds || 'Double'}</span>
+                                                    <span className="flex items-center gap-1"><PiUsers /> {room.baseAdults || 2} + {room.baseChildren || 0}</span>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleAddRoom(room)}
+                                                className="px-4 py-2 bg-[#283862] text-white text-xs font-bold rounded-lg hover:bg-[#c23535] transition-colors shadow-sm"
                                             >
-                                                <div className="flex items-start justify-between mb-3">
-                                                    <div>
-                                                        <div className="font-medium text-[#283862]">{service.title}</div>
-                                                        <div className="text-xs text-gray-500 line-clamp-1">{service.description}</div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="text-lg font-bold text-[#283862]">+${service.price}</div>
-                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${isSelected ? 'border-[#c23535] bg-[#c23535]' : 'border-gray-300'}`}>
-                                                        {isSelected && <FaCheckCircle className="text-white text-xs" />}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                                Add
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {allRooms.length > 0 && allRooms.filter(r => !cartItems.some(ci => ci.roomId === r._id)).length === 0 && (
+                                        <div className="col-span-full py-4 text-center text-sm text-gray-500 italic">All rooms already added</div>
+                                    )}
                                 </div>
                             </div>
+
+
                         </div>
 
                         {/* Order Summary Sidebar - Desktop */}
                         <div className="hidden lg:block lg:col-span-1">
                             <div className="sticky top-8 space-y-6">
                                 {/* Summary Card */}
-                                <div className="bg-white rounded-xl border border-gray-200">
+                                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                                    <div className="bg-[#283862] p-5 text-white">
+                                        <h3 className="text-lg font-bold">Booking Summary</h3>
+                                        <p className="text-xs text-gray-300 mt-1">Review your total selection</p>
+                                    </div>
                                     <div className="p-6">
-                                        <h3 className="text-lg font-bold text-[#283862] mb-6">Booking Summary</h3>
-
                                         <div className="space-y-4">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-gray-600">Room ({roomsCount}) x 1 night</span>
-                                                <span className="font-medium">{fmt(baseTotal)}</span>
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-600">Rooms ({totals.roomsCount})</span>
+                                                <span className="font-bold text-[#283862]">{fmt(totals.baseTotal)}</span>
                                             </div>
 
-                                            {extrasTotal > 0 && (
+                                            {totals.extrasTotal > 0 && (
                                                 <div className="flex justify-between items-center text-sm">
-                                                    <span className="text-gray-600">Extras ({selectedExtras.size})</span>
-                                                    <span className="font-medium text-[#c23535]">+{fmt(extrasTotal)}</span>
+                                                    <span className="text-gray-600">Total Extras</span>
+                                                    <span className="font-bold text-[#c23535]">+{fmt(totals.extrasTotal)}</span>
                                                 </div>
                                             )}
 
-                                            <div className="flex justify-between items-center">
+                                            <div className="flex justify-between items-center text-sm">
                                                 <span className="text-gray-600">Taxes (10%)</span>
                                                 <span className="font-medium">{fmt(taxes)}</span>
                                             </div>
 
-                                            <div className="flex justify-between items-center">
+                                            <div className="flex justify-between items-center text-sm">
                                                 <span className="text-gray-600">Service Charge (5%)</span>
                                                 <span className="font-medium">{fmt(serviceCharge)}</span>
                                             </div>
 
                                             {appliedPromo && (
-                                                <div className="flex justify-between items-center text-green-600 bg-green-50 p-2 rounded group">
+                                                <div className="flex justify-between items-center text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="text-sm">Discount ({appliedPromo.code})</span>
+                                                        <span className="text-xs font-bold">PROMO: {appliedPromo.code}</span>
                                                     </div>
                                                     <div className="flex items-center gap-3">
                                                         <span className="font-bold">-{fmt(discountAmount)}</span>
@@ -567,10 +526,10 @@ export default function RoomCart() {
                                             )}
 
                                             {/* Promo Code */}
-                                            <div className="pt-4 border-t border-gray-200">
+                                            <div className="pt-4 border-t border-gray-100">
                                                 {/* Alert Notification */}
                                                 {alertState && (
-                                                    <Alert variant={alertState.type as any} className="mb-4 py-3">
+                                                    <Alert variant={alertState.type as any} className="mb-4 py-2 text-xs">
                                                         <AlertTitle className="mb-0 font-bold">{alertState.title}</AlertTitle>
                                                         <AlertDescription>{alertState.message}</AlertDescription>
                                                     </Alert>
@@ -582,14 +541,14 @@ export default function RoomCart() {
                                                             type="text"
                                                             value={promoCode}
                                                             onChange={(e) => setPromoCode(e.target.value)}
-                                                            placeholder="Code: WELCOME10"
-                                                            className="flex-1 px-4 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#c23535]"
+                                                            placeholder="Promo Code"
+                                                            className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#c23535] transition-colors"
                                                             onKeyDown={(e) => e.key === 'Enter' && handleApplyPromo()}
                                                         />
                                                         <button
                                                             onClick={handleApplyPromo}
                                                             disabled={isApplyingPromo}
-                                                            className={`px-4 py-2 bg-[#c23535] cursor-pointer text-white rounded text-sm font-medium hover:bg-[#283862] transition-colors ${isApplyingPromo ? 'opacity-70 cursor-wait' : ''}`}
+                                                            className={`px-4 py-2 bg-[#283862] cursor-pointer text-white rounded-lg text-xs font-bold hover:bg-[#c23535] transition-colors ${isApplyingPromo ? 'opacity-70 cursor-wait' : ''}`}
                                                         >
                                                             {isApplyingPromo ? '...' : 'Apply'}
                                                         </button>
@@ -599,47 +558,38 @@ export default function RoomCart() {
                                         </div>
 
                                         {/* Total */}
-                                        <div className="mt-6 pt-6 border-t border-gray-200">
+                                        <div className="mt-6 pt-6 border-t border-gray-100">
                                             <div className="flex justify-between items-center">
                                                 <div>
-                                                    <div className="font-bold text-[#283862]">Total Amount</div>
-                                                    <div className="text-xs text-gray-500">Includes all taxes</div>
+                                                    <div className="font-bold text-[#283862]">Grand Total</div>
+                                                    <div className="text-[10px] text-gray-400">Total payable amount</div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-2xl lg:text-3xl font-bold text-[#c23535]">{fmt(grandTotal)}</div>
+                                                    <div className="text-2xl font-bold text-[#c23535]">{fmt(grandTotal)}</div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Checkout Button */}
-                                    <div className="border-t border-gray-200 p-6">
+                                    <div className="p-6 bg-gray-50 border-t border-gray-100">
                                         <button
                                             onClick={handleCheckout}
-                                            className="w-full py-4 cursor-pointer bg-gradient-to-r from-[#283862] to-[#1c2a4a] hover:from-[#c23535] hover:to-[#a82d2d] text-white font-bold text-sm uppercase tracking-wider rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
+                                            className="w-full py-4 cursor-pointer bg-gradient-to-r from-[#283862] to-[#1c2a4a] hover:from-[#c23535] hover:to-[#a82d2d] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all duration-300 shadow-lg"
                                         >
-                                            Proceed to Checkout
+                                            Check Out Now
                                         </button>
                                     </div>
                                 </div>
-                                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                                     <div className="space-y-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-[#c23535]/10 flex items-center justify-center">
-                                                <FaShieldAlt className="text-[#c23535] text-lg" />
+                                            <div className="w-10 h-10 rounded-full bg-[#c23535]/10 flex items-center justify-center">
+                                                <FaShieldAlt className="text-[#c23535] text-base" />
                                             </div>
                                             <div>
-                                                <div className="font-bold text-[#283862]">Secure Payment</div>
-                                                <div className="text-sm text-gray-500">Your data is protected</div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-[#c23535]/10 flex items-center justify-center">
-                                                <FaCheckCircle className="text-[#c23535] text-lg" />
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-[#283862]">Best Price Guarantee</div>
-                                                <div className="text-sm text-gray-500">Find it cheaper? We`ll match it</div>
+                                                <div className="font-bold text-[#283862] text-sm">Secure Payment</div>
+                                                <div className="text-xs text-gray-500">Industry standard encryption</div>
                                             </div>
                                         </div>
                                     </div>
@@ -650,15 +600,15 @@ export default function RoomCart() {
                 )}
 
                 {/* Bottom Actions - Desktop only */}
-                {cartItem && (
+                {cartItems.length > 0 && (
                     <div className="hidden lg:flex mt-8 flex-col sm:flex-row justify-between items-center gap-4">
-                        <button onClick={() => router.back()} className="px-6 py-3 cursor-pointer border border-gray-300 text-gray-700 rounded-lg hover:border-[#c23535] hover:text-[#c23535] transition-colors font-medium">
+                        <button onClick={() => router.back()} className="px-6 py-3 cursor-pointer border border-gray-300 text-gray-700 rounded-xl hover:border-[#c23535] hover:text-[#c23535] transition-colors font-medium">
                             Continue Shopping
                         </button>
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleCheckout}
-                                className="px-6 py-3 cursor-pointer bg-[#c23535] text-white rounded-lg hover:bg-[#a82d2d] transition-colors font-medium flex items-center gap-2"
+                                className="px-6 py-3 cursor-pointer bg-[#c23535] text-white rounded-xl hover:bg-[#a82d2d] transition-colors font-medium flex items-center gap-2"
                             >
                                 <FaCreditCard />
                                 Secure Checkout
@@ -669,37 +619,15 @@ export default function RoomCart() {
             </div>
 
             {/* Mobile Floating Checkout Button */}
-            {showMobileCheckout && cartItem && (
+            {showMobileCheckout && cartItems.length > 0 && (
                 <div className="lg:hidden fixed bottom-4 left-4 right-4 z-40">
                     <button
                         onClick={handleCheckout}
-                        className="w-full py-4 cursor-pointer bg-gradient-to-r from-[#283862] to-[#1c2a4a] hover:from-[#c23535] hover:to-[#a82d2d] text-white font-bold text-sm uppercase tracking-wider rounded-lg transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
+                        className="w-full py-4 cursor-pointer bg-gradient-to-r from-[#283862] to-[#1c2a4a] hover:from-[#c23535] hover:to-[#a82d2d] text-white font-bold text-sm uppercase tracking-wider rounded-xl transition-all duration-300 shadow-lg flex items-center justify-center gap-2"
                     >
                         <FaCreditCard />
                         Checkout - {fmt(grandTotal)}
                     </button>
-                </div>
-            )}
-            {showSummaryModal && cartItem && (
-                <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50">
-                    <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[90vh] overflow-y-auto">
-                        <div className="p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-xl font-bold text-[#283862]">Complete Booking</h3>
-                                <button onClick={() => setShowSummaryModal(false)} className="text-gray-400 hover:text-gray-600 p-2"><FaTimes className="text-lg" /></button>
-                            </div>
-                            {/* Shortened mobile summary for brevity, ideally duplicate logic or componentize */}
-                            <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                                <h4 className="font-bold text-[#283862] mb-4">Total: {fmt(grandTotal)}</h4>
-                                <button
-                                    onClick={handleCheckout}
-                                    className="w-full py-4 bg-[#c23535] text-white font-bold rounded-lg"
-                                >
-                                    Proceed to Checkout
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             )}
         </div>

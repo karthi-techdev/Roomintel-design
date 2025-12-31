@@ -185,7 +185,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             roomSlug: slug,
             roomName: room.name || room.title || "Room",
             roomTitle: room.title || room.name,
-            roomImage: room.previewImage || room.images?.[0] || "",
+            image: room.previewImage || room.images?.[0] || "",
             price: basePrice,
             checkIn: checkInDate,
             checkOut: checkOutDate,
@@ -213,7 +213,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                 serviceCharge: serviceCharge,
                 discountAmount: 0,
                 grandTotal: grandTotal,
-                currency: '$'
+                currency: '₹'
             },
             totalAmount: grandTotal,
             quantity: 1
@@ -472,7 +472,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <div className="bg-[#283862] rounded-sm overflow-hidden text-white shadow-xl border border-gray-700/50">
                                 <div className="bg-[#EDA337] p-5 flex justify-between items-center font-bold">
                                     <span className="text-sm uppercase tracking-wider">Starting At:</span>
-                                    <span className="text-2xl noto-geogia-font">${basePrice}</span>
+                                    <span className="text-2xl noto-geogia-font">₹{basePrice}</span>
                                 </div>
                                 <div className="p-6 md:p-8 space-y-5">
                                     <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
@@ -575,7 +575,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                                     <div className="border-t border-gray-700 my-4 pt-4 flex justify-between font-bold text-lg text-[#EDA337]">
                                         <span>Total:</span>
-                                        <span>${totalPrice}</span>
+                                        <span>₹{totalPrice}</span>
                                     </div>
 
                                     <button

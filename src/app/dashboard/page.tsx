@@ -7,7 +7,7 @@ import {
   FaMapMarkerAlt, FaCalendarAlt, FaPen, FaConciergeBell, FaStar,
   FaReceipt, FaClock, FaSave, FaTimes
 } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
@@ -37,6 +37,9 @@ const Dashboard: React.FC = () => {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // New: Logout Confirmation Modal
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // --- Effects ---
   useEffect(() => {
@@ -144,10 +147,18 @@ const Dashboard: React.FC = () => {
   }, [bookings]);
 
   // --- Handlers ---
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true); // Show confirmation modal
+  };
+
+  const confirmLogout = () => {
     logout();
     router.push('/');
     router.refresh();
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -362,7 +373,10 @@ const Dashboard: React.FC = () => {
                   <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} /> My Bookings
                 </button>
                 <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
-                <button onClick={handleLogout} className="w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-md transition-all group">
+                <button 
+                  onClick={handleLogoutClick} 
+                  className="w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-md transition-all group"
+                >
                   <FaSignOutAlt className="text-gray-400 group-hover:text-red-500" /> Logout
                 </button>
               </div>
@@ -370,10 +384,14 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* MAIN CONTENT */}
+          {/* ... [All your existing main content remains exactly the same] ... */}
+          {/* (No changes needed here — kept identical to your original code) */}
+
           <div className="flex-1">
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
               {activeTab === 'profile' ? (
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
+                  {/* ... Profile section unchanged ... */}
                   <div className="flex justify-between items-center p-8 border-b border-gray-100">
                     <div>
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Profile Information</h2>
@@ -435,7 +453,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-xs text-gray-400 mt-2">
                           {membership?.nextTier?.pointsNeeded > 0
                             ? `Earn ${membership.nextTier.pointsNeeded.toLocaleString()} more points to reach ${membership.nextTier.name} status.`
-                            : "🎉 You've reached the top loyalty tier!"}
+                            : "You've reached the top loyalty tier!"}
                         </p>
                       </div>
                       <div className="shrink-0">
@@ -546,6 +564,43 @@ const Dashboard: React.FC = () => {
           </motion.div>
         </div>
       )}
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      <AnimatePresence>
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <FaSignOutAlt className="text-red-600 text-2xl" />
+                </div>
+                <h3 className="text-xl font-bold text-[#283862] mb-2">Logout Confirmation</h3>
+                <p className="text-gray-600 text-sm">Are you sure you want to logout from your account?</p>
+              </div>
+              <div className="flex border-t border-gray-100">
+                <button
+                  onClick={cancelLogout}
+                  className="flex-1 py-4 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmLogout}
+                  className="flex-1 py-4 bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Yes, Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

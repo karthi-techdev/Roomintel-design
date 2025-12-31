@@ -6,13 +6,13 @@ import {
   FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
-  FaTwitter,
+  // FaTwitter,
 } from 'react-icons/fa';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
-import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import { IoLogoLinkedin } from 'react-icons/io';
+import { RiDoubleQuotesL /*, RiFacebookBoxFill */ } from 'react-icons/ri';
+// import { IoLogoLinkedin } from 'react-icons/io';
 import { showAlert } from '../utils/alertStore';
 
 
@@ -194,6 +194,7 @@ export default function Home() {
     }
   ];
 
+  /*
   const staffMembers = [
     {
       id: 1,
@@ -220,7 +221,9 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1581050777502-c8a115d64b53?q=80&w=2670&auto=format&fit=crop"
     }
   ];
+  */
 
+  /*
   const articles = [
     {
       id: 1,
@@ -244,6 +247,7 @@ export default function Home() {
       month: "Dec"
     }
   ];
+  */
 
   return (
     <main className="w-full">
@@ -581,7 +585,7 @@ export default function Home() {
                   {/* Left: Price & Title */}
                   <div className="w-full md:w-1/3 flex flex-col">
                     <div className="flex items-end gap-2 mb-2">
-                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ${activeRoom.price} Night</span>
+                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ₹{activeRoom.price} Night</span>
                     </div>
                     <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
                       {activeRoom.name}
@@ -654,9 +658,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 
       <section className="py-30 px-6 lg:px-16 w-full pt-10">
         <div className="max-w-[1400px] mx-auto">
-          {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between mb-16 gap-9 md:items-center lg:items-end">
             <div className="max-w-xl">
               <div className="flex items-center gap-4 mb-4">
@@ -673,7 +677,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {staffMembers.map((staff, index) => (
               <motion.div
@@ -695,7 +698,6 @@ export default function Home() {
                     <FaTwitter className='text-white text-xl hidden group-hover:flex' />
                   </div>
                 </div>
-                {/* Image Container */}
                 <div className='relative'>
                   <div className="aspect-square w-full h-full overflow-hidden  bg-gray-800">
                     <img
@@ -705,7 +707,6 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* Text */}
                   <div className="flex flex-col justify-center text-center bg-[#0f1825] w-[90%] h-[6rem] absolute -bottom-15 md:-bottom-15 lg:-bottom-15">
                     <h4 className="text-white font-bold text-xl mb-2   tracking-wide">{staff.name}</h4>
                     <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
@@ -716,6 +717,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
       <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
         <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
           {/* Restaurant */}
@@ -1017,6 +1019,7 @@ export default function Home() {
           </div>
 
           {/* ================= Articles ================= */}
+          {/* 
           <div className="max-w-[1200px] mx-auto py-16 sm:py-20">
             <div className="text-center mb-16">
               <div className="flex items-center justify-center gap-4 mb-4">
@@ -1047,7 +1050,6 @@ export default function Home() {
         lg:w-full
       "
                 >
-                  {/* Image */}
                   <div className="relative h-[220px] sm:h-[250px] md:h-[280px] lg:h-[300px] overflow-hidden rounded-lg">
                     <img
                       src={article.image}
@@ -1064,7 +1066,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Floating Content */}
                   <div
                     className="
           absolute
@@ -1100,6 +1101,7 @@ export default function Home() {
             </div>
 
           </div>
+          */}
 
         </section>
       </div>
