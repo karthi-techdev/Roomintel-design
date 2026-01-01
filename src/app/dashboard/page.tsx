@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -37,7 +38,7 @@ const Dashboard: React.FC = () => {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+  
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -331,7 +332,15 @@ const Dashboard: React.FC = () => {
               <div className="px-6 pb-8 relative text-center">
                 <div className="w-24 h-24 mx-auto -mt-12 mb-4 relative">
                   <div className="w-full h-full rounded-full p-1 bg-white shadow-md">
-                    <img src={previews.avatar || getImageUrl(user.avatar, "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop")} className="w-full h-full rounded-full object-cover" alt="Profile" />
+                    <Image
+                      src={previews.avatar || getImageUrl(user.avatar, '/image/user.png')}
+                      alt="Profile"
+                      className="w-full h-full rounded-full object-cover"
+                      priority
+                      width={150}
+                      height={150}
+                    />
+                    {/* <img src={previews.avatar || getImageUrl(user.avatar, '/image/user.png')} className="w-full h-full rounded-full object-cover" alt="Profile" /> */}
                   </div>
                   <label className="absolute bottom-1 right-1 bg-[#EDA337] p-2 rounded-full cursor-pointer hover:bg-[#d8922f] border-2 border-white shadow-sm transition-colors">
                     <FaCamera size={10} className="text-white" />
