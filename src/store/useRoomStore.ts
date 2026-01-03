@@ -11,6 +11,7 @@ export interface Room {
     adults: number;
     maxAdults: number;
     maxChildren: number;
+    maxRooms: number;
     baseAdults: number;
     baseChildren: number;
     extraAdultPrice: number;

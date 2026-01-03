@@ -28,15 +28,20 @@ import RoomFaq from '../../../components/room-view/RoomFaq';
 import RoomAmenities from '../../../components/room-view/RoomAmenities';
 import { useRoomStore } from '@/store/useRoomStore';
 import { useCartStore } from '@/store/useCartStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { showAlert } from '@/utils/alertStore';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const router = useRouter();
+    const { formatPrice, currencyIcon } = useCurrency();
 
 
 
     const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
+    const { isLoggedIn, openLoginModal } = useAuthStore();
 
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
@@ -174,6 +179,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const handleBookRoom = async () => {
         if (!room) return;
 
+        // Check if user is logged in
+        if (!isLoggedIn) {
+            showAlert.error('Please login to book a room');
+            openLoginModal();
+            return;
+        }
+
         const roomsCount = rooms;
         const totalBase = roomPricePerNight * roomsCount;
         const taxes = totalBase * 0.10;
@@ -212,7 +224,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                 serviceCharge: serviceCharge,
                 discountAmount: 0,
                 grandTotal: grandTotal,
-                currency: '₹'
+                currency: currencyIcon
             },
             totalAmount: grandTotal
         };
@@ -337,7 +349,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             )}
 
                             {/* Info Bar */}
-                            <div className="bg-[#283862] p-6 rounded-sm flex flex-col md:flex-row gap-8 md:gap-16 text-white shadow-md">
+                            <div className="bg-[#283862] p-6 rounded-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-white shadow-md">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-[#c23535] shrink-0">
                                         <PiArrowsOutSimple className="text-2xl" />
@@ -347,44 +359,36 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         <div className="font-bold">{room ? room.size.replace('m²', '').trim() : "100"} m²</div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-[#c23535] shrink-0">
-                                        <PiBed className="text-2xl" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] uppercase font-bold tracking-widest opacity-70">Beds</div>
-                                        <div className="font-bold">
-                                            {(() => {
-                                                if (!room) return "2 Beds";
+                                {(() => {
+                                    // Check if we should show bed info
+                                    if (!room || !room.beds || typeof room.beds !== 'string') return null;
 
-                                                if (!room.beds || typeof room.beds !== 'string') return "2 Beds";
+                                    const bedIds = room.beds.split(',').map(s => s.trim());
+                                    let bedDisplay = room.beds;
 
-                                                const bedIds = room.beds.split(',').map(s => s.trim());
+                                    if (bedConfig.length > 0) {
+                                        const labels = bedIds.map(id => {
+                                            const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+                                            return match ? match.value : id;
+                                        });
+                                        bedDisplay = labels.join(', ');
+                                    }
 
-                                                if (bedConfig.length > 0) {
-                                                    const labels = bedIds.map(id => {
-                                                        // Ensure comparison is safe (strings)
-                                                        const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
-                                                        return match ? match.value : id;
-                                                    });
+                                    // Hide if contains "Unknown"
+                                    if (bedDisplay.toLowerCase().includes('unknown')) return null;
 
-                                                    return labels.join(', ');
-                                                }
-
-                                                return room.beds;
-                                            })()}
+                                    return (
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-[#c23535] shrink-0">
+                                                <PiBed className="text-2xl" />
+                                            </div>
+                                            <div>
+                                                <div className="text-[10px] uppercase font-bold tracking-widest opacity-70">Beds</div>
+                                                <div className="font-bold">{bedDisplay}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-full border border-gray-600 flex items-center justify-center text-[#c23535] shrink-0">
-                                        <PiUsers className="text-2xl" />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] uppercase font-bold tracking-widest opacity-70">Adults</div>
-                                        <div className="font-bold">{room ? room.adults : 3} Adults</div>
-                                    </div>
-                                </div>
+                                    );
+                                })()}
                             </div>
                         </div>
 
@@ -492,7 +496,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <div className="bg-[#283862] rounded-sm overflow-hidden text-white shadow-xl border border-gray-700/50">
                                 <div className="bg-[#EDA337] p-5 flex justify-between items-center font-bold">
                                     <span className="text-sm uppercase tracking-wider">Starting At:</span>
-                                    <span className="text-2xl noto-geogia-font">₹{basePrice}</span>
+                                    <span className="text-2xl noto-geogia-font">{formatPrice(basePrice)}</span>
                                 </div>
                                 <div className="p-6 md:p-8 space-y-5">
                                     <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
@@ -523,25 +527,34 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
 
                                         <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
-                                            <span className="text-sm font-medium pl-1">Number</span>
+                                            <span className="text-sm font-medium pl-1">Number of Rooms</span>
                                             <div className="flex items-center gap-4 text-gray-300">
                                                 <button
                                                     onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    className="hover:text-[#EDA337] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={rooms <= 1}
                                                 >
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-white">{rooms}</span>
+                                                <span className="text-sm font-bold text-center text-white">
+                                                    {rooms}
+                                                </span>
                                                 <button
-                                                    onClick={() => setRooms(rooms + 1)}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    onClick={() => setRooms(Math.min(room?.maxRooms || 10, rooms + 1))}
+                                                    className="hover:text-[#EDA337] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    disabled={rooms >= (room?.maxRooms || 10)}
                                                 >
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
                                         </div>
+                                        {rooms >= (room?.maxRooms || 10) && (
+                                            <div className="text-[10px] text-yellow-400 text-center py-1">
+                                                Maximum booking limit reached
+                                            </div>
+                                        )}
                                         <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                            x ${basePrice} = ${basePrice * rooms}
+                                            x {formatPrice(basePrice)} = {formatPrice(basePrice * rooms)}
                                         </div>
 
                                         <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
@@ -564,7 +577,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
                                         {extraAdultPrice > 0 && (
                                             <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                                +${extraAdultPrice} per extra adult
+                                                +{formatPrice(extraAdultPrice)} per extra adult
                                             </div>
                                         )}
 
@@ -588,14 +601,14 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
                                         {extraChildPrice > 0 && (
                                             <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                                +${extraChildPrice} per extra child
+                                                +{formatPrice(extraChildPrice)} per extra child
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="border-t border-gray-700 my-4 pt-4 flex justify-between font-bold text-lg text-[#EDA337]">
                                         <span>Total:</span>
-                                        <span>₹{totalPrice}</span>
+                                        <span>{formatPrice(totalPrice)}</span>
                                     </div>
 
                                     <button

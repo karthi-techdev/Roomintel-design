@@ -14,6 +14,7 @@ import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { siteService } from '@/api/siteService';
+import { useCurrency } from '@/hooks/useCurrency';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -34,9 +35,6 @@ interface Room {
 
 // --- CONSTANTS ---
 const locations = ["Argentina", "Australia", "Canada", "Germany", "United States"];
-const sizes = [100, 150, 200, 250];
-const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
-const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
 
 export default function RoomsGrid() {
@@ -45,11 +43,18 @@ export default function RoomsGrid() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+
+  // Dynamic filter options
+  const [sizes, setSizes] = useState<number[]>([]);
+  const [bedsOptions, setBedsOptions] = useState<string[]>([]);
+  const [adultsOptions, setAdultsOptions] = useState<string[]>([]);
+
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
 
   // Filters
-  const [priceRange, setPriceRange] = useState(9900);
+  const [maxPrice, setMaxPrice] = useState(10000); // Will be updated from rooms data
+  const [priceRange, setPriceRange] = useState(10000);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<number[]>([]);
@@ -57,6 +62,9 @@ export default function RoomsGrid() {
   const [selectedAdults, setSelectedAdults] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  // Currency
+  const { formatPrice } = useCurrency();
 
   // Initial Fetch
   useEffect(() => {
@@ -67,8 +75,18 @@ export default function RoomsGrid() {
     const fetchBedConfig = async () => {
       try {
         const res = await siteService.getConfigBySlug('bed-types');
+        console.log('Bed config response:', res);
         if (res && (res.status === true || res.success === true) && res.data) {
-          setBedConfig(res.data.configFields || []);
+          const bedFields = res.data.configFields || [];
+          console.log('Bed fields:', bedFields);
+          setBedConfig(bedFields);
+
+          // Set bed options from config
+          const bedLabels = bedFields
+            .map((field: any) => field.value)
+            .filter((value: string) => value && !value.toLowerCase().includes('unknown'));
+          console.log('Bed labels for filter:', bedLabels);
+          setBedsOptions(bedLabels);
         }
       } catch (e) {
         console.error("Failed to fetch bed config", e);
@@ -76,6 +94,15 @@ export default function RoomsGrid() {
     };
     fetchBedConfig();
   }, []);
+
+  // Debug: Log filter options when they change
+  useEffect(() => {
+    console.log('Filter options updated:', {
+      sizes,
+      bedsOptions,
+      adultsOptions
+    });
+  }, [sizes, bedsOptions, adultsOptions]);
 
   // Map Data from Store
   useEffect(() => {
@@ -109,13 +136,50 @@ export default function RoomsGrid() {
           description: r.description,
           size: parseInt(r.size) || 100,
           beds: [{ count: 1, type: bedLabel }],
-          adults: r.adults,
+          adults: r.maxAdults || r.adults,
           category: r.category?.name || "Uncategorized",
           location: r.locationName || "Unknown",
           date: r.createdAt || new Date().toISOString()
         };
       });
       setRooms(mappedRooms);
+
+      // Extract unique sizes from rooms (ascending order)
+      const uniqueSizes = Array.from(new Set(mappedRooms.map(r => r.size)))
+        .filter(size => size && size > 0)
+        .sort((a, b) => a - b);
+      console.log('Unique sizes:', uniqueSizes);
+      setSizes(uniqueSizes);
+
+      // Extract unique adults from rooms (ascending order, formatted)
+      console.log('Raw rooms for adults:', rawRooms.map((r: any) => ({
+        name: r.name,
+        maxAdults: r.maxAdults,
+        adults: r.adults
+      })));
+
+      const allMaxAdults = rawRooms.map((r: any) => r.maxAdults);
+      console.log('All maxAdults values:', allMaxAdults);
+
+      const uniqueAdultsNumbers = Array.from(new Set(allMaxAdults))
+        .filter(adults => adults && adults > 0)
+        .sort((a, b) => a - b);
+      console.log('Unique adult numbers:', uniqueAdultsNumbers);
+
+      const uniqueAdults = uniqueAdultsNumbers
+        .map(adults => `${adults} Adult${adults > 1 ? 's' : ''}`);
+      console.log('Unique adults options:', uniqueAdults);
+      setAdultsOptions(uniqueAdults);
+
+      // Calculate max price from rooms
+      const prices = mappedRooms.map(r => r.price).filter(p => p > 0);
+      if (prices.length > 0) {
+        const calculatedMaxPrice = Math.max(...prices);
+        console.log('Max price from rooms:', calculatedMaxPrice);
+        setMaxPrice(calculatedMaxPrice);
+        // Set initial price range to max price
+        setPriceRange(calculatedMaxPrice);
+      }
     }
   }, [rawRooms, rawCategories, storeLoading, bedConfig]);
 
@@ -135,9 +199,7 @@ export default function RoomsGrid() {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  // Pagination removed - showing all rooms
 
   // Helper function to generate pastel colors based on room ID
   const getPastelColor = (id: string | number): string => {
@@ -163,7 +225,6 @@ export default function RoomsGrid() {
   // --- HANDLERS ---
 
   const handleCategoryChange = (category: string) => {
-    setCurrentPage(1); // Reset to page 1 on filter change
     setSelectedCategories(prev =>
       prev.includes(category)
         ? prev.filter(c => c !== category)
@@ -198,14 +259,12 @@ export default function RoomsGrid() {
 
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCurrentPage(1);
     setPriceRange(Number(e.target.value));
   };
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
     setIsSortOpen(false);
-    setCurrentPage(1);
   };
 
   // --- FILTER & SORT LOGIC ---
@@ -226,24 +285,16 @@ export default function RoomsGrid() {
       const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(room.size);
 
       // Beds Filter
-      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(sel => {
-        const totalBeds = room.beds.reduce((acc, b) => acc + b.count, 0);
-        const bedTypes = room.beds.map(b => b.type.toLowerCase()).join(" ");
-
-        if (sel === "2 Beds") return totalBeds === 2;
-        if (sel === "1 Bed") return totalBeds === 1;
-        if (sel === "1 King Bed") return totalBeds === 1 && bedTypes.includes("king");
-        if (sel === "1 Double Bed") return totalBeds === 1 && bedTypes.includes("double");
-        return false;
+      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(selectedBed => {
+        // Check if any of the room's bed types match the selected bed type
+        return room.beds.some(bed => {
+          // Case-insensitive comparison
+          return bed.type.toLowerCase().includes(selectedBed.toLowerCase()) ||
+            selectedBed.toLowerCase().includes(bed.type.toLowerCase());
+        });
       });
 
-      // Adults Filter
-      const matchesAdults = selectedAdults.length === 0 || selectedAdults.some(sel => {
-        const num = parseInt(sel);
-        return room.adults === num;
-      });
-
-      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds && matchesAdults;
+      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds;
     });
 
     // 2. Sort
@@ -259,14 +310,9 @@ export default function RoomsGrid() {
     });
 
     return result;
-  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
+  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, sortBy]);
 
-  // --- PAGINATION LOGIC ---
-
-  const totalPages = Math.ceil(filteredAndSortedRooms.length / itemsPerPage);
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentRooms = filteredAndSortedRooms.slice(indexOfFirstItem, indexOfLastItem);
+  // --- SHOW ALL ROOMS (No Pagination) ---
 
   const getSortLabel = () => {
     switch (sortBy) {
@@ -296,12 +342,12 @@ export default function RoomsGrid() {
       <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
         <div className="z-10">
           <h1 className="noto-geogia-font font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
-            Rooms Grid
+            Our Rooms
           </h1>
           <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
             <Link href="/"><span className="hover:text-brand-red cursor-pointer transition-colors">Home</span></Link>
             <span>/</span>
-            <span>Rooms Grid</span>
+            <span>Rooms</span>
           </div>
         </div>
       </div>
@@ -327,7 +373,7 @@ export default function RoomsGrid() {
                 <input
                   type="range"
                   min="0"
-                  max="9900"
+                  max={maxPrice}
                   step="50"
                   value={priceRange}
                   onChange={handlePriceChange}
@@ -335,7 +381,7 @@ export default function RoomsGrid() {
                 />
               </div>
               <div className="text-gray-500 font-medium">
-                $0 - ${priceRange}
+                {formatPrice(0)} - {formatPrice(priceRange)}
               </div>
             </div>
             <span className='bg-[#00000033] flex h-[2px]'></span>
@@ -450,46 +496,6 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
-
-            <div className="bg-white">
-              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
-                Adults
-              </h3>
-
-              <div className="space-y-4">
-                {adultsOptions.map((adult, idx) => {
-                  const isChecked = selectedAdults.includes(adult);
-
-                  return (
-                    <label
-                      key={idx}
-                      className="flex items-center gap-3 cursor-pointer select-none"
-                    >
-                      <div
-                        className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          checked={isChecked}
-                          onChange={() => handleAdultsChange(adult)}
-                        />
-                        {isChecked && <FaCheck className="text-white text-xs" />}
-                      </div>
-
-                      <span
-                        className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                          }`}
-                      >
-                        {adult}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
 
           </aside>
 
@@ -537,7 +543,7 @@ export default function RoomsGrid() {
                     <input
                       type="range"
                       min="0"
-                      max="9900"
+                      max={maxPrice}
                       step="50"
                       value={priceRange}
                       onChange={handlePriceChange}
@@ -545,7 +551,7 @@ export default function RoomsGrid() {
                     />
                   </div>
                   <div className="text-gray-500 font-medium">
-                    $0 - ${priceRange}
+                    {formatPrice(0)} - {formatPrice(priceRange)}
                   </div>
                 </div>
                 <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
@@ -659,46 +665,6 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
-
-                <div className="bg-white">
-                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
-                    Adults
-                  </h3>
-
-                  <div className="space-y-4">
-                    {adultsOptions.map((adult, idx) => {
-                      const isChecked = selectedAdults.includes(adult);
-
-                      return (
-                        <label
-                          key={idx}
-                          className="flex items-center gap-3 cursor-pointer select-none"
-                        >
-                          <div
-                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                              checked={isChecked}
-                              onChange={() => handleAdultsChange(adult)}
-                            />
-                            {isChecked && <FaCheck className="text-white text-xs" />}
-                          </div>
-
-                          <span
-                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                              }`}
-                          >
-                            {adult}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
               </motion.aside>
             </>
           )}
@@ -785,9 +751,9 @@ export default function RoomsGrid() {
 
 
             {/* Room Cards Grid */}
-            {currentRooms.length > 0 ? (
+            {filteredAndSortedRooms.length > 0 ? (
               <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-                {currentRooms.map((room) => (
+                {filteredAndSortedRooms.map((room) => (
                   <motion.div
                     key={room.id}
                     layout
@@ -829,7 +795,7 @@ export default function RoomsGrid() {
                             {room.name}
                           </h3>
                         </Link>
-                        <span>From ${room.price}</span>
+                        <span>From {formatPrice(room.price)}</span>
 
                       </div>
 
@@ -866,18 +832,16 @@ export default function RoomsGrid() {
                             <span className='text-[10px]'>Size: {room.size} m²</span>
                           </div>
 
-                          {room.beds.map((bed, idx) => (
-                            console.log('bed', bed),
-                            <div key={idx} className="flex gap-[5px] items-center">
-                              <PiBed className="text-[12px] text-[#c23535]" />
-                              <span className='text-[10px]'>Beds:{bed.type}</span>
-                            </div>
-                          ))}
+                          {room.beds
+                            .filter((bed) => bed.type && !bed.type.toLowerCase().includes('unknown'))
+                            .map((bed, idx) => (
+                              console.log('bed', bed),
+                              <div key={idx} className="flex gap-[5px] items-center">
+                                <PiBed className="text-[12px] text-[#c23535]" />
+                                <span className='text-[10px]'>Beds:{bed.type}</span>
+                              </div>
+                            ))}
 
-                          <div className="flex gap-[5px] items-center">
-                            <PiUsers className="text-[12px] text-[#c23535]" />
-                            <span className='text-[10px]'>Adults: {room.adults} Adults</span>
-                          </div>
                         </div>
                         <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
                           <button
@@ -888,7 +852,7 @@ export default function RoomsGrid() {
                                 useAuthStore.getState().openLoginModal();
                               }
                             }}
-                            className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]"
+                            className="px-6 py-3 bg-[#c23535] text-white font-bold uppercase text-xs rounded-lg hover:bg-[#a82d2d] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
                           >
                             Book Now
                           </button>
@@ -906,28 +870,7 @@ export default function RoomsGrid() {
               </div>
             )}
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="mt-16 flex justify-center gap-2">
-                {/* Page Buttons */}
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => {
-                      setCurrentPage(page);
-                      window.scrollTo({ top: 400, behavior: 'smooth' });
-                    }}
-                    className={`w-10 h-10 flex items-center justify-center font-bold rounded-full transition-all duration-300 shadow-md
-                        ${currentPage === page
-                        ? 'bg-[#c23535] text-white scale-110'
-                        : 'bg-white text-[#c23535] hover:bg-gray-100'
-                      }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* Pagination removed - showing all rooms */}
 
           </main>
         </div>
