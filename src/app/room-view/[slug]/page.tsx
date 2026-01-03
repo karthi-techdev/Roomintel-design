@@ -34,7 +34,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const router = useRouter();
 
     const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
-    const { addToCart } = useCartStore();
+    const { addToCart, fetchCart } = useCartStore();
 
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
@@ -85,8 +85,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         if (slug) {
             fetchRoomBySlug(slug);
         }
+        fetchCart();
         fetchFaqs();
-    }, [slug, fetchRoomBySlug]);
+    }, [slug, fetchRoomBySlug, fetchCart]);
 
     useEffect(() => {
         if (room) {
@@ -126,7 +127,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // --- CONSTANTS ---
-
+    console.log('room:',room);
     const basePrice = room ? room.price : 1590;
 
     // Config values
@@ -183,16 +184,12 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         const cartItem: any = {
             roomId: room._id,
             roomSlug: slug,
-            roomName: room.name || room.title || "Room",
+            roomName: room.title || room.name || "Room",
             roomTitle: room.title || room.name,
             image: room.previewImage || room.images?.[0] || "",
             price: basePrice,
             checkIn: checkInDate,
             checkOut: checkOutDate,
-            guests: {
-                adults: adults,
-                children: children
-            },
             guestDetails: {
                 rooms: rooms,
                 adults: adults,
@@ -215,8 +212,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                 grandTotal: grandTotal,
                 currency: '₹'
             },
-            totalAmount: grandTotal,
-            quantity: 1
+            totalAmount: grandTotal
         };
 
         // If useCartStore uses a different structure, we should align.
@@ -592,7 +588,10 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         <div className="relative inline-block bg-[#283862] px-4 text-xs text-gray-500 font-bold">OR</div>
                                     </div>
 
-                                    <button className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md">
+                                    <button
+                                        onClick={() => router.push('/contact-us')}
+                                        className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md"
+                                    >
                                         Send Enquiry
                                     </button>
                                 </div>

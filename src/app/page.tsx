@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   FaRegCalendarAlt,
   FaChevronDown,
@@ -14,6 +14,7 @@ import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, P
 import { RiDoubleQuotesL /*, RiFacebookBoxFill */ } from 'react-icons/ri';
 // import { IoLogoLinkedin } from 'react-icons/io';
 import { showAlert } from '../utils/alertStore';
+import { useTestimonialStore } from '@/store/useTestimonialStore';
 
 
 interface SlideData {
@@ -23,6 +24,11 @@ interface SlideData {
 }
 
 export default function Home() {
+  const { testimonials, fetchTestimonial } = useTestimonialStore();
+
+  useEffect(() => {
+    fetchTestimonial();
+  }, [fetchTestimonial])
 
   const slides: SlideData[] = [
     {
@@ -982,40 +988,43 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[1, 2].map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
-                >
-                  <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                    <RiDoubleQuotesL />
-                  </div>
-
-                  <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                    My Favourite Place
-                  </h3>
-
-                  <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                    The team at Baroque is incredibly dedicated, knowledgeable, and helpful.
-                  </p>
-
-                  <div className="w-full h-[1px] bg-gray-200 mb-6" />
-
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                      <img
-                        src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d"
-                        className="w-full h-full object-cover grayscale"
-                      />
+            {testimonials.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {testimonials && testimonials.map((data) => {
+                return (
+                  <div
+                    key={data._id}
+                    className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
+                  >
+                    <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+                      <RiDoubleQuotesL />
                     </div>
-                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                      Berber Smith
-                    </span>
+
+                    <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
+                      {data.title}
+                    </h3>
+
+                    <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                      {data.reviews}
+                    </p>
+
+                    <div className="w-full h-[1px] bg-gray-200 mb-6" />
+
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                        <img
+                          src={data.image}
+                          className="w-full h-full object-cover grayscale"
+                        />
+                      </div>
+                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                        {data.reviewerName}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
+              : 'No data found'}
           </div>
 
           {/* ================= Articles ================= */}

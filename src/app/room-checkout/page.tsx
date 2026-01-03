@@ -8,6 +8,8 @@ import { bookingService } from '../../api/bookingService';
 import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
 import { showAlert } from '../../utils/alertStore';
 import { useCartStore } from '@/store/useCartStore';
+import { siteService } from '../../api/siteService';
+import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 
 interface RoomCheckoutProps {
     onBack?: () => void;
@@ -20,9 +22,15 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     // --- STORE ---
     const { cartItems, fetchCart, clearCart } = useCartStore();
 
+    // --- STATE ---
+    const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [isBooked, setIsBooked] = useState(false);
+    const [availableServices, setAvailableServices] = useState<any[]>([]);
+
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
-        const base = cartItems.reduce((acc, item) => {
+        const base = cartItems.reduce((acc: any, item: any) => {
             const roomPrice = item.price || 0;
             const config = item.rateConfig;
             const occupancySurcharge = config ? (
@@ -32,9 +40,18 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             const roomQuantity = item.guestDetails?.rooms || 1;
             const itemBaseTotal = (roomPrice + occupancySurcharge) * roomQuantity;
 
+            // Calculate extras if availableServices is loaded, else fallback to essentials
+            let itemExtrasTotal = item.financials?.extrasTotal || 0;
+            if (availableServices.length > 0 && item.selectedExtras) {
+                itemExtrasTotal = item.selectedExtras.reduce((eAcc: number, extraName: string) => {
+                    const extra = availableServices.find(e => e.title === extraName);
+                    return eAcc + (extra ? extra.price : 0);
+                }, 0);
+            }
+
             return {
                 baseTotal: acc.baseTotal + itemBaseTotal,
-                extrasTotal: acc.extrasTotal + (item.financials?.extrasTotal || 0),
+                extrasTotal: acc.extrasTotal + itemExtrasTotal,
                 discountAmount: acc.discountAmount + (item.financials?.discountAmount || 0),
                 roomsCount: acc.roomsCount + roomQuantity
             };
@@ -55,15 +72,11 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             serviceCharge,
             grandTotal
         };
-    }, [cartItems]);
+    }, [cartItems, availableServices]);
 
     const fmt = (amount: number) => `₹${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const cartItem = cartItems.length > 0 ? cartItems[0] : null;
-
-    // --- STATE ---
-    const [paymentMethod, setPaymentMethod] = useState('cash');
-    const [isProcessing, setIsProcessing] = useState(false);
 
     // Dates
     const [dates, setDates] = useState({
@@ -104,9 +117,20 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
 
 
-    // Load Cart
+    // Load Cart & Services
     useEffect(() => {
         fetchCart();
+        const fetchServices = async () => {
+            try {
+                const res = await siteService.getServices();
+                if (res && res.success) {
+                    setAvailableServices(res.data);
+                }
+            } catch (e) {
+                console.error("Error fetching services", e);
+            }
+        };
+        fetchServices();
     }, []);
     // --- FORM VALIDITY CHECK ---
     const isFormValid = useMemo(() => {
@@ -294,7 +318,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
     const finalizeOrder = async () => {
         await clearCart();
-        router.push('/');
+        setIsBooked(true);
         setIsProcessing(false);
     };
 
@@ -422,6 +446,68 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         }
     };
 
+
+    if (isBooked) {
+        return (
+            <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
+                <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+                    <div className="bg-[#283862] py-16 px-8 text-center text-white relative">
+                        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+                            <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461" alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
+                                <FaCheckCircle className="text-white text-4xl" />
+                            </div>
+                            <h2 className="text-4xl noto-geogia-font font-bold mb-2">Booking Confirmed!</h2>
+                            <p className="text-gray-300">Thank you for choosing RoomIntel. Your stay is secured.</p>
+                        </div>
+                    </div>
+
+                    <div className="p-8 md:p-12 text-center">
+                        <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left inline-block w-full">
+                            <h4 className="text-sm font-bold text-[#283862] uppercase tracking-wider mb-4 border-b pb-2">What's Next?</h4>
+                            <ul className="space-y-3">
+                                <li className="flex items-start gap-3 text-sm text-gray-600">
+                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <span>You will receive a confirmation email with all details shortly.</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm text-gray-600">
+                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <span>Please present your ID card at the reception during check-in.</span>
+                                </li>
+                                <li className="flex items-start gap-3 text-sm text-gray-600">
+                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                    </div>
+                                    <span>Need help? Contact our support via your dashboard or call +91 XXX-XXX-XXXX.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <button
+                                onClick={() => router.push('/')}
+                                className="flex items-center justify-center gap-2 px-8 py-4 bg-[#283862] text-white rounded-xl font-bold hover:bg-[#1c2a4a] transition-all shadow-md active:scale-95"
+                            >
+                                <FaHome /> Go to Home
+                            </button>
+                            <button
+                                onClick={() => router.push('/dashboard')}
+                                className="flex items-center justify-center gap-2 px-8 py-4 border-2 border-[#283862] text-[#283862] rounded-xl font-bold hover:bg-[#283862] hover:text-white transition-all shadow-sm active:scale-95"
+                            >
+                                <FaListAlt /> View My Bookings
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className=" w-full   pb-20 min-h-screen">

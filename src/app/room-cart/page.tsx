@@ -162,7 +162,16 @@ export default function RoomCart() {
                 maxAdults: room.maxAdults || 4,
                 maxChildren: room.maxChildren || 2
             },
-            amenities: room.amenities
+            amenities: room.amenities,
+            financials: {
+                baseTotal: room.price,
+                extrasTotal: 0,
+                taxes: room.price * 0.10,
+                serviceCharge: room.price * 0.05,
+                discountAmount: 0,
+                grandTotal: room.price * 1.15,
+                currency: '₹'
+            }
         };
 
         await addToCart(newItem);
@@ -242,6 +251,44 @@ export default function RoomCart() {
         await removeFromCart(itemId);
     };
 
+    const calculateItemFinancials = (item: CartItem) => {
+        const roomPrice = item.price || 0;
+        const config = item.rateConfig;
+        const roomsCount = item.guestDetails?.rooms || 1;
+
+        // Occupancy Surcharge
+        let occupancySurcharge = 0;
+        if (config) {
+            const adults = item.guestDetails?.adults || 2;
+            const children = item.guestDetails?.children || 0;
+            const extraAdults = Math.max(0, adults - (config.baseAdults ?? 2));
+            const extraChildren = Math.max(0, children - (config.baseChildren ?? 0));
+            occupancySurcharge = (extraAdults * (config.extraAdultPrice ?? 0)) + (extraChildren * (config.extraChildPrice ?? 0));
+        }
+
+        const baseTotal = (roomPrice + occupancySurcharge) * roomsCount;
+
+        // Extras
+        const extrasTotal = (item.selectedExtras || []).reduce((eAcc, extraName) => {
+            const extra = availableServices.find(e => e.title === extraName);
+            return eAcc + (extra ? extra.price : 0);
+        }, 0);
+
+        const taxes = baseTotal * 0.10;
+        const serviceCharge = baseTotal * 0.05;
+        const grandTotal = baseTotal + extrasTotal + taxes + serviceCharge;
+
+        return {
+            baseTotal,
+            extrasTotal,
+            taxes,
+            serviceCharge,
+            discountAmount: 0, // Will be managed globally or updated separately
+            grandTotal,
+            currency: '₹'
+        };
+    };
+
     const handleUpdateGuests = async (index: number, adults: number, children: number) => {
         const item = cartItems[index];
         const updatedItem = {
@@ -252,6 +299,7 @@ export default function RoomCart() {
                 children: children || 0
             }
         };
+        updatedItem.financials = calculateItemFinancials(updatedItem);
         await updateCartItem(updatedItem);
     };
 
@@ -265,6 +313,7 @@ export default function RoomCart() {
                 children: item.guestDetails?.children ?? 0
             }
         };
+        updatedItem.financials = calculateItemFinancials(updatedItem);
         await updateCartItem(updatedItem);
     };
 
@@ -281,6 +330,7 @@ export default function RoomCart() {
             ...item,
             selectedExtras: Array.from(currentExtras)
         };
+        updatedItem.financials = calculateItemFinancials(updatedItem);
         await updateCartItem(updatedItem);
     };
 
