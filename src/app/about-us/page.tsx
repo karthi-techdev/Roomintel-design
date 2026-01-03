@@ -2,12 +2,10 @@
 import React from 'react';
 import { FaCheck } from 'react-icons/fa';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
-interface AboutUsProps {
-    onBack: () => void;
-}
-
-const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
+const AboutUs: React.FC = () => {
+    const router = useRouter();
     const [pageSections, setPageSections] = React.useState<any[]>([]);
     const [error, setError] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(true);
@@ -21,7 +19,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     React.useEffect(() => {
         const fetchSections = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=about');
+                const response = await fetch('http://localhost:8000/api/v1/layout-builder?page=about');
                 if (!response.ok) {
                     setPageSections(DEFAULT_ABOUT_SECTIONS);
                     return;
@@ -206,7 +204,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 >
                     <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif font-bold mb-3 md:mb-4 drop-shadow-lg">About</h1>
                     <div className="flex justify-center items-center gap-2 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
-                        <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={onBack}>Home</span>
+                        <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={() => router.push('/')}>Home</span>
                         <span>/</span>
                         <span className="text-white">About</span>
                     </div>
@@ -221,7 +219,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 <div className="w-full h-screen flex flex-col items-center justify-center p-10 text-center">
                     <h3 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
-                    <p className="text-sm text-gray-400">Please ensure the backend server is running on port 5000.</p>
+                    <p className="text-sm text-gray-400">Please ensure the backend server is running on port 8000.</p>
                     <button
                         onClick={() => window.location.reload()}
                         className="mt-6 bg-[#c23535] text-white px-6 py-2 rounded shadow hover:bg-red-700 transition"

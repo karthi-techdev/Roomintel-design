@@ -215,6 +215,18 @@ const cartItem = {
     }
 };
 ```
+📝 Example Calculation
+Let's say you have a room with these settings:
+
+Room Configuration:
+
+Base Price: $150/night
+Base Adults: 2 (included in base price)
+Base Children: 0 (included in base price)
+Max Adults: 3
+Max Children: 5
+Extra Adult Price: $50
+Extra Child Price: $30
 
 ## ✨ SUMMARY
 
