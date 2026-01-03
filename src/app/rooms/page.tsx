@@ -952,7 +952,7 @@ export default function RoomsGrid() {
                           </div>
                         </div>
                         <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[8px] py-[3px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <a href="" className="text-sm transition-colors duration-300 group-hover:text-[#c23535]">book</a>
+                          <a href="" className="text-sm transition-colors duration-300 group-hover:text-[black]">Book</a>
                           <IoIosArrowRoundForward className="text-[20px] transition-transform duration-300 group-hover:translate-x-1" />
                         </div>
 
