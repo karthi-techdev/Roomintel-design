@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { siteService } from '@/api/siteService';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -43,6 +44,7 @@ export default function RoomsGrid() {
   const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
 
@@ -60,6 +62,19 @@ export default function RoomsGrid() {
   useEffect(() => {
     fetchRooms();
     fetchCategories();
+
+    // Fetch bed configuration
+    const fetchBedConfig = async () => {
+      try {
+        const res = await siteService.getConfigBySlug('bed-types');
+        if (res && (res.status === true || res.success === true) && res.data) {
+          setBedConfig(res.data.configFields || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch bed config", e);
+      }
+    };
+    fetchBedConfig();
   }, []);
 
   // Map Data from Store
@@ -69,25 +84,40 @@ export default function RoomsGrid() {
     }
 
     if (rawRooms) {
-      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => ({
-        id: r._id,
-        slug: r.slug,
-        name: r.name || r.title,
-        image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
-        price: r.price || 0,
-        rating: 5, // Mock data
-        reviews: 0, // Mock data
-        description: r.description,
-        size: parseInt(r.size) || 100,
-        beds: [{ count: 1, type: r.beds || "Standard" }],
-        adults: r.adults,
-        category: r.category?.name || "Uncategorized",
-        location: r.locationName || "Unknown",
-        date: r.createdAt || new Date().toISOString()
-      }));
+      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => {
+        // Convert bed IDs to labels
+        let bedLabel = "Standard";
+        if (r.beds && typeof r.beds === 'string' && bedConfig.length > 0) {
+          const bedIds = r.beds.split(',').map(s => s.trim());
+          const labels = bedIds.map(id => {
+            const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+            return match ? match.value : id;
+          });
+          bedLabel = labels.join(', ');
+        } else if (r.beds) {
+          bedLabel = r.beds;
+        }
+
+        return {
+          id: r._id,
+          slug: r.slug,
+          name: r.name || r.title,
+          image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
+          price: r.price || 0,
+          rating: 5, // Mock data
+          reviews: 0, // Mock data
+          description: r.description,
+          size: parseInt(r.size) || 100,
+          beds: [{ count: 1, type: bedLabel }],
+          adults: r.adults,
+          category: r.category?.name || "Uncategorized",
+          location: r.locationName || "Unknown",
+          date: r.createdAt || new Date().toISOString()
+        };
+      });
       setRooms(mappedRooms);
     }
-  }, [rawRooms, rawCategories, storeLoading]);
+  }, [rawRooms, rawCategories, storeLoading, bedConfig]);
 
   useEffect(() => {
     if (isFilterOpen) {
@@ -108,6 +138,27 @@ export default function RoomsGrid() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Helper function to generate pastel colors based on room ID
+  const getPastelColor = (id: string | number): string => {
+    const pastelColors = [
+      '#FFE5E5', // Pastel Pink
+      '#E5F3FF', // Pastel Blue
+      '#FFF5E5', // Pastel Peach
+      '#E5FFE5', // Pastel Mint
+      '#F5E5FF', // Pastel Lavender
+      '#FFE5F5', // Pastel Rose
+      '#E5FFFF', // Pastel Cyan
+      '#FFFFE5', // Pastel Yellow
+      '#FFE5D9', // Pastel Coral
+      '#E5E5FF', // Pastel Periwinkle
+    ];
+
+    // Convert ID to a number for consistent color selection
+    const idString = String(id);
+    const hash = idString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return pastelColors[hash % pastelColors.length];
+  };
 
   // --- HANDLERS ---
 
@@ -747,12 +798,19 @@ export default function RoomsGrid() {
                     className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
                   >
                     {/* Image Section */}
-                    <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}>
+                    <div
+                      className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
+                      style={{ backgroundColor: getPastelColor(room.id) }}
+                    >
                       <Link href={`/room-view/${room.slug}`}>
                         <img
                           src={room.image}
                           alt={room.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                          onError={(e) => {
+                            // Hide the broken image icon
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </Link>
 

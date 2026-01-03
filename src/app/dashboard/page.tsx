@@ -36,13 +36,10 @@ const Dashboard: React.FC = () => {
 
   // UI States
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // New: Logout Confirmation Modal
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-
-  
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -383,8 +380,8 @@ const Dashboard: React.FC = () => {
                   <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} /> My Bookings
                 </button>
                 <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
-                <button 
-                  onClick={handleLogoutClick} 
+                <button
+                  onClick={handleLogoutClick}
                   className="w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide text-gray-500 hover:bg-red-50 hover:text-red-500 rounded-md transition-all group"
                 >
                   <FaSignOutAlt className="text-gray-400 group-hover:text-red-500" /> Logout

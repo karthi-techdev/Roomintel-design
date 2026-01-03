@@ -70,8 +70,8 @@ export default function Home() {
   useEffect(() => {
     const fetchBookedDates = async () => {
       try {
-        const { default: axios } = await import('axios');
-        const res = await axios.get('http://localhost:8000/api/v1/site/bookings/booked-dates');
+        const { default: axiosInstance } = await import('../api/axiosInstance');
+        const res = await axiosInstance.get('/site/bookings/booked-dates');
         if (res.data.status) {
           const dates = res.data.data.map((d: string) => new Date(d));
           setBookedDates(dates);
