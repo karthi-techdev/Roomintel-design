@@ -99,8 +99,9 @@ export const useCartStore = create<CartState>((set, get) => ({
             const stored = localStorage.getItem('room_cart');
             if (stored) {
                 try {
-                    const item = JSON.parse(stored);
-                    set({ cartItems: [item], loading: false });
+                    const parsed = JSON.parse(stored);
+                    const items = Array.isArray(parsed) ? parsed : [parsed];
+                    set({ cartItems: items, loading: false });
                 } catch (e) {
                     console.error("Failed to parse cart item", e);
                     set({ loading: false });
@@ -114,19 +115,23 @@ export const useCartStore = create<CartState>((set, get) => ({
     addToCart: async (item: CartItem) => {
         set({ loading: true });
         try {
+            const currentItems = get().cartItems;
+            // Check if item already exists (optional, but good for UX)
+            // For rooms, maybe we allow multiple of same room? Or different dates?
+            // Simple approach: just add it.
+            const newItems = [...currentItems, item];
+
             // Update Local Storage
             if (typeof window !== 'undefined') {
-                localStorage.setItem('room_cart', JSON.stringify(item));
+                localStorage.setItem('room_cart', JSON.stringify(newItems));
             }
 
-            set({ cartItems: [item] });
+            set({ cartItems: newItems });
 
             // Backend sync if logged in
             const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
             if (token) {
-                await cartService.syncCart(item);
-                // Reload to confirm (optional, maybe just trust optimistic)
-                // await get().fetchCart(); 
+                await cartService.syncCart(newItems);
             }
         } catch (error) {
             console.error('Add to cart failed', error);
@@ -136,17 +141,25 @@ export const useCartStore = create<CartState>((set, get) => ({
     },
 
     updateCartItem: async (item: CartItem) => {
-        // Update Store
-        set({ cartItems: [item] });
-        // Update Local
+        const currentItems = get().cartItems;
+        // If it has _id, update by _id. If not (local), maybe update the first one or logic needs to change.
+        // For simplicity in this multi-room context, let's update by index or roomId if IDs aren't available yet.
+        const newItems = currentItems.map(i => {
+            if (item._id && i._id === item._id) return item;
+            if (!item._id && i.roomId === item.roomId) return item; // Fallback for local
+            return i;
+        });
+
+        set({ cartItems: newItems });
+
         if (typeof window !== 'undefined') {
-            localStorage.setItem('room_cart', JSON.stringify(item));
+            localStorage.setItem('room_cart', JSON.stringify(newItems));
         }
-        // Update Backend
+
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (token) {
             try {
-                await cartService.syncCart(item);
+                await cartService.syncCart(newItems);
             } catch (err) {
                 console.error("Failed to sync updated cart", err);
             }
@@ -154,14 +167,23 @@ export const useCartStore = create<CartState>((set, get) => ({
     },
 
     removeFromCart: async (itemId: string) => {
-        set({ cartItems: [] });
+        const currentItems = get().cartItems;
+        const newItems = currentItems.filter(i => (i._id !== itemId && i.roomId !== itemId)); // Handle both _id and roomId if needed
+
+        set({ cartItems: newItems });
+
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('room_cart');
+            localStorage.setItem('room_cart', JSON.stringify(newItems));
         }
+
         const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
         if (token) {
             try {
-                await cartService.clearCart();
+                if (newItems.length === 0) {
+                    await cartService.clearCart();
+                } else {
+                    await cartService.syncCart(newItems);
+                }
             } catch (e) { console.error(e) }
         }
     },

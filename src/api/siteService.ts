@@ -4,6 +4,7 @@ export const siteService = {
     // Rooms
     getRooms: async () => {
         const response = await axiosInstance.get('/site/rooms');
+        console.log('Rooms response:', response.data);
         return response.data;
     },
     getRoomBySlug: async (slug: string) => {
