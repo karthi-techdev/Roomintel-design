@@ -21,7 +21,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
     React.useEffect(() => {
         const fetchSections = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/v1/layout-builder?page=about');
+                const response = await fetch('http://localhost:8000/api/v1/layout-builder?page=about');
                 if (!response.ok) {
                     setPageSections(DEFAULT_ABOUT_SECTIONS);
                     return;
@@ -221,7 +221,7 @@ const AboutUs: React.FC<AboutUsProps> = ({ onBack }) => {
                 <div className="w-full h-screen flex flex-col items-center justify-center p-10 text-center">
                     <h3 className="text-2xl font-bold text-red-600 mb-4">Connection Issue</h3>
                     <p className="text-gray-600 mb-4">{error}</p>
-                    <p className="text-sm text-gray-400">Please ensure the backend server is running on port 5000.</p>
+                    <p className="text-sm text-gray-400">Please ensure the backend server is running on port 8000.</p>
                     <button
                         onClick={() => window.location.reload()}
                         className="mt-6 bg-[#c23535] text-white px-6 py-2 rounded shadow hover:bg-red-700 transition"

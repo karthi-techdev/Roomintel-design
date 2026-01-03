@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 
 interface SlideData {
     image: string;
@@ -16,6 +16,8 @@ interface SliderState {
     fetchActiveSlides: () => Promise<void>;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 export const useSliderStore = create<SliderState>((set) => ({
     slides: [],
     loading: false,
@@ -24,10 +26,10 @@ export const useSliderStore = create<SliderState>((set) => ({
     fetchActiveSlides: async () => {
         set({ loading: true, error: null });
         try {
-            const res = await axios.get('http://localhost:5000/api/v1/site/slider?status=active');
+            const res = await axiosInstance.get('/site/slider?status=active');
             if (res.data && res.data.data && Array.isArray(res.data.data.data)) {
                 const fetchedSlides = res.data.data.data.map((s: any) => ({
-                    image: s.image ? (s.image.startsWith('http') ? s.image : `http://localhost:5000/${s.image}`) : '',
+                    image: s.image ? (s.image.startsWith('http') ? s.image : `${API_BASE_URL}/${s.image}`) : '',
                     title: s.title,
                     subtitle: s.description,
                     buttonName: s.buttonName || "View Rooms",

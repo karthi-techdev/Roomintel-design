@@ -107,6 +107,27 @@ export default function RoomsGrid() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
+  // Helper function to generate pastel colors based on room ID
+  const getPastelColor = (id: string | number): string => {
+    const pastelColors = [
+      '#FFE5E5', // Pastel Pink
+      '#E5F3FF', // Pastel Blue
+      '#FFF5E5', // Pastel Peach
+      '#E5FFE5', // Pastel Mint
+      '#F5E5FF', // Pastel Lavender
+      '#FFE5F5', // Pastel Rose
+      '#E5FFFF', // Pastel Cyan
+      '#FFFFE5', // Pastel Yellow
+      '#FFE5D9', // Pastel Coral
+      '#E5E5FF', // Pastel Periwinkle
+    ];
+
+    // Convert ID to a number for consistent color selection
+    const idString = String(id);
+    const hash = idString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return pastelColors[hash % pastelColors.length];
+  };
+
   // --- HANDLERS ---
 
   const handleCategoryChange = (category: string) => {
@@ -744,12 +765,19 @@ export default function RoomsGrid() {
                     className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
                   >
                     {/* Image Section */}
-                    <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}>
+                    <div
+                      className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
+                      style={{ backgroundColor: getPastelColor(room.id) }}
+                    >
                       <Link href={`/room-view/${room.slug}`}>
                         <img
                           src={room.image}
                           alt={room.name}
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                          onError={(e) => {
+                            // Hide the broken image icon
+                            e.currentTarget.style.display = 'none';
+                          }}
                         />
                       </Link>
 

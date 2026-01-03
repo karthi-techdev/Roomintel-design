@@ -38,7 +38,7 @@ const Dashboard: React.FC = () => {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  
+
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -285,7 +285,7 @@ const Dashboard: React.FC = () => {
   const getImageUrl = (filename: string | undefined, fallback: string) => {
     if (!filename) return fallback;
     if (filename.startsWith('http')) return filename;
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:5000';
+    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000';
     return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
   };
 
