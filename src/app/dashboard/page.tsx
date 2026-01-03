@@ -14,10 +14,12 @@ import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
 import { membershipService } from '@/api/membershipService';
 import { showAlert } from '@/utils/alertStore';
+import { useCurrency } from '@/hooks/useCurrency';
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
+  const { formatPrice } = useCurrency();
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
@@ -81,7 +83,7 @@ const Dashboard: React.FC = () => {
                   (bk.guestDetails?.adults || 0) > 0 ? `${bk.guestDetails?.adults} Adult${(bk.guestDetails?.adults || 0) > 1 ? 's' : ''}` : null,
                   (bk.guestDetails?.children || 0) > 0 ? `${bk.guestDetails?.children} Child${(bk.guestDetails?.children || 0) !== 1 ? 'ren' : ''}` : null
                 ].filter(Boolean).join(', ') || '0 Guests',
-              price: `$${bk.totalAmount}`,
+              price: formatPrice(bk.totalAmount),
               status: bk.bookingStatus || "Upcoming",
               features: [],
               originalCheckIn: bk.checkIn

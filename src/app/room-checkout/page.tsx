@@ -10,6 +10,7 @@ import { showAlert } from '../../utils/alertStore';
 import { useCartStore } from '@/store/useCartStore';
 import { siteService } from '../../api/siteService';
 import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
+import { useCurrency } from '@/hooks/useCurrency';
 
 interface RoomCheckoutProps {
     onBack?: () => void;
@@ -74,7 +75,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         };
     }, [cartItems, availableServices]);
 
-    const fmt = (amount: number) => `₹${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const { formatPrice } = useCurrency();
+    const fmt = (amount: number) => formatPrice(amount);
 
     const cartItem = cartItems.length > 0 ? cartItems[0] : null;
 
@@ -277,13 +279,31 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         if (name === 'country') {
-            const code = countryCodeMap[value] || "";
-            setFormData(prev => ({
-                ...prev,
-                [name]: value,
-                state: '',
-                phone: (!prev.phone || prev.phone === code) ? code : prev.phone // Simple logic to help user
-            }));
+            setFormData(prev => {
+                const newCode = countryCodeMap[value] || "";
+                const oldCode = countryCodeMap[prev.country] || "";
+                let newPhone = prev.phone;
+
+                // If phone is empty, just set the new code
+                if (!newPhone || newPhone.trim() === "") {
+                    newPhone = newCode;
+                }
+                // If phone starts with old code, replace it with new code
+                else if (oldCode && newPhone.startsWith(oldCode)) {
+                    newPhone = newCode + newPhone.slice(oldCode.length);
+                }
+                // If old code was empty (e.g. initial selection) and phone exists, prepend new code
+                else if (!oldCode && newCode && !newPhone.startsWith("+")) {
+                    newPhone = newCode + " " + newPhone;
+                }
+
+                return {
+                    ...prev,
+                    [name]: value,
+                    state: '',
+                    phone: newPhone
+                };
+            });
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -421,6 +441,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     theme: {
                         color: "#EDA337",
                     },
+                    modal: {
+                        ondismiss: function () {
+                            console.log('Payment cancelled by user');
+                            setIsProcessing(false);
+                            showAlert.info("Payment cancelled");
+                        }
+                    }
                 };
 
                 if (typeof window !== "undefined" && (window as any).Razorpay) {
@@ -586,6 +613,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         value={formData.name}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('name')}
+                                        placeholder="e.g. John Doe"
                                         className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.name && errors.name
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
@@ -603,6 +631,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('email')}
+                                        placeholder="e.g. john@example.com"
                                         className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.email && errors.email
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
@@ -658,7 +687,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                             ))}
                                         </select>
                                     ) : (
-                                        <input type="text" name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                        <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. NY" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
                                     )}
                                 </div>
                             </div>
@@ -666,7 +695,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
-                                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. New York" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
@@ -676,6 +705,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                         value={formData.postcode}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('postcode')}
+                                        placeholder="e.g. 10001"
                                         className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.postcode && errors.postcode
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'

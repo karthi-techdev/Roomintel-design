@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from "../store/useAuthStore";
 import logoImg from "../../public/Navbar-Logo.png";
 import { useCartStore } from "../store/useCartStore";
+import { useSettingsStore } from "../store/useSettingsStore";
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const router = useRouter();
@@ -42,6 +43,8 @@ const Navbar: React.FC = () => {
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const cartItems = useCartStore((state) => state.cartItems);
+    const fetchCart = useCartStore((state) => state.fetchCart);
+    const fetchSettings = useSettingsStore((state) => state.fetchSettings);
     const cartCount = cartItems.length;
     const [formData, setFormData] = useState({
         email: '',
@@ -81,6 +84,16 @@ const Navbar: React.FC = () => {
     useEffect(() => {
         loadFromStorage();
     }, [loadFromStorage]);
+
+    // Fetch cart on mount
+    useEffect(() => {
+        fetchCart();
+    }, [fetchCart]);
+
+    // Fetch settings on mount
+    useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
 
     // Handle scroll effect
     useEffect(() => {
