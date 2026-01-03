@@ -55,16 +55,16 @@ export const useRoomStore = create<RoomState>((set) => ({
     },
 
     fetchRoomBySlug: async (slug: string) => {
-        set({ loading: true, error: null });
+        set({ loading: true, error: null, selectedRoom: null });
         try {
             const res = await siteService.getRoomBySlug(slug);
             if (res.status === undefined || res.status || res.success) {
-                set({ selectedRoom: res.data, loading: false });
+                set({ selectedRoom: res.data, loading: false, error: null });
             } else {
-                set({ error: res.message || 'Failed to fetch room details', loading: false });
+                set({ error: res.message || 'Failed to fetch room details', loading: false, selectedRoom: null });
             }
         } catch (error: any) {
-            set({ error: error.message || 'Failed to fetch room details', loading: false });
+            set({ error: error.message || 'Failed to fetch room details', loading: false, selectedRoom: null });
         }
     },
 

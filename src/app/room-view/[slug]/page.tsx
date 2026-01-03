@@ -33,7 +33,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const { slug } = use(params);
     const router = useRouter();
 
-    const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
+
+
+    const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
 
     // --- REFS FOR SCROLLING ---
@@ -127,7 +129,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // --- CONSTANTS ---
-    console.log('room:',room);
+    console.log('room:', room);
     const basePrice = room ? room.price : 1590;
 
     // Config values
@@ -224,12 +226,34 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     };
 
 
-    if (!room) {
+    // Show loading state
+    if (roomLoading) {
         return (
             <div className="w-full h-screen flex items-center justify-center bg-gray-100">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-[#283862] border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-[#283862] font-bold animate-pulse">Loading Room Details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show 404 error if room not found
+    if (!room || roomError) {
+        return (
+            <div className="w-full h-screen flex items-center justify-center bg-gray-100">
+                <div className="flex flex-col items-center gap-6 text-center px-4">
+                    <div className="text-9xl font-bold text-[#283862]">404</div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-[#283862]">Room Not Found</h1>
+                    <p className="text-gray-600 max-w-md">
+                        {roomError || "The room you're looking for doesn't exist or has been removed."}
+                    </p>
+                    <button
+                        onClick={() => router.push('/rooms')}
+                        className="bg-[#283862] hover:bg-[#1a2542] text-white font-bold py-3 px-8 rounded-md transition-colors"
+                    >
+                        Browse All Rooms
+                    </button>
                 </div>
             </div>
         );
