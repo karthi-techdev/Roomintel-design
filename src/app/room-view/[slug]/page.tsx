@@ -34,7 +34,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const router = useRouter();
 
     const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
-    const { addToCart } = useCartStore();
+    const { addToCart, fetchCart } = useCartStore();
 
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
@@ -85,8 +85,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         if (slug) {
             fetchRoomBySlug(slug);
         }
+        fetchCart();
         fetchFaqs();
-    }, [slug, fetchRoomBySlug]);
+    }, [slug, fetchRoomBySlug, fetchCart]);
 
     useEffect(() => {
         if (room) {
@@ -126,7 +127,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // --- CONSTANTS ---
-
+    console.log('room:',room);
     const basePrice = room ? room.price : 1590;
 
     // Config values
@@ -183,16 +184,12 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         const cartItem: any = {
             roomId: room._id,
             roomSlug: slug,
-            roomName: room.name || room.title || "Room",
+            roomName: room.title || room.name || "Room",
             roomTitle: room.title || room.name,
-            roomImage: room.previewImage || room.images?.[0] || "",
+            image: room.previewImage || room.images?.[0] || "",
             price: basePrice,
             checkIn: checkInDate,
             checkOut: checkOutDate,
-            guests: {
-                adults: adults,
-                children: children
-            },
             guestDetails: {
                 rooms: rooms,
                 adults: adults,
@@ -213,10 +210,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                 serviceCharge: serviceCharge,
                 discountAmount: 0,
                 grandTotal: grandTotal,
-                currency: '$'
+                currency: '₹'
             },
-            totalAmount: grandTotal,
-            quantity: 1
+            totalAmount: grandTotal
         };
 
         // If useCartStore uses a different structure, we should align.
@@ -472,7 +468,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <div className="bg-[#283862] rounded-sm overflow-hidden text-white shadow-xl border border-gray-700/50">
                                 <div className="bg-[#EDA337] p-5 flex justify-between items-center font-bold">
                                     <span className="text-sm uppercase tracking-wider">Starting At:</span>
-                                    <span className="text-2xl noto-geogia-font">${basePrice}</span>
+                                    <span className="text-2xl noto-geogia-font">₹{basePrice}</span>
                                 </div>
                                 <div className="p-6 md:p-8 space-y-5">
                                     <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
@@ -575,7 +571,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                                     <div className="border-t border-gray-700 my-4 pt-4 flex justify-between font-bold text-lg text-[#EDA337]">
                                         <span>Total:</span>
-                                        <span>${totalPrice}</span>
+                                        <span>₹{totalPrice}</span>
                                     </div>
 
                                     <button
@@ -592,7 +588,10 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         <div className="relative inline-block bg-[#283862] px-4 text-xs text-gray-500 font-bold">OR</div>
                                     </div>
 
-                                    <button className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md">
+                                    <button
+                                        onClick={() => router.push('/contact-us')}
+                                        className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md"
+                                    >
                                         Send Enquiry
                                     </button>
                                 </div>

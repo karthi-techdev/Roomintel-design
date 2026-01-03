@@ -6,14 +6,18 @@ import {
   FaChevronDown,
   FaChevronLeft,
   FaChevronRight,
-  FaTwitter,
+  // FaTwitter,
 } from 'react-icons/fa';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
-import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import { IoLogoLinkedin } from 'react-icons/io';
+import { RiDoubleQuotesL /*, RiFacebookBoxFill */ } from 'react-icons/ri';
+// import { IoLogoLinkedin } from 'react-icons/io';
 import { showAlert } from '../utils/alertStore';
+import { useSliderStore } from '../store/useSliderStore';
+import { useRouter } from 'next/navigation';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useTestimonialStore } from '@/store/useTestimonialStore';
 
 
@@ -21,6 +25,8 @@ interface SlideData {
   image: string;
   title: string;
   subtitle: string;
+  buttonName?: string;
+  buttonUrl?: string;
 }
 
 export default function Home() {
@@ -30,23 +36,58 @@ export default function Home() {
     fetchTestimonial();
   }, [fetchTestimonial])
 
-  const slides: SlideData[] = [
-    {
-      image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2525&auto=format&fit=crop",
-      title: "Mountains Legacy Stay",
-      subtitle: "Food indulgence in mind, come next door and sate your desires with our ever changing internationally and seasonally."
-    },
-    {
-      image: "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=2525&auto=format&fit=crop",
-      title: "Oceanfront Paradise",
-      subtitle: "Wake up to the sound of waves and experience ultimate relaxation in our premium oceanfront suites."
-    },
-    {
-      image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2525&auto=format&fit=crop",
-      title: "Tropical Garden Villa",
-      subtitle: "Immerse yourself in nature with our secluded garden villas, offering private pools and lush greenery."
-    }
-  ];
+  const { slides, fetchActiveSlides, loading } = useSliderStore();
+  const router = useRouter();
+
+  const handleCheckAvailability = () => {
+    const params = new URLSearchParams();
+    if (formData.arrival) params.append('arrival', formData.arrival);
+    if (formData.departure) params.append('departure', formData.departure);
+    if (formData.adults) params.append('adults', formData.adults);
+    if (formData.children) params.append('children', formData.children);
+
+    router.push(`/rooms?${params.toString()}`);
+  };
+
+  useEffect(() => {
+    fetchActiveSlides();
+  }, [fetchActiveSlides]);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [formData, setFormData] = useState({
+    arrival: '',
+    departure: '',
+    adults: '',
+    children: ''
+  });
+
+  const arrivalRef = useRef<HTMLInputElement>(null);
+  const departureRef = useRef<HTMLInputElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const [bookedDates, setBookedDates] = useState<Date[]>([]);
+
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      try {
+        const { default: axiosInstance } = await import('../api/axiosInstance');
+        const res = await axiosInstance.get('/site/bookings/booked-dates');
+        if (res.data.status) {
+          const dates = res.data.data.map((d: string) => new Date(d));
+          setBookedDates(dates);
+        }
+      } catch (err) {
+        console.error("Failed to fetch booked dates", err);
+      }
+    };
+    fetchBookedDates();
+  }, []);
+
+
+
+  if (loading || slides.length === 0) {
+    return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
+  }
 
   const rooms = [
     {
@@ -87,16 +128,7 @@ export default function Home() {
     }
   ];
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [formData, setFormData] = useState({
-    arrival: '',
-    departure: '',
-    adults: '',
-    children: ''
-  });
 
-  const arrivalRef = useRef<HTMLInputElement>(null);
-  const departureRef = useRef<HTMLInputElement>(null);
 
   // Carousel Navigation
 
@@ -148,7 +180,7 @@ export default function Home() {
     }
   ];
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+
 
   const nextSlideCarousel = () => {
     setCurrentIndex((prev) => (prev + 1) % rooms.length);
@@ -200,6 +232,7 @@ export default function Home() {
     }
   ];
 
+  /*
   const staffMembers = [
     {
       id: 1,
@@ -226,7 +259,9 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1581050777502-c8a115d64b53?q=80&w=2670&auto=format&fit=crop"
     }
   ];
+  */
 
+  /*
   const articles = [
     {
       id: 1,
@@ -250,6 +285,7 @@ export default function Home() {
       month: "Dec"
     }
   ];
+  */
 
   return (
     <main className="w-full">
@@ -290,9 +326,9 @@ export default function Home() {
                 {currentData.subtitle}
               </p>
 
-              <button className="bg-white hover:bg-gray-100 text-[#222] font-bold h-[55px] px-10 rounded-[4px] text-[13px] tracking-[0.2em] uppercase transition-all shadow-lg hover:shadow-xl">
-                View Rooms
-              </button>
+              <a href={currentData.buttonUrl || "/rooms"} className="inline-block bg-white hover:bg-gray-100 text-[#222] font-bold h-[55px] px-10 rounded-[4px] text-[13px] tracking-[0.2em] uppercase transition-all shadow-lg hover:shadow-xl flex items-center justify-center w-fit pt-[18px]">
+                {currentData.buttonName || "View Rooms"}
+              </a>
             </motion.div>
           </AnimatePresence>
         </div>
@@ -301,20 +337,19 @@ export default function Home() {
         <div className="absolute bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
           {/* Booking Bar - Left/Center */}
           <div className="bg-white rounded-[6px] shadow-2xl p-6 lg:p-8 w-full max-w-[1100px] pointer-events-auto">
-            <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => e.preventDefault()}>
+            <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 items-end" onSubmit={(e) => { e.preventDefault(); handleCheckAvailability(); }}>
               {/* Arrival Date */}
               <div className="flex flex-col gap-3">
                 <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Arrival Date</label>
-                <div className="relative group cursor-pointer" onClick={() => arrivalRef.current?.focus()}>
-                  <input
-                    ref={arrivalRef}
-                    type={formData.arrival ? "date" : "text"}
-                    value={formData.arrival}
-                    onChange={(e) => handleInputChange('arrival', e.target.value)}
-                    onFocus={handleDateFocus}
-                    onBlur={handleDateBlur}
-                    placeholder="Arrival Date"
+                <div className="relative group cursor-pointer z-50">
+                  <DatePicker
+                    selected={formData.arrival ? new Date(formData.arrival) : null}
+                    onChange={(date) => handleInputChange('arrival', date ? date.toISOString().split('T')[0] : '')}
+                    excludeDates={bookedDates}
+                    placeholderText="Arrival Date"
                     className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                    dateFormat="yyyy-MM-dd"
+                    minDate={new Date()}
                   />
                   <FaRegCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-lg pointer-events-none" />
                 </div>
@@ -322,16 +357,15 @@ export default function Home() {
               {/* Departure Date */}
               <div className="flex flex-col gap-3">
                 <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Departure Date</label>
-                <div className="relative cursor-pointer" onClick={() => departureRef.current?.focus()}>
-                  <input
-                    ref={departureRef}
-                    type={formData.departure ? "date" : "text"}
-                    value={formData.departure}
-                    onChange={(e) => handleInputChange('departure', e.target.value)}
-                    onFocus={handleDateFocus}
-                    onBlur={handleDateBlur}
-                    placeholder="Departure Date"
+                <div className="relative cursor-pointer z-50">
+                  <DatePicker
+                    selected={formData.departure ? new Date(formData.departure) : null}
+                    onChange={(date) => handleInputChange('departure', date ? date.toISOString().split('T')[0] : '')}
+                    excludeDates={bookedDates}
+                    placeholderText="Departure Date"
                     className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                    dateFormat="yyyy-MM-dd"
+                    minDate={formData.arrival ? new Date(formData.arrival) : new Date()}
                   />
                   <FaRegCalendarAlt className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 text-lg pointer-events-none" />
                 </div>
@@ -380,7 +414,6 @@ export default function Home() {
                 <button
                   type="submit"
                   className="w-full h-[50px] bg-[#c23535] text-white font-bold text-[14px] rounded-[4px] shadow-sm transition-colors tracking-wide hover:bg-[#a12b2b]"
-                  onClick={() => showAlert.info(`Checking availability for:\nCheck-in: ${formData.arrival}\nCheck-out: ${formData.departure}\nAdults: ${formData.adults}\nChildren: ${formData.children}`)}
                 >
                   Check Availability
                 </button>
@@ -587,7 +620,7 @@ export default function Home() {
                   {/* Left: Price & Title */}
                   <div className="w-full md:w-1/3 flex flex-col">
                     <div className="flex items-end gap-2 mb-2">
-                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ${activeRoom.price} Night</span>
+                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ₹{activeRoom.price} Night</span>
                     </div>
                     <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
                       {activeRoom.name}
@@ -660,9 +693,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 
       <section className="py-30 px-6 lg:px-16 w-full pt-10">
         <div className="max-w-[1400px] mx-auto">
-          {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between mb-16 gap-9 md:items-center lg:items-end">
             <div className="max-w-xl">
               <div className="flex items-center gap-4 mb-4">
@@ -679,7 +712,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {staffMembers.map((staff, index) => (
               <motion.div
@@ -701,7 +733,6 @@ export default function Home() {
                     <FaTwitter className='text-white text-xl hidden group-hover:flex' />
                   </div>
                 </div>
-                {/* Image Container */}
                 <div className='relative'>
                   <div className="aspect-square w-full h-full overflow-hidden  bg-gray-800">
                     <img
@@ -711,7 +742,6 @@ export default function Home() {
                     />
                   </div>
 
-                  {/* Text */}
                   <div className="flex flex-col justify-center text-center bg-[#0f1825] w-[90%] h-[6rem] absolute -bottom-15 md:-bottom-15 lg:-bottom-15">
                     <h4 className="text-white font-bold text-xl mb-2   tracking-wide">{staff.name}</h4>
                     <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
@@ -722,6 +752,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      */}
       <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
         <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
           {/* Restaurant */}
@@ -1026,6 +1057,7 @@ export default function Home() {
           </div>
 
           {/* ================= Articles ================= */}
+          {/* 
           <div className="max-w-[1200px] mx-auto py-16 sm:py-20">
             <div className="text-center mb-16">
               <div className="flex items-center justify-center gap-4 mb-4">
@@ -1056,7 +1088,6 @@ export default function Home() {
         lg:w-full
       "
                 >
-                  {/* Image */}
                   <div className="relative h-[220px] sm:h-[250px] md:h-[280px] lg:h-[300px] overflow-hidden rounded-lg">
                     <img
                       src={article.image}
@@ -1073,7 +1104,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Floating Content */}
                   <div
                     className="
           absolute
@@ -1109,6 +1139,7 @@ export default function Home() {
             </div>
 
           </div>
+          */}
 
         </section>
       </div>
