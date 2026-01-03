@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
+import { siteService } from '@/api/siteService';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -43,6 +44,7 @@ export default function RoomsGrid() {
   const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
 
@@ -60,6 +62,19 @@ export default function RoomsGrid() {
   useEffect(() => {
     fetchRooms();
     fetchCategories();
+
+    // Fetch bed configuration
+    const fetchBedConfig = async () => {
+      try {
+        const res = await siteService.getConfigBySlug('bed-types');
+        if (res && (res.status === true || res.success === true) && res.data) {
+          setBedConfig(res.data.configFields || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch bed config", e);
+      }
+    };
+    fetchBedConfig();
   }, []);
 
   // Map Data from Store
@@ -69,25 +84,40 @@ export default function RoomsGrid() {
     }
 
     if (rawRooms) {
-      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => ({
-        id: r._id,
-        slug: r.slug,
-        name: r.name || r.title,
-        image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
-        price: r.price || 0,
-        rating: 5, // Mock data
-        reviews: 0, // Mock data
-        description: r.description,
-        size: parseInt(r.size) || 100,
-        beds: [{ count: 1, type: r.beds || "Standard" }],
-        adults: r.adults,
-        category: r.category?.name || "Uncategorized",
-        location: r.locationName || "Unknown",
-        date: r.createdAt || new Date().toISOString()
-      }));
+      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => {
+        // Convert bed IDs to labels
+        let bedLabel = "Standard";
+        if (r.beds && typeof r.beds === 'string' && bedConfig.length > 0) {
+          const bedIds = r.beds.split(',').map(s => s.trim());
+          const labels = bedIds.map(id => {
+            const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+            return match ? match.value : id;
+          });
+          bedLabel = labels.join(', ');
+        } else if (r.beds) {
+          bedLabel = r.beds;
+        }
+
+        return {
+          id: r._id,
+          slug: r.slug,
+          name: r.name || r.title,
+          image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
+          price: r.price || 0,
+          rating: 5, // Mock data
+          reviews: 0, // Mock data
+          description: r.description,
+          size: parseInt(r.size) || 100,
+          beds: [{ count: 1, type: bedLabel }],
+          adults: r.adults,
+          category: r.category?.name || "Uncategorized",
+          location: r.locationName || "Unknown",
+          date: r.createdAt || new Date().toISOString()
+        };
+      });
       setRooms(mappedRooms);
     }
-  }, [rawRooms, rawCategories, storeLoading]);
+  }, [rawRooms, rawCategories, storeLoading, bedConfig]);
 
   useEffect(() => {
     if (isFilterOpen) {
