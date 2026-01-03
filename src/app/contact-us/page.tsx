@@ -10,6 +10,7 @@ const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '700'], 
 interface FormErrors {
   name?: string;
   email?: string;
+  phone?: string;
   message?: string;
 }
 
@@ -47,6 +48,9 @@ const ContactUs: React.FC = () => {
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required';
+    }
+     if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone is required';
     }
 
     if (!formData.email.trim()) {

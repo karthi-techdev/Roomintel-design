@@ -16,6 +16,7 @@ interface AuthState {
   logout: () => void;
   loadFromStorage: () => void;
   updateUser: (user: User) => void;
+  openLoginModal: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -80,5 +81,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   updateUser: (user) => {
     localStorage.setItem("user", JSON.stringify(user));
     set({ user });
+  },
+  openLoginModal: () => {   
+    window.dispatchEvent(new Event('open-login-modal'));
   },
 }));

@@ -24,10 +24,10 @@ export const useSliderStore = create<SliderState>((set) => ({
     fetchActiveSlides: async () => {
         set({ loading: true, error: null });
         try {
-            const res = await axios.get('http://localhost:5000/api/v1/site/slider?status=active');
+            const res = await axios.get('http://localhost:8000/api/v1/site/slider?status=active');
             if (res.data && res.data.data && Array.isArray(res.data.data.data)) {
                 const fetchedSlides = res.data.data.data.map((s: any) => ({
-                    image: s.image ? (s.image.startsWith('http') ? s.image : `http://localhost:5000/${s.image}`) : '',
+                    image: s.image ? (s.image.startsWith('http') ? s.image : `http://localhost:8000/${s.image}`) : '',
                     title: s.title,
                     subtitle: s.description,
                     buttonName: s.buttonName || "View Rooms",

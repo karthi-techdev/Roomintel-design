@@ -27,7 +27,7 @@ import { useToast } from './ui/Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from "../store/useAuthStore";
 import logoImg from "../../public/Navbar-Logo.png";
-
+import { useCartStore } from "../store/useCartStore";
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const router = useRouter();
@@ -41,7 +41,8 @@ const Navbar: React.FC = () => {
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-
+    const cartItems = useCartStore((state) => state.cartItems);
+    const cartCount = cartItems.length;
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -99,7 +100,18 @@ const Navbar: React.FC = () => {
         setIsMobileMenuOpen(false);
         resetForm();
     };
+    // Inside Navbar component
+    useEffect(() => {
+        const handleOpenLogin = () => {
+            openLogin(); // This opens your existing login modal
+        };
 
+        window.addEventListener('open-login-modal', handleOpenLogin);
+
+        return () => {
+            window.removeEventListener('open-login-modal', handleOpenLogin);
+        };
+    }, [openLogin]);
     const openRegister = () => {
         setIsRegisterOpen(true);
         setIsLoginOpen(false);
@@ -245,8 +257,8 @@ const Navbar: React.FC = () => {
                             key={link.name}
                             href={link.href}
                             className={`relative font-bold text-[13px] max-[1250px]:text-[.65rem] tracking-widest uppercase transition-colors hover:text-[#c23535] ${currentView === link.view
-                                    ? 'text-[#c23535]'
-                                    : 'text-[#444]'
+                                ? 'text-[#c23535]'
+                                : 'text-[#444]'
                                 }`}
                         >
                             {link.name}
@@ -283,13 +295,16 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Cart */}
                     <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
                         <FaShoppingBag size={20} />
-                        <span className="absolute top-1 right-0 bg-[#c23535] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">1</span>
+                        {cartCount > 0 && (
+                            <span className="absolute top-1 right-0 bg-[#c23535] text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-white animate-pulse">
+                                {cartCount}
+                            </span>
+                        )}
                     </Link>
 
                     {/* Enquiry Button */}
@@ -420,7 +435,6 @@ const Navbar: React.FC = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            onClick={closeAuth}
                             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                         />
 
@@ -428,6 +442,7 @@ const Navbar: React.FC = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
                             className="relative w-full max-w-[450px] bg-white rounded-sm shadow-2xl overflow-hidden"
                         >
                             <button
@@ -459,7 +474,7 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
                                         </div>
@@ -475,7 +490,7 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-10 bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.password}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             <button
                                                 type="button"
@@ -525,7 +540,7 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.name ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.name}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             {errors.name && <p className="text-red-500 text-xs mt-1 pl-2">{errors.name}</p>}
                                         </div>
@@ -541,7 +556,7 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
                                         </div>
@@ -557,7 +572,7 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-10 bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.password}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             <button
                                                 type="button"
@@ -580,13 +595,13 @@ const Navbar: React.FC = () => {
                                                 className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.confirmPassword ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`}
                                                 value={formData.confirmPassword}
                                                 onChange={handleInputChange}
-                                                
+
                                             />
                                             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1 pl-2">{errors.confirmPassword}</p>}
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]"  />
+                                            <input type="checkbox" className="accent-[#c23535]" />
                                             <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
