@@ -105,7 +105,7 @@ const ContactUs: React.FC = () => {
   return (
     <div className="w-full pb-0 min-h-screen">
       {/* Header */}
-      <div className="bg-[#283862] pt-40 pb-20 md:pt-56 md:pb-36 text-white text-center px-4 relative overflow-hidden">
+      <div className=" min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-40">
           <img
             src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2670&auto=format&fit=crop"

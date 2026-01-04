@@ -20,6 +20,7 @@ import {
 import { PiArrowsOutSimple, PiBed, PiUsers } from 'react-icons/pi';
 import { siteService } from '../../api/siteService';
 import { useCartStore, CartItem } from '@/store/useCartStore';
+import { useCurrency } from '@/hooks/useCurrency';
 
 export default function RoomCart() {
     const router = useRouter();
@@ -31,6 +32,7 @@ export default function RoomCart() {
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [allRooms, setAllRooms] = useState<any[]>([]);
     const [roomsLoading, setRoomsLoading] = useState(false);
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // Alert/Promo
     const [promoCode, setPromoCode] = useState('');
@@ -42,12 +44,25 @@ export default function RoomCart() {
     const [showMobileCheckout, setShowMobileCheckout] = useState(false);
 
     // Helper
-    const fmt = (amount: number) => `₹${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const { formatPrice, currencyIcon } = useCurrency();
+    const fmt = (amount: number) => formatPrice(amount);
 
     // --- EFFECTS ---
 
     // Initial Fetch
     useEffect(() => {
+        // Fetch bed configuration
+        const fetchBedConfig = async () => {
+            try {
+                const res = await siteService.getConfigBySlug('bed-types');
+                if (res && (res.status === true || res.success === true) && res.data) {
+                    setBedConfig(res.data.configFields || []);
+                }
+            } catch (e) {
+                console.error("Failed to fetch bed config", e);
+            }
+        };
+        fetchBedConfig();
         fetchCart();
 
         // Fetch Services
@@ -170,7 +185,7 @@ export default function RoomCart() {
                 serviceCharge: room.price * 0.05,
                 discountAmount: 0,
                 grandTotal: room.price * 1.15,
-                currency: '₹'
+                currency: currencyIcon
             }
         };
 
@@ -285,7 +300,7 @@ export default function RoomCart() {
             serviceCharge,
             discountAmount: 0, // Will be managed globally or updated separately
             grandTotal,
-            currency: '₹'
+            currency: currencyIcon
         };
     };
 
@@ -427,25 +442,78 @@ export default function RoomCart() {
                                                             <div className="space-y-1">
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Rooms</label>
                                                                 <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) - 1)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
-                                                                    <span className="font-bold text-[#283862]">{item.guestDetails?.rooms || 1}</span>
-                                                                    <button onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) + 1)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                    <button
+                                                                        onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) - 1)}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(item.guestDetails?.rooms || 1) <= 1}
+                                                                    >
+                                                                        -
+                                                                    </button>
+                                                                    <span className="font-bold text-[#283862]">
+                                                                        {item.guestDetails?.rooms || 1}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
+                                                                            const maxRooms = roomData?.maxRooms || 10;
+                                                                            handleUpdateRooms(index, Math.min(maxRooms, (item.guestDetails?.rooms || 1) + 1));
+                                                                        }}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(() => {
+                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
+                                                                            const maxRooms = roomData?.maxRooms || 10;
+                                                                            return (item.guestDetails?.rooms || 1) >= maxRooms;
+                                                                        })()}
+                                                                    >
+                                                                        +
+                                                                    </button>
                                                                 </div>
+                                                                {(() => {
+                                                                    const roomData = allRooms.find((r: any) => r._id === item.roomId);
+                                                                    const maxRooms = roomData?.maxRooms || 10;
+                                                                    return (item.guestDetails?.rooms || 1) >= maxRooms && (
+                                                                        <div className="text-[9px] text-yellow-500">Max limit reached</div>
+                                                                    );
+                                                                })()}
                                                             </div>
                                                             <div className="space-y-1">
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Adults</label>
                                                                 <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleUpdateGuests(index, Math.max(1, (item.guestDetails?.adults || 2) - 1), item.guestDetails?.children || 0)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
+                                                                    <button
+                                                                        onClick={() => handleUpdateGuests(index, Math.max(1, (item.guestDetails?.adults || 2) - 1), item.guestDetails?.children || 0)}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(item.guestDetails?.adults || 2) <= 1}
+                                                                    >
+                                                                        -
+                                                                    </button>
                                                                     <span className="font-bold text-[#283862]">{item.guestDetails?.adults || 2}</span>
-                                                                    <button onClick={() => handleUpdateGuests(index, Math.min(config?.maxAdults || 10, (item.guestDetails?.adults || 2) + 1), item.guestDetails?.children || 0)} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                    <button
+                                                                        onClick={() => handleUpdateGuests(index, Math.min(config?.maxAdults || 10, (item.guestDetails?.adults || 2) + 1), item.guestDetails?.children || 0)}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(item.guestDetails?.adults || 2) >= (config?.maxAdults || 10)}
+                                                                    >
+                                                                        +
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-1">
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Children</label>
                                                                 <div className="flex items-center gap-3">
-                                                                    <button onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.max(0, (item.guestDetails?.children || 0) - 1))} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">-</button>
+                                                                    <button
+                                                                        onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.max(0, (item.guestDetails?.children || 0) - 1))}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(item.guestDetails?.children || 0) <= 0}
+                                                                    >
+                                                                        -
+                                                                    </button>
                                                                     <span className="font-bold text-[#283862]">{item.guestDetails?.children || 0}</span>
-                                                                    <button onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.min(config?.maxChildren || 10, (item.guestDetails?.children || 0) + 1))} className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535]">+</button>
+                                                                    <button
+                                                                        onClick={() => handleUpdateGuests(index, item.guestDetails?.adults || 2, Math.min(config?.maxChildren || 10, (item.guestDetails?.children || 0) + 1))}
+                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                        disabled={(item.guestDetails?.children || 0) >= (config?.maxChildren || 10)}
+                                                                    >
+                                                                        +
+                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -462,7 +530,7 @@ export default function RoomCart() {
                                                                             onClick={() => toggleExtra(index, service.title)}
                                                                             className={`px-3 py-1 text-[10px] font-bold rounded-full border transition-all ${isSelected ? 'bg-[#c23535] border-[#c23535] text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-400'}`}
                                                                         >
-                                                                            {service.title} (₹{service.price})
+                                                                            {service.title} ({formatPrice(service.price)})
                                                                         </button>
                                                                     );
                                                                 })}
@@ -499,11 +567,31 @@ export default function RoomCart() {
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <h4 className="font-bold text-[#283862] text-sm truncate">{room.title}</h4>
-                                                    <div className="text-[#c23535] font-bold text-sm">₹{room.price}</div>
+                                                    <div className="text-[#c23535] font-bold text-sm">{formatPrice(room.price)}</div>
                                                 </div>
                                                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-400">
                                                     <span className="flex items-center gap-1"><PiArrowsOutSimple /> {room.size}</span>
-                                                    <span className="flex items-center gap-1"><PiBed /> {room.beds || 'Double'}</span>
+                                                    {(() => {
+                                                        if (!room.beds || typeof room.beds !== 'string') return null;
+
+                                                        // Convert bed IDs to labels
+                                                        let bedDisplay = room.beds;
+                                                        if (bedConfig.length > 0) {
+                                                            const bedIds = room.beds.split(',').map((s: string) => s.trim());
+                                                            const labels = bedIds.map((id: string) => {
+                                                                const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+                                                                return match ? match.value : id;
+                                                            });
+                                                            bedDisplay = labels.join(', ');
+                                                        }
+
+                                                        // Hide if contains "Unknown"
+                                                        if (bedDisplay.toLowerCase().includes('unknown')) return null;
+
+                                                        return (
+                                                            <span className="flex items-center gap-1"><PiBed /> {bedDisplay}</span>
+                                                        );
+                                                    })()}
                                                     <span className="flex items-center gap-1"><PiUsers /> {room.baseAdults || 2} + {room.baseChildren || 0}</span>
                                                 </div>
                                             </div>
@@ -649,23 +737,6 @@ export default function RoomCart() {
                     </div>
                 )}
 
-                {/* Bottom Actions - Desktop only */}
-                {cartItems.length > 0 && (
-                    <div className="hidden lg:flex mt-8 flex-col sm:flex-row justify-between items-center gap-4">
-                        <button onClick={() => router.back()} className="px-6 py-3 cursor-pointer border border-gray-300 text-gray-700 rounded-xl hover:border-[#c23535] hover:text-[#c23535] transition-colors font-medium">
-                            Continue Shopping
-                        </button>
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={handleCheckout}
-                                className="px-6 py-3 cursor-pointer bg-[#c23535] text-white rounded-xl hover:bg-[#a82d2d] transition-colors font-medium flex items-center gap-2"
-                            >
-                                <FaCreditCard />
-                                Secure Checkout
-                            </button>
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Mobile Floating Checkout Button */}

@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useTestimonialStore } from '@/store/useTestimonialStore';
+import { useCurrency } from '@/hooks/useCurrency';
 
 
 interface SlideData {
@@ -35,6 +36,7 @@ interface SlideData {
 
 export default function Home() {
   const { testimonials, fetchTestimonial } = useTestimonialStore();
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     fetchTestimonial();
@@ -575,7 +577,7 @@ export default function Home() {
                   {/* Left: Price & Title */}
                   <div className="w-full md:w-1/3 flex flex-col">
                     <div className="flex items-end gap-2 mb-2">
-                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from ₹{activeRoom.price} Night</span>
+                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from {formatPrice(activeRoom.price)} Night</span>
                     </div>
                     <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
                       {activeRoom.name}
