@@ -472,7 +472,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         </div>
 
                         {/* Accommodation Rules */}
-                        <div className="bg-[#283862] text-white p-8 rounded-sm shadow-md">
+                        <div className="bg-[#1e2c4e] text-white p-8 rounded-sm shadow-md">
                             <h3 className="text-2xl noto-geogia-font font-bold mb-4 border-b border-gray-700 pb-4">Accommodation Rules</h3>
                             {room && room.accommodationRules ? (
                                 <div
@@ -493,56 +493,49 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         <div className="sticky top-24 space-y-8">
 
                             {/* Booking Widget */}
-                            <div className="bg-[#283862] rounded-sm overflow-hidden text-white shadow-xl border border-gray-700/50">
-                                <div className="bg-[#EDA337] p-5 flex justify-between items-center font-bold">
-                                    <span className="text-sm uppercase tracking-wider">Starting At:</span>
-                                    <span className="text-2xl noto-geogia-font">{formatPrice(basePrice)}</span>
-                                </div>
+                            <h3 className="text-2xl rounded-t-[8px] text-[white] bg-[#283862] mb-0 p-5 noto-geogia-font font-bold pb-4 ">Book This Room</h3>
+                            <div className="bg-[white] rounded-b-[8px]  overflow-hidden text-white shadow-xl border border border-[#0000001c]">
+
                                 <div className="p-6 md:p-8 space-y-5">
-                                    <h3 className="text-2xl noto-geogia-font font-bold mb-4 pb-4 border-b border-gray-700">Book This Room</h3>
 
                                     <div className="space-y-4 pt-2">
                                         {/* Date Selection */}
                                         <div className="grid grid-cols-2 gap-3">
                                             <div className="space-y-2">
-                                                <label className="text-xs font-medium text-gray-300 uppercase tracking-wider">Check-In</label>
+                                                <label className="text-xs font-medium text-[black] uppercase tracking-wider">Check-In</label>
                                                 <input
                                                     type="date"
                                                     value={checkInDate}
                                                     onChange={(e) => setCheckInDate(e.target.value)}
                                                     min={new Date().toISOString().split('T')[0]}
-                                                    className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-[#EDA337]"
+                                                    className="w-full border border-gray-300 rounded-sm p-3 text-sm text-black focus:outline-none focus:border-[#EDA337]"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label className="text-xs font-medium text-gray-300 uppercase tracking-wider">Check-Out</label>
+                                                <label className="text-xs font-medium text-[black] uppercase tracking-wider">Check-Out</label>
                                                 <input
                                                     type="date"
                                                     value={checkOutDate}
                                                     onChange={(e) => setCheckOutDate(e.target.value)}
                                                     min={checkInDate}
-                                                    className="w-full bg-[#3f4e66] border border-gray-600 rounded-sm p-3 text-sm text-white focus:outline-none focus:border-[#EDA337]"
+                                                    className="w-full border border-gray-300 rounded-sm p-3 text-sm text-black focus:outline-none focus:border-[#EDA337]"
                                                 />
                                             </div>
                                         </div>
 
-                                        <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
-                                            <span className="text-sm font-medium pl-1">Number of Rooms</span>
+                                        <div className="flex justify-between items-center  p-3 rounded-sm border border-gray-300">
+                                            <span className="text-sm text-[black] font-medium pl-1">Number</span>
                                             <div className="flex items-center gap-4 text-gray-300">
                                                 <button
                                                     onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                                    className="hover:text-[#EDA337] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    disabled={rooms <= 1}
+                                                    className=" text-[black] hover:text-[#EDA337] transition-colors"
                                                 >
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold text-center text-white">
-                                                    {rooms}
-                                                </span>
+                                                <span className="text-sm font-bold w-4 text-center text-black">{rooms}</span>
                                                 <button
                                                     onClick={() => setRooms(Math.min(room?.maxRooms || 10, rooms + 1))}
-                                                    className="hover:text-[#EDA337] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                                    disabled={rooms >= (room?.maxRooms || 10)}
+                                                    className="text-[black] hover:text-[#EDA337] transition-colors"
                                                 >
                                                     <FaPlus size={10} />
                                                 </button>
@@ -553,47 +546,47 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 Maximum booking limit reached
                                             </div>
                                         )}
-                                        <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
+                                        <div className="text-[10px] text-[black] text-right uppercase tracking-wider font-bold">
                                             x {formatPrice(basePrice)} = {formatPrice(basePrice * rooms)}
                                         </div>
 
-                                        <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600">
-                                            <span className="text-sm font-medium pl-1">Adults (per room)</span>
+                                        <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300">
+                                            <span className="text-sm text-[black] font-medium pl-1">Adults (per room)</span>
                                             <div className="flex items-center gap-4 text-gray-300">
                                                 <button
                                                     onClick={() => setAdults(Math.max(1, adults - 1))}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
                                                 >
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-white">{adults}</span>
+                                                <span className="text-sm font-bold w-4 text-center text-[black]">{adults}</span>
                                                 <button
                                                     onClick={() => setAdults(Math.min(maxAdults, adults + 1))}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
                                                 >
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
                                         </div>
                                         {extraAdultPrice > 0 && (
-                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
+                                            <div className="text-[10px] text-[black] text-gray-400 text-right uppercase tracking-wider font-bold">
                                                 +{formatPrice(extraAdultPrice)} per extra adult
                                             </div>
                                         )}
 
-                                        <div className="flex justify-between items-center bg-[#3f4e66] p-3 rounded-sm border border-gray-600 mt-2">
-                                            <span className="text-sm font-medium pl-1">Children (per room)</span>
+                                        <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300 mt-2">
+                                            <span className="text-sm text-[black] font-medium pl-1">Children (per room)</span>
                                             <div className="flex items-center gap-4 text-gray-300">
                                                 <button
                                                     onClick={() => setChildren(Math.max(0, children - 1))}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
                                                 >
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-white">{children}</span>
+                                                <span className="text-sm font-bold w-4 text-center text-[black]">{children}</span>
                                                 <button
                                                     onClick={() => setChildren(Math.min(maxChildren, children + 1))}
-                                                    className="hover:text-[#EDA337] transition-colors"
+                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
                                                 >
                                                     <FaPlus size={10} />
                                                 </button>
@@ -606,28 +599,28 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         )}
                                     </div>
 
-                                    <div className="border-t border-gray-700 my-4 pt-4 flex justify-between font-bold text-lg text-[#EDA337]">
+                                    <div className="border-t border-[#00000029] my-4 pt-4 flex justify-between font-bold text-lg text-[#1e2c4e]">
                                         <span>Total:</span>
-                                        <span>{formatPrice(totalPrice)}</span>
+                                        <span className='text-[#c23535]'>{formatPrice(totalPrice)}</span>
                                     </div>
 
                                     <button
                                         onClick={handleBookRoom}
-                                        className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md cursor-pointer"
+                                        className="w-full bg-[#1e2c4e] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md cursor-pointer"
                                     >
                                         Book This Room
                                     </button>
 
-                                    <div className="relative text-center my-4">
+                                    <div className="relative text-center ">
                                         <div className="absolute inset-0 flex items-center">
-                                            <div className="w-full border-t border-gray-700"></div>
+                                            <div className="w-full border-t border-[#00000029]"></div>
                                         </div>
-                                        <div className="relative inline-block bg-[#283862] px-4 text-xs text-gray-500 font-bold">OR</div>
+                                        <div className="relative inline-block bg-[white] px-4 text-xs text-[black] font-bold">OR</div>
                                     </div>
 
                                     <button
                                         onClick={() => router.push('/contact-us')}
-                                        className="w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md"
+                                        className="w-full bg-[#1e2c4e] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md"
                                     >
                                         Send Enquiry
                                     </button>
@@ -635,13 +628,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             </div>
 
                             {/* Location Widget */}
-                            <div className="bg-[#34425a] p-8 text-white rounded-sm shadow-xl border border-gray-700/50">
+                            <div className="bg-[#1e2c4e] p-8 text-white rounded-sm shadow-xl border border-gray-700/50">
                                 <h3 className="text-xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Location</h3>
                                 <div className="h-[200px] bg-gray-700 mb-6 overflow-hidden relative group cursor-pointer rounded-sm border border-gray-600">
                                     <img src={room && room.locationImage ? room.locationImage : "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2670&auto=format&fit=crop"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" alt="Map" />
                                 </div>
                                 <div className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">{room ? room.locationName : "Location Name"}</div>
-                                <h4 className="text-lg font-bold mb-4 text-[#EDA337]">Checkin & Explore</h4>
+                                <h4 className="text-lg font-bold mb-4 text-[#c23535]">Checkin & Explore</h4>
                                 <p className="text-sm text-gray-400 leading-relaxed mb-6">
                                     {room ? room.locationDescription : "At Anantara Angkor Resort..."}
                                 </p>

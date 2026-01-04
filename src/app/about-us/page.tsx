@@ -190,7 +190,7 @@ const AboutUs: React.FC = () => {
         <section className="w-full   pb-20 min-h-screen">
 
             {/* --- HEADER --- */}
-            <div className="bg-[#283862] h-[450px] sm:h-[500px] md:h-[600px] lg:h-[800px] text-white px-4 relative overflow-hidden">
+            <div className="bg-[#283862] h-[250px] sm:h-[300px] md:h-[400px] lg:h-[600px] text-white px-4 relative overflow-hidden">
                 <div className="absolute inset-0">
                     <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2670&auto=format&fit=crop" className="w-full h-full object-cover" alt="Header" />
                 </div>
@@ -202,7 +202,7 @@ const AboutUs: React.FC = () => {
                     transition={{ duration: 0.6 }}
                     className="relative z-10 flex flex-col items-center justify-center h-full text-center"
                 >
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif font-bold mb-3 md:mb-4 drop-shadow-lg">About</h1>
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[60px] font-serif font-bold mb-3 md:mb-4 drop-shadow-lg">About</h1>
                     <div className="flex justify-center items-center gap-2 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
                         <span className="hover:text-[#c23535] cursor-pointer transition-colors" onClick={() => router.push('/')}>Home</span>
                         <span>/</span>

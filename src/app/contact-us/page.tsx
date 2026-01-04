@@ -105,7 +105,7 @@ const ContactUs: React.FC = () => {
   return (
     <div className="w-full pb-0 min-h-screen">
       {/* Header */}
-      <div className="bg-[#283862] pt-40 pb-20 md:pt-56 md:pb-36 text-white text-center px-4 relative overflow-hidden">
+      <div className=" min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-40">
           <img
             src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2670&auto=format&fit=crop"
@@ -114,7 +114,7 @@ const ContactUs: React.FC = () => {
           />
         </div>
         <div className="relative z-10">
-          <h1 className="text-3xl md:text-5xl lg:text-7xl noto-geogia-font font-bold mb-4 drop-shadow-lg">
+          <h1 className="text-3xl md:text-5xl lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
             Contact Us
           </h1>
           <div className="flex justify-center items-center gap-3 text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
