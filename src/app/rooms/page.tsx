@@ -14,6 +14,7 @@ import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { siteService } from '@/api/siteService';
+import { useReviewStore } from '@/store/useReviewStore';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -47,7 +48,8 @@ export default function RoomsGrid() {
   const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
-
+  const { fetchReview ,reviews} = useReviewStore();
+  console.log('=========reviews',reviews)
   // Filters
   const [priceRange, setPriceRange] = useState(9900);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -62,6 +64,8 @@ export default function RoomsGrid() {
   useEffect(() => {
     fetchRooms();
     fetchCategories();
+    fetchReview({status : 'approved'})
+
 
     // Fetch bed configuration
     const fetchBedConfig = async () => {

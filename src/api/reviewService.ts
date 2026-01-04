@@ -16,4 +16,8 @@ export const reviewService = {
         const response  = await axiosInstance.get(`/review/verify?token=${token}`);
         return response.data;
     },
+    getReview : async (filter : {}) => {
+        const response  = await axiosInstance.get(`/review`,{params : filter});
+        return response.data;
+    },
 }

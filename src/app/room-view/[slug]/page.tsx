@@ -28,20 +28,27 @@ import RoomFaq from '../../../components/room-view/RoomFaq';
 import RoomAmenities from '../../../components/room-view/RoomAmenities';
 import { useRoomStore } from '@/store/useRoomStore';
 import { useCartStore } from '@/store/useCartStore';
+import { Reviews, useReviewStore } from '@/store/useReviewStore';
+import RoomReview from '@/components/room-view/RoomReview';
 
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
+    console.log('==========slug',slug)
     const router = useRouter();
 
     const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
-
+    const { fetchReview ,reviews} = useReviewStore();
+    const filteredReview = reviews &&reviews.filter((item) => {
+        return item?.bookingId?.room?.slug === slug;
+    });
+    console.log('=-=-=-=-=-==--filteredReview',filteredReview)
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
     const infoRef = useRef<HTMLDivElement>(null);
     const amenitiesRef = useRef<HTMLDivElement>(null);
     const faqRef = useRef<HTMLDivElement>(null);
-    const commentsRef = useRef<HTMLDivElement>(null);
+    const reviewRef = useRef<HTMLDivElement>(null);
 
     // --- STATE ---
 
@@ -88,6 +95,16 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         fetchCart();
         fetchFaqs();
     }, [slug, fetchRoomBySlug, fetchCart]);
+
+    // Review Effect
+    useEffect(() => {
+        if (slug) {
+            fetchReview({ 
+                status: 'approved', 
+                slug: 'deluxe-sea-view' 
+            });
+        }
+    }, [slug])
 
     useEffect(() => {
         if (room) {
@@ -281,7 +298,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         { label: "Useful Info", ref: infoRef },
                         { label: "Amenities", ref: amenitiesRef },
                         { label: "FAQ", ref: faqRef },
-                        { label: "Comments", ref: commentsRef }
+                        { label: "Review & Rating", ref: reviewRef }
                     ].map((tab, idx) => (
                         <button
                             key={idx}
@@ -419,6 +436,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         <div ref={faqRef} className="scroll-mt-32">
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Frequently Asked Questions</h3>
                             <RoomFaq faqs={faqData} />
+                        </div>
+
+                        <div ref={reviewRef}>
+                        <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Ratings & Reviews</h3>
+                        {filteredReview && filteredReview.map((item : Reviews) => {
+                           return <RoomReview item={item}/>
+                        })}
                         </div>
 
                         {/* Nearby */}
