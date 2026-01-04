@@ -26,7 +26,7 @@ export default function RoomCart() {
 
     // --- STORE ---
     const { cartItems, loading, fetchCart, updateCartItem, removeFromCart, addToCart } = useCartStore();
-
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
     // --- LOCAL STATE ---
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [allRooms, setAllRooms] = useState<any[]>([]);
@@ -76,9 +76,19 @@ export default function RoomCart() {
                 setRoomsLoading(false);
             }
         };
-
+        const fetchBedConfig = async () => {
+            try {
+                const res = await siteService.getConfigBySlug('bed-types');
+                if (res && (res.status === true || res.success === true) && res.data) {
+                    setBedConfig(res.data.configFields || []);
+                }
+            } catch (e) {
+                console.error("Failed to fetch bed config", e);
+            }
+        };
         fetchServices();
         fetchRooms();
+        fetchBedConfig();
     }, []);
 
     // Scroll Handler
@@ -503,7 +513,7 @@ export default function RoomCart() {
                                                 </div>
                                                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-gray-400">
                                                     <span className="flex items-center gap-1"><PiArrowsOutSimple /> {room.size}</span>
-                                                    <span className="flex items-center gap-1"><PiBed /> {room.beds || 'Double'}</span>
+                                                    <span className="flex items-center gap-1"><PiBed /> {bedConfig?.[0]?.value || 'Double'}</span>
                                                     <span className="flex items-center gap-1"><PiUsers /> {room.baseAdults || 2} + {room.baseChildren || 0}</span>
                                                 </div>
                                             </div>
