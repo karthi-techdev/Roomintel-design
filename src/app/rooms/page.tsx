@@ -325,43 +325,49 @@ export default function RoomsGrid() {
   return (
     <div className="w-full pb-20  ">
       {/* --- Page Header --- */}
-      <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
+      <div className="relative h-[600px] w-full bg-brand-navy flex items-center justify-center text-white text-center px-4 overflow-hidden mb-4">
 
-        {/* Background Image Wrapper */}
-        <div className="absolute inset-0 opacity-40 flex items-end">
-          <div className="relative w-full h-[220px]">
-            <img
-              src={Roombg.src}
-              alt="Header Background"
-              className="w-full h-full object-cover [mask-image:linear-gradient(to_top,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_top,transparent,black_35%)]"
-            />
-          </div>
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-40">
+          <img
+            src={Roombg.src}
+            alt="Header Background"
+            className="w-full h-full object-cover"
+          />
         </div>
-      </div>
 
-      <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
-        <div className="z-10">
-          <h1 className="noto-geogia-font font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
+        {/* CENTER CONTENT */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <h1 className="noto-geogia-font font-bold text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-[60px] mb-4 sm:mb-5 md:mb-6 lg:mb-[30px] drop-shadow-lg">
             Our Rooms
           </h1>
-          <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
-            <Link href="/"><span className="hover:text-brand-red cursor-pointer transition-colors">Home</span></Link>
+
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
+            <Link href="/">
+              <span className="hover:text-brand-red cursor-pointer transition-colors">
+                Home
+              </span>
+            </Link>
             <span>/</span>
             <span>Rooms</span>
           </div>
         </div>
+
       </div>
+
+
+
 
 
       {/* --- Main Content --- */}
       <div className="max-w-[1450px] p-6 mx-auto lg:pt-20 bg-white rounded-[10px]">
-        <div className="flex flex-col lg:flex-row gap-12 pb-20">
+        <div className="flex flex-col justify-between px-10 lg:flex-row  pb-20">
 
           {/* --- Sidebar --- */}
 
 
 
-          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12 sticky top-24 h-fit">
+          <aside className="hidden lg:block w-full lg:w-[20%] border border-[#0000002e] border border-[#00000014] px-[30px] py-[20px] space-y-12 sticky top-24 h-fit">
 
             {/* Price Filter */}
             <div className="bg-white">
@@ -384,7 +390,7 @@ export default function RoomsGrid() {
                 {formatPrice(0)} - {formatPrice(priceRange)}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
             {/* Category Filter */}
             <div className="bg-white">
@@ -412,7 +418,7 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
 
 
@@ -455,7 +461,7 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
             <div className="bg-white">
               <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
@@ -490,6 +496,46 @@ export default function RoomsGrid() {
                           }`}
                       >
                         {bed}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
+
+            <div className="bg-white">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
+                Adults
+              </h3>
+
+              <div className="space-y-4">
+                {adultsOptions.map((adult, idx) => {
+                  const isChecked = selectedAdults.includes(adult);
+
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                    >
+                      <div
+                        className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => handleAdultsChange(adult)}
+                        />
+                        {isChecked && <FaCheck className="text-white text-xs" />}
+                      </div>
+
+                      <span
+                        className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                          }`}
+                      >
+                        {adult}
                       </span>
                     </label>
                   );
@@ -554,7 +600,7 @@ export default function RoomsGrid() {
                     {formatPrice(0)} - {formatPrice(priceRange)}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] mb-[10px] flex h-[2px]'></span>
 
                 {/* Category Filter */}
                 <div className="bg-white">
@@ -582,7 +628,7 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] flex h-[1px]'></span>
 
 
 
@@ -625,7 +671,7 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
                   <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
@@ -659,6 +705,46 @@ export default function RoomsGrid() {
                               }`}
                           >
                             {bed}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
+
+                <div className="bg-white">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
+                    Adults
+                  </h3>
+
+                  <div className="space-y-4">
+                    {adultsOptions.map((adult, idx) => {
+                      const isChecked = selectedAdults.includes(adult);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleAdultsChange(adult)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {adult}
                           </span>
                         </label>
                       );

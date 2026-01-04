@@ -91,30 +91,30 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="bg-[#FAFAFA] w-full   pb-20 min-h-screen">
+    <div className=" w-full   pb-20 min-h-screen">
 
       {/* --- HEADER --- */}
-      <div className="bg-[#283862] min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
-  {/* Background Image */}
-  <div className="absolute inset-0 opacity-40">
-    <img src="/image/gallery/background-image.webp" className="w-full h-full object-cover" alt="Header" />
-  </div>
+      <div className="min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-40">
+          <img src="/image/gallery/background-image.webp" className="w-full h-full object-cover" alt="Header" />
+        </div>
 
-  {/* CENTER CONTENT */}
-  <div className="relative z-10 flex flex-col items-center justify-center">
-    <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
-      Gallery Grid
-    </h1>
+        {/* CENTER CONTENT */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
+            Gallery Grid
+          </h1>
 
-    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
-      <span className="hover:text-brand-red cursor-pointer transition-colors" onClick={onBack}>
-        Home
-      </span>
-      <span>/</span>
-      <span className="text-white">Gallery</span>
-    </div>
-  </div>
-</div>
+          <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
+            <span className="hover:text-brand-red cursor-pointer transition-colors" onClick={onBack}>
+              Home
+            </span>
+            <span>/</span>
+            <span className="text-white">Gallery</span>
+          </div>
+        </div>
+      </div>
 
 
 
@@ -127,8 +127,8 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
               key={cat}
               onClick={() => setFilter(cat)}
               className={`relative px-6 py-3 text-[11px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-sm ${filter === cat
-                  ? 'bg-[#283862] text-white shadow-lg transform -translate-y-1'
-                  : 'bg-white text-gray-500 hover:text-[#283862] hover:bg-gray-50 border border-gray-100'
+                ? 'bg-[#283862] text-white shadow-lg transform -translate-y-1'
+                : 'bg-white text-gray-500 hover:text-[#283862] hover:bg-gray-50 border border-gray-100'
                 }`}
             >
               {cat}

@@ -11,8 +11,12 @@ import {
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
-import { RiDoubleQuotesL /*, RiFacebookBoxFill */ } from 'react-icons/ri';
-// import { IoLogoLinkedin } from 'react-icons/io';
+import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
+import { IoLogoLinkedin } from 'react-icons/io';
+import { FaStar } from "react-icons/fa6";
+import { FaStarHalfStroke } from "react-icons/fa6";
+
+
 import { showAlert } from '../utils/alertStore';
 import { useSliderStore } from '../store/useSliderStore';
 import { useRouter } from 'next/navigation';
@@ -84,6 +88,7 @@ export default function Home() {
     };
     fetchBookedDates();
   }, []);
+
 
 
 
@@ -234,76 +239,19 @@ export default function Home() {
     }
   ];
 
-  /*
-  const staffMembers = [
-    {
-      id: 1,
-      name: "Dona Mona",
-      role: "HOUSE KEEPING",
-      image: "https://images.unsplash.com/photo-1542909168-82c3e7fdca5c?q=80&w=2680&auto=format&fit=crop"
-    },
-    {
-      id: 2,
-      name: "Desulva Merry",
-      role: "HOUSE KEEPING",
-      image: "https://images.unsplash.com/photo-1595273670150-bd0c3c392e46?q=80&w=2687&auto=format&fit=crop"
-    },
-    {
-      id: 3,
-      name: "John Michale",
-      role: "HOUSE KEEPING",
-      image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=2574&auto=format&fit=crop"
-    },
-    {
-      id: 4,
-      name: "Marry Desalwa",
-      role: "HOUSE KEEPING",
-      image: "https://images.unsplash.com/photo-1581050777502-c8a115d64b53?q=80&w=2670&auto=format&fit=crop"
-    }
-  ];
-  */
 
-  /*
-  const articles = [
-    {
-      id: 1,
-      title: "New heaven for our customers in ...",
-      image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2070&auto=format&fit=crop",
-      date: "11",
-      month: "Dec"
-    },
-    {
-      id: 2,
-      title: "10 top soups from our restaurant ...",
-      image: "https://images.unsplash.com/photo-1563690403756-3c46e0882772?q=80&w=2070&auto=format&fit=crop",
-      date: "11",
-      month: "Dec"
-    },
-    {
-      id: 3,
-      title: "Paradise for our customers in ...",
-      image: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=2000&auto=format&fit=crop",
-      date: "11",
-      month: "Dec"
-    }
-  ];
-  */
 
   return (
     <main className="w-full">
+
       <section className="relative w-full h-[850px] overflow-hidden">
         {/* Background Image with Transition */}
         <div className="absolute inset-0 z-0">
           <AnimatePresence mode='popLayout'>
-            <motion.img
-              key={currentSlide}
-              src={currentData.image}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.7 }}
-              alt="Luxury Resort Background"
-              className="w-full h-[140%] object-cover absolute inset-0"
+            <img
+              src="/image/666.jpg"
+              alt="Gallery Background"
+              className="w-full h-[600px] object-cover absolute inset-0"
             />
           </AnimatePresence>
           {/* Subtle overlay to make text pop against the blue water/sky */}
@@ -311,8 +259,9 @@ export default function Home() {
         </div>
 
         {/* Hero Content - Centered Left */}
-        <div className="relative z-10 h-full flex flex-col justify-center px-6 lg:px-16  w-full max-w-[1800px] mt-0 lg:mt-18 mx-auto pb-115 md:pb-40">
-          <AnimatePresence mode='wait'>
+        <div className="relative h-[380px] sm:h-[420px] md:h-[480px] lg:h-[600px] w-full bg-brand-navy flex items-center justify-center text-white text-center px-4 overflow-hidden mb-4">
+
+          <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
               initial={{ opacity: 0, y: 30 }}
@@ -321,19 +270,25 @@ export default function Home() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="md:max-w-4xl"
             >
-              <h1 className="text-lg md:text-5xl lg:text-[5.4rem] noto-geogia-font text-white mb-2 md:mb-6 leading-[1.1] drop-shadow-lg">
+              <h1 className="noto-geogia-font font-bold text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-[60px] mb-4 sm:mb-5 md:mb-6 lg:mb-[30px] drop-shadow-lg">
                 {currentData.title}
               </h1>
-              <p className="text-white text-sm md:text-[1.47rem] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
+
+              <p className="text-white text-[10px] md:text-[18px] lg:text-[20px] font-normal md:mb-12 max-w-2xl leading-relaxed opacity-95">
                 {currentData.subtitle}
               </p>
 
-              <a href={currentData.buttonUrl || "/rooms"} className="inline-block bg-white hover:bg-gray-100 text-[#222] font-bold h-[55px] px-10 rounded-[4px] text-[13px] tracking-[0.2em] uppercase transition-all shadow-lg hover:shadow-xl flex items-center justify-center w-fit pt-[18px]">
+              <a
+                href={currentData.buttonUrl || "/rooms"}
+                className="inline-block bg-white hover:bg-gray-100 text-[#222] font-bold h-[55px] px-10 rounded-[4px] text-[13px] tracking-[0.2em] uppercase transition-all shadow-lg hover:shadow-xl flex items-center justify-center w-fit pt-[18px]"
+              >
                 {currentData.buttonName || "View Rooms"}
               </a>
             </motion.div>
           </AnimatePresence>
+
         </div>
+
 
         {/* Floating Elements Container (Bottom) */}
         <div className="absolute bottom-12 mt-10 md:mt-0 left-0 right-0 z-20 px-6 lg:px-16 max-w-[1800px] mx-auto w-full flex justify-between items-end pointer-events-none">
@@ -695,66 +650,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 
-      <section className="py-30 px-6 lg:px-16 w-full pt-10">
-        <div className="max-w-[1400px] mx-auto">
-          <div className="flex flex-col lg:flex-row justify-between mb-16 gap-9 md:items-center lg:items-end">
-            <div className="max-w-xl">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-[#c23535]"></div>
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Dedicated Team</span>
-              </div>
-              <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-white font-bold leading-tight">Our Resort Staff</h2>
-            </div>
 
-            <div className="max-w-lg mb-2">
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {staffMembers.map((staff, index) => (
-              <motion.div
-                key={staff.id}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="group"
-              >
-                <div className='flex flex-row gap-8 relative top-[173px] justify-center z-[1]'>
-                  <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
-                    <RiFacebookBoxFill className="text-white text-xl hidden group-hover:flex" />
-                  </div>
-                  <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
-                    <IoLogoLinkedin className='text-white text-xl hidden group-hover:flex' />
-                  </div>
-                  <div className="w-12 h-12 rounded-full hover:bg-[#c23535] flex items-center justify-center cursor-pointer hover:bg-[#a82e2e] transition-colors duration-300">
-                    <FaTwitter className='text-white text-xl hidden group-hover:flex' />
-                  </div>
-                </div>
-                <div className='relative'>
-                  <div className="aspect-square w-full h-full overflow-hidden  bg-gray-800">
-                    <img
-                      src={staff.image}
-                      alt={staff.name}
-                      className="w-full h-full object-cover  group-hover:blur-xs group-hover:grayscale grayscale-0 transition-all duration-500 ease-in-out transform group-hover:scale-105"
-                    />
-                  </div>
-
-                  <div className="flex flex-col justify-center text-center bg-[#0f1825] w-[90%] h-[6rem] absolute -bottom-15 md:-bottom-15 lg:-bottom-15">
-                    <h4 className="text-white font-bold text-xl mb-2   tracking-wide">{staff.name}</h4>
-                    <span className="text-[#c23535] text-[11px] font-bold tracking-[0.2em] uppercase">{staff.role}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      */}
       <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
         <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
           {/* Restaurant */}
@@ -893,112 +789,8 @@ export default function Home() {
           </div>
         </div>
       </section>
-      {/* <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%]  before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px] after:absolute after:-bottom-[13px] after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:z-1 w-full relative'>
-      <section className="bg-white py-10  rounded-[10px] overflow-hidden md:px-5 lg:mx-0">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
-            <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[2px] bg-[#c23535]"></div>
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">Testimonials</span>
-            </div>
-            <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">What Our Customer Says</h2>
-            <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-                Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
-                <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                    <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
-                </div>
-                <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-4">My Favrouite Place</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                    The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
-                </p>
-                <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                      <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=1000&auto=format&fit=crop" alt="Berber Smith" className="w-full h-full object-cover grayscale" />
-                    </div>
-                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Berber Smith</span>
-                </div>
-            </div>
-
-            <div className="bg-[#F9F9F9] p-10 md:p-14 border border-gray-100/50">
-                <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                    <RiDoubleQuotesL className="stroke-[0.5px] stroke-[#c23535]" />
-                </div>
-                <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-4">Satisfied with Service</h3>
-                <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                    The team at Baroque is incredibly dedicated, knowledgeable, and helpful. The finished product was beautiful every penny incredibly dedicated, bleincredibly dedicated, knowledgeable.
-                </p>
-                <div className="w-full h-[1px] bg-gray-200 mb-6"></div>
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                      <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=1000&auto=format&fit=crop" alt="Albert March" className="w-full h-full object-cover grayscale" />
-                    </div>
-                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Albert March</span>
-                </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1200px] mx-auto py-10 relative">
-          <div className="text-center mb-16">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">Tips & Receipes</span>
-                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]"></div>
-              </div>
-              <h2 className="text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold">News & Articles</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {articles.map((article) => (
-                  <div key={article.id} className="group  rounded-md   transition-all duration-300 border border-gray-50 ">
-                      <div className="relative h-[300px] overflow-hidden">
-                        <img 
-                            src={article.image} 
-                            alt={article.title} 
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        />
-                        <div className="absolute bottom-0 right-8 bg-[#c23535] z-10 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center  border-4 border-white z-10">
-                            <span className="font-bold text-xl leading-none">{article.date}</span>
-                            <span className="text-[10px] font-bold uppercase">{article.month}</span>
-                        </div>
-                      </div>   
-                      <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[88%] ml-11">
-                        <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
-                        <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
-                            {article.title}
-                        </h3>
-                        <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">
-                            Read More
-                        </button>
-                      </div>
-                  </div>                  
-              ))}
-          </div>
-        </div>
-      </section>
-      </div>  */}
-
-      <div
-        className="
-    relative w-full
-    before:absolute before:-top-[12px] before:left-5
-    before:w-[91%] sm:before:w-[93%] md:before:w-[95%] lg:before:w-[97%]
-    before:h-[13px] before:content-[''] before:bg-white/45
-    before:rounded-t-[8px]
-
-    after:absolute after:-bottom-[13px] after:left-5
-    after:w-[91%] sm:after:w-[93%] md:after:w-[95%] lg:after:w-[97%]
-    after:h-[13px] after:content-[''] after:bg-white/45
-    after:rounded-b-[8px] after:z-10
-  "
-      >
-        <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
+      <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
 
           {/* ================= Testimonials ================= */}
           <div className="max-w-[1200px] mx-auto">
@@ -1058,122 +850,8 @@ export default function Home() {
               : 'No data found'}
           </div>
 
-          {/* ================= Articles ================= */}
-          {/* 
-          <div className="max-w-[1200px] mx-auto py-16 sm:py-20">
-            <div className="text-center mb-16">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]" />
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                  Tips & Recipes
-                </span>
-                <div className="w-8 md:w-12 h-[2px] bg-[#c23535]" />
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold">
-                News & Articles
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:place-items-center lg:grid-cols-3 gap-8">
-              {articles.map((article) => (
-                <div
-                  key={article.id}
-                  className="
-        relative
-        border border-gray-50 rounded-md
-        pb-[180px]
-        sm:pb-[190px]
-        md:pb-[200px]
-        lg:pb-[180px]
-        md:w-[55%]
-        lg:w-full
-      "
-                >
-                  <div className="relative h-[220px] sm:h-[250px] md:h-[280px] lg:h-[300px] overflow-hidden rounded-lg">
-                    <img
-                      src={article.image}
-                      className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
-                    />
-
-                    <div className="absolute bottom-0 right-5 sm:right-6 md:right-8 bg-[#c23535] text-white w-14 h-14 md:w-16 md:h-16 rounded-full flex flex-col items-center justify-center border-4 border-white z-10">
-                      <span className="font-bold text-lg md:text-xl">
-                        {article.date}
-                      </span>
-                      <span className="text-[9px] md:text-[10px] font-bold uppercase">
-                        {article.month}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div
-                    className="
-          absolute
-          right-0
-          -bottom-[5px]
-          md:-bottom-[15px]
-          lg:-bottom-[27px]
-          w-[95%]
-          sm:w-[92%]
-          md:w-[90%]
-          lg:w-[90%]
-          p-6 sm:p-8 md:p-10 pt-10
-          text-center
-          bg-[var(--background)]
-          rounded-lg
-          shadow-lg
-        "
-                  >
-                    <p className="text-gray-400 text-xs mb-3 font-medium">
-                      admin / 0 Comments
-                    </p>
-
-                    <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-6 md:mb-8">
-                      {article.title}
-                    </h3>
-
-                    <button className="bg-[#c23535] text-white font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full">
-                      Read More
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-          </div>
-          */}
 
         </section>
-      </div>
-
-
-
     </main>
   );
 }
-//<div className=''>
-//                     <div className='rounded-xl overflow-hidden'>
-//                       <img
-//                             src={article.image}
-//                             alt={article.title}
-//                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-//                         />
-//                     </div>
-//                     <div>
-//                       <div className="bg-[#c23535] z-10 text-white w-16 h-16 rounded-full flex flex-col items-center justify-center  border-4 border-white z-10">
-//                            <span className="font-bold text-xl leading-none">{article.date}</span>
-//                              <span className="text-[10px] font-bold uppercase">{article.month}</span>
-//                       </div>
-//                     </div>
-//                     <div className=''>
-// <div className="p-10 pt-12 text-center bg-[var(--background)] rounded-lg shadow-lg w-[90%] ml-11">
-//                         <p className="text-gray-400 text-xs mb-3 font-medium">admin / 0 Comments</p>
-//                          <h3 className="text-2xl noto-geogia-font text-[#283862] font-bold mb-8 leading-tight hover:text-brand-red transition-colors cursor-pointer">
-//                              {article.title}
-//                          </h3>
-//                          <button className="bg-[#c23535] text-white hover:text-brand-red font-bold text-[10px] tracking-[0.2em] uppercase py-3 px-8 rounded-full transition-colors">
-//                              Read More
-//                         </button>
-//                        </div>
-//                     </div>
-//                   </div>

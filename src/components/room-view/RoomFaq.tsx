@@ -16,10 +16,10 @@ const RoomFaq: React.FC<RoomFaqProps> = ({ faqs }) => {
                     <div key={idx} className="bg-[#34425a] rounded-sm overflow-hidden">
                         <button
                             onClick={() => setActiveAccordion(activeAccordion === idx ? null : idx)}
-                            className="w-full flex justify-between items-center p-4 text-left transition-colors bg-[#3f4e66] hover:bg-[#4a5a75]"
+                            className="w-full flex justify-between items-center p-4 text-left transition-colors bg-[#1e2c4e]"
                         >
                             <span className="font-bold text-white text-xs md:text-sm pr-4">{faq.question}</span>
-                            <div className="w-6 h-6 rounded-full bg-[#EDA337] flex items-center justify-center text-[#283862] text-xs shrink-0">
+                            <div className="w-6 h-6 rounded-full bg-[#c23535] flex items-center justify-center text-[white] text-xs shrink-0">
                                 {activeAccordion === idx ? <FaMinus /> : <FaPlus />}
                             </div>
                         </button>
@@ -31,7 +31,7 @@ const RoomFaq: React.FC<RoomFaqProps> = ({ faqs }) => {
                                     exit={{ height: 0 }}
                                     className="overflow-hidden"
                                 >
-                                    <div className="p-4 text-xs md:text-sm text-gray-300 bg-[#34425a] border-t border-gray-600/50 leading-relaxed">
+                                    <div className="p-4 text-xs md:text-sm text-black bg-[white] border border-[#0000002e] leading-relaxed">
                                         {faq.answer}
                                     </div>
                                 </motion.div>
