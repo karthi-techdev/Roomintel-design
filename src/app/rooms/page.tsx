@@ -1,35 +1,23 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
-import Roombg from "../../../public/image/rooms-bg.jpg"
+import React, { useState, useMemo, useEffect } from 'react';
+import Roombg from "../../../public/image/rooms-bg.jpg";
 import { HiCursorArrowRays } from "react-icons/hi2";
 import { TfiStar } from "react-icons/tfi";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import { TbNorthStar } from "react-icons/tb";
-import { useEffect } from "react";
-
-
-
-import { FaFilter } from "react-icons/fa";
-
-import {
-  FaStar,
-  FaTh,
-  FaList,
-  FaChevronDown,
-  FaCheck
-} from 'react-icons/fa';
-import {
-  PiBed,
-  PiUsers,
-  PiArrowsOutSimple
-} from 'react-icons/pi';
+import { FaChevronRight, FaFilter, FaStar, FaTh, FaList, FaChevronDown, FaCheck } from "react-icons/fa";
+import { PiBed, PiUsers, PiArrowsOutSimple } from 'react-icons/pi';
 import { motion } from 'framer-motion';
-
+import Link from 'next/link';
+import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
+import { siteService } from '@/api/siteService';
 // --- TYPES ---
-
 interface Room {
-  id: number;
+  id: string | number;
+  slug: string;
   name: string;
   image: string;
   price: number;
@@ -41,202 +29,26 @@ interface Room {
   adults: number;
   category: string;
   location: string;
-  date: string; // Added for sorting
+  date: string;
 }
 
-// --- DATA ---
-
-const roomsData: Room[] = [
-  {
-    id: 1,
-    name: "City Double Or Twin Room",
-    image: "/image/rooms/room-1.jpg",
-    price: 150,
-    rating: 5,
-    reviews: 5,
-    description: "Business, Family, Terrace",
-    size: 100,
-    beds: [{ count: 2, type: "Double Bed" }],
-    adults: 3,
-    category: "Luxury",
-    location: "Australia",
-    date: "2023-10-01"
-  },
-  {
-    id: 2,
-    name: "Superior Double Room",
-    image: "/image/rooms/room-2.jpg",
-    price: 240,
-    rating: 5,
-    reviews: 5,
-    description: "Couple, Family, Luxury",
-    size: 100,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Couple",
-    location: "Argentina",
-    date: "2023-09-15"
-  },
-  {
-    id: 3,
-    name: "Classic Family Suite",
-    image: "/image/rooms/room-3.jpg",
-    price: 320,
-    rating: 4,
-    reviews: 12,
-    description: "Family, Luxury, Terrace",
-    size: 150,
-    beds: [{ count: 2, type: "Queen Bed" }],
-    adults: 4,
-    category: "Family",
-    location: "Australia",
-    date: "2023-11-20"
-  },
-  {
-    id: 4,
-    name: "Ocean View Terrace",
-    image: "/image/rooms/room-4.jpg",
-    price: 450,
-    rating: 5,
-    reviews: 8,
-    description: "Couple, Family, Luxury",
-    size: 120,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Terrace",
-    location: "Australia",
-    date: "2023-08-05"
-  },
-  {
-    id: 5,
-    name: "Business Executive Room",
-    image: "/image/rooms/room-5.jpg",
-    price: 180,
-    rating: 4,
-    reviews: 15,
-    description: "Business, Classic, Couple, Luxury, Terrace",
-    size: 85,
-    beds: [{ count: 1, type: "Queen Bed" }],
-    adults: 1,
-    category: "Business",
-    location: "United States",
-    date: "2023-12-01"
-  },
-  {
-    id: 6,
-    name: "Mountain Retreat",
-    image: "/image/rooms/room-6.jpg",
-    price: 210,
-    rating: 5,
-    reviews: 22,
-    description: "Business, Couple, Family",
-    size: 95,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Classic",
-    location: "Canada",
-    date: "2023-01-15"
-  },
-  {
-    id: 7,
-    name: "Urban Loft",
-    image: "/image/rooms/room-7.avif",
-    price: 275,
-    rating: 4,
-    reviews: 9,
-    description: "Business, Family, Luxury",
-    size: 110,
-    beds: [{ count: 1, type: "Queen Bed" }],
-    adults: 2,
-    category: "Couple",
-    location: "Germany",
-    date: "2023-05-10"
-  },
-  {
-    id: 8,
-    name: "Grand Luxury Suite",
-    image: "/image/rooms/room-8.webp",
-    price: 850,
-    rating: 5,
-    reviews: 3,
-    description: "Classic, Couple, Luxury, Terrace",
-    size: 200,
-    beds: [{ count: 1, type: "California King" }],
-    adults: 2,
-    category: "Luxury",
-    location: "United States",
-    date: "2023-12-25"
-  },
-  {
-    id: 9,
-    name: "Family Garden Villa",
-    image: "/image/rooms/room-9.webp",
-    price: 380,
-    rating: 5,
-    reviews: 18,
-    description: "Business, Classic, Luxury",
-    size: 160,
-    beds: [{ count: 2, type: "Queen Bed" }, { count: 1, type: "Single Bed" }],
-    adults: 5,
-    category: "Family",
-    location: "Argentina",
-    date: "2023-06-20"
-  },
-  {
-    id: 10,
-    name: "Berlin Terrace Penthouse",
-    image: "/image/rooms/room-10.avif",
-    price: 600,
-    rating: 5,
-    reviews: 7,
-    description: "Business, Classic, Family, Luxury",
-    size: 140,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 2,
-    category: "Terrace",
-    location: "Germany",
-    date: "2023-09-01"
-  },
-  {
-    id: 11,
-    name: "Cozy Cabin",
-    image: "/image/rooms/room-11.jpg",
-    price: 130,
-    rating: 3,
-    reviews: 40,
-    description: "Classic, Couple, Luxury, Terrace",
-    size: 60,
-    beds: [{ count: 1, type: "Double Bed" }],
-    adults: 2,
-    category: "Classic",
-    location: "Canada",
-    date: "2022-12-10"
-  },
-  {
-    id: 12,
-    name: "Corporate Suite",
-    image: "/image/rooms/room-12.webp",
-    price: 220,
-    rating: 4,
-    reviews: 14,
-    description: "Business, Couple, Family, Terrace",
-    size: 90,
-    beds: [{ count: 1, type: "King Bed" }],
-    adults: 1,
-    category: "Business",
-    location: "United States",
-    date: "2023-10-15"
-  }
-];
-
-const categories = ["Business", "Classic", "Couple", "Family", "Luxury", "Terrace"];
+// --- CONSTANTS ---
 const locations = ["Argentina", "Australia", "Canada", "Germany", "United States"];
 const sizes = [100, 150, 200, 250];
 const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
 const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
+
 export default function RoomsGrid() {
   // --- STATE ---
+  const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+  const router = useRouter();
+  const { isLoggedIn } = useAuthStore();
+
+  // Filters
   const [priceRange, setPriceRange] = useState(9900);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
@@ -246,7 +58,68 @@ export default function RoomsGrid() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-    useEffect(() => {
+  // Initial Fetch
+  useEffect(() => {
+    fetchRooms();
+    fetchCategories();
+
+    // Fetch bed configuration
+    const fetchBedConfig = async () => {
+      try {
+        const res = await siteService.getConfigBySlug('bed-types');
+        if (res && (res.status === true || res.success === true) && res.data) {
+          setBedConfig(res.data.configFields || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch bed config", e);
+      }
+    };
+    fetchBedConfig();
+  }, []);
+
+  // Map Data from Store
+  useEffect(() => {
+    if (rawCategories) {
+      setCategories(rawCategories.map((c: any) => c.name));
+    }
+
+    if (rawRooms) {
+      const mappedRooms: Room[] = rawRooms.map((r: StoreRoom) => {
+        // Convert bed IDs to labels
+        let bedLabel = "Standard";
+        if (r.beds && typeof r.beds === 'string' && bedConfig.length > 0) {
+          const bedIds = r.beds.split(',').map(s => s.trim());
+          const labels = bedIds.map(id => {
+            const match = bedConfig.find((c: any) => c._id && c._id.toString() === id);
+            return match ? match.value : id;
+          });
+          bedLabel = labels.join(', ');
+        } else if (r.beds) {
+          bedLabel = r.beds;
+        }
+
+        return {
+          id: r._id,
+          slug: r.slug,
+          name: r.name || r.title,
+          image: r.previewImage || (r.images && r.images[0]) || "/image/rooms/room-1.jpg",
+          price: r.price || 0,
+          rating: 5, // Mock data
+          reviews: 0, // Mock data
+          description: r.description,
+          size: parseInt(r.size) || 100,
+          beds: [{ count: 1, type: bedLabel }],
+          adults: r.adults,
+          category: r.category?.name || "Uncategorized",
+          location: r.locationName || "Unknown",
+          date: r.createdAt || new Date().toISOString()
+        };
+      });
+      setRooms(mappedRooms);
+    }
+  }, [rawRooms, rawCategories, storeLoading, bedConfig]);
+
+  useEffect(() => {
     if (isFilterOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -265,6 +138,27 @@ export default function RoomsGrid() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
+
+  // Helper function to generate pastel colors based on room ID
+  const getPastelColor = (id: string | number): string => {
+    const pastelColors = [
+      '#FFE5E5', // Pastel Pink
+      '#E5F3FF', // Pastel Blue
+      '#FFF5E5', // Pastel Peach
+      '#E5FFE5', // Pastel Mint
+      '#F5E5FF', // Pastel Lavender
+      '#FFE5F5', // Pastel Rose
+      '#E5FFFF', // Pastel Cyan
+      '#FFFFE5', // Pastel Yellow
+      '#FFE5D9', // Pastel Coral
+      '#E5E5FF', // Pastel Periwinkle
+    ];
+
+    // Convert ID to a number for consistent color selection
+    const idString = String(id);
+    const hash = idString.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return pastelColors[hash % pastelColors.length];
+  };
 
   // --- HANDLERS ---
 
@@ -318,7 +212,7 @@ export default function RoomsGrid() {
 
   const filteredAndSortedRooms = useMemo(() => {
     // 1. Filter
-    let result = roomsData.filter(room => {
+    let result = rooms.filter(room => {
       // Price Filter
       const matchesPrice = room.price <= priceRange;
 
@@ -328,7 +222,28 @@ export default function RoomsGrid() {
       // Location Filter
       const matchesLocation = selectedLocations.length === 0 || selectedLocations.includes(room.location);
 
-      return matchesPrice && matchesCategory && matchesLocation;
+      // Size Filter
+      const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(room.size);
+
+      // Beds Filter
+      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(sel => {
+        const totalBeds = room.beds.reduce((acc, b) => acc + b.count, 0);
+        const bedTypes = room.beds.map(b => b.type.toLowerCase()).join(" ");
+
+        if (sel === "2 Beds") return totalBeds === 2;
+        if (sel === "1 Bed") return totalBeds === 1;
+        if (sel === "1 King Bed") return totalBeds === 1 && bedTypes.includes("king");
+        if (sel === "1 Double Bed") return totalBeds === 1 && bedTypes.includes("double");
+        return false;
+      });
+
+      // Adults Filter
+      const matchesAdults = selectedAdults.length === 0 || selectedAdults.some(sel => {
+        const num = parseInt(sel);
+        return room.adults === num;
+      });
+
+      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds && matchesAdults;
     });
 
     // 2. Sort
@@ -344,7 +259,7 @@ export default function RoomsGrid() {
     });
 
     return result;
-  }, [priceRange, selectedCategories, selectedLocations, sortBy]);
+  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
 
   // --- PAGINATION LOGIC ---
 
@@ -362,49 +277,55 @@ export default function RoomsGrid() {
   };
 
   return (
-    <div className="w-full pb-20 font-sans">
+    <div className="w-full pb-20  ">
       {/* --- Page Header --- */}
-      <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
+      <div className="relative h-[600px] w-full bg-brand-navy flex items-center justify-center text-white text-center px-4 overflow-hidden mb-4">
 
-        {/* Background Image Wrapper */}
-        <div className="absolute inset-0 opacity-40 flex items-end">
-          <div className="relative w-full h-[220px]">
-            <img
-              src={Roombg.src}
-              alt="Header Background"
-              className="w-full h-full object-cover [mask-image:linear-gradient(to_top,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_top,transparent,black_35%)]"
-            />
-          </div>
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-40">
+          <img
+            src={Roombg.src}
+            alt="Header Background"
+            className="w-full h-full object-cover"
+          />
         </div>
-      </div>
 
-      <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
-        <div className="z-10">
-          <h1 className="font-serif font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
+        {/* CENTER CONTENT */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <h1 className="noto-geogia-font font-bold text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-[60px] mb-4 sm:mb-5 md:mb-6 lg:mb-[30px] drop-shadow-lg">
             Rooms Grid
           </h1>
-          <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
-            <span className="hover:text-brand-red cursor-pointer transition-colors">Home</span>
+
+          <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
+            <Link href="/">
+              <span className="hover:text-brand-red cursor-pointer transition-colors">
+                Home
+              </span>
+            </Link>
             <span>/</span>
             <span>Rooms Grid</span>
           </div>
         </div>
+
       </div>
+
+
+
 
 
       {/* --- Main Content --- */}
       <div className="max-w-[1450px] p-6 mx-auto lg:pt-20 bg-white rounded-[10px]">
-        <div className="flex flex-col lg:flex-row gap-12 pb-20">
+        <div className="flex flex-col justify-between px-10 lg:flex-row  pb-20">
 
           {/* --- Sidebar --- */}
 
 
 
-          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12">
+          <aside className="hidden lg:block w-full lg:w-[20%] border border-[#0000002e] border border-[#00000014] px-[30px] py-[20px] space-y-12 sticky top-24 h-fit">
 
             {/* Price Filter */}
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4 relative">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4 relative">
                 Price
               </h3>
 
@@ -423,11 +344,11 @@ export default function RoomsGrid() {
                 $0 - ${priceRange}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
             {/* Category Filter */}
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 relative">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
                 Category
               </h3>
 
@@ -451,13 +372,13 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
 
 
 
             <div className="bg-white ">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Size
               </h3>
 
@@ -494,15 +415,16 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Beds
               </h3>
 
               <div className="space-y-4">
                 {bedsOptions.map((bed, idx) => {
+
                   const isChecked = selectedBeds.includes(bed);
 
                   return (
@@ -534,10 +456,10 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#00000033] flex h-[2px]'></span>
+            <span className='bg-[#0000001f] flex h-[1px]'></span>
 
             <div className="bg-white">
-              <h3 className="text-2xl font-serif font-bold text-[#283862] mb-4">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
                 Adults
               </h3>
 
@@ -578,19 +500,19 @@ export default function RoomsGrid() {
           </aside>
 
           {/* MOBILE FILTER POPUP */}
-          
+
           {isFilterOpen && (
 
             <>
-            
-            
+
+
               {/* BACKDROP */}
               <div
                 className="fixed inset-0 bg-black/40 z-40 lg:hidden"
                 onClick={() => setIsFilterOpen(false)}
-                
+
               />
-              
+
 
               {/* POPUP */}
               <motion.aside
@@ -602,7 +524,7 @@ export default function RoomsGrid() {
               >
                 {/* CLOSE HEADER */}
                 <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862]">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862]">
                     Filter
                   </h3>
                   <button
@@ -613,7 +535,7 @@ export default function RoomsGrid() {
                   </button>
                 </div>
                 <div className="bg-white mb-3">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2 relative">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2 relative">
                     Price
                   </h3>
 
@@ -632,11 +554,11 @@ export default function RoomsGrid() {
                     $0 - ${priceRange}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] mb-[10px] flex h-[2px]'></span>
 
                 {/* Category Filter */}
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-8 relative">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
                     Category
                   </h3>
 
@@ -660,13 +582,13 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] flex h-[1px]'></span>
 
 
 
 
                 <div className="bg-white ">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Size
                   </h3>
 
@@ -703,10 +625,10 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Beds
                   </h3>
 
@@ -743,10 +665,10 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
-                  <h3 className="text-2xl font-serif font-bold text-[#283862] mb-2">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                     Adults
                   </h3>
 
@@ -816,7 +738,7 @@ export default function RoomsGrid() {
                 {filteredAndSortedRooms.length} Rooms Available
               </div>
 
-              <div className="flex justify-between items-center gap-3 mt-5 overflow-x-auto whitespace-nowrap md:overflow-visible md:flex-row md:items-center md:gap-6">
+              <div className="flex justify-between items-center gap-3 mt-5 whitespace-nowrap md:flex-row md:items-center md:gap-6">
 
                 {/* SORT */}
                 <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -841,7 +763,7 @@ export default function RoomsGrid() {
                 </div>
 
                 {/* GRID / LIST */}
-                <div className="flex gap-2 min-w-max">
+                <div className="flex gap-2 min-w-max md:flex hidden">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'grid'
@@ -882,12 +804,21 @@ export default function RoomsGrid() {
                     className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
                   >
                     {/* Image Section */}
-                    <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}>
-                      <img
-                        src={room.image}
-                        alt={room.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
+                    <div
+                      className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
+                      style={{ backgroundColor: getPastelColor(room.id) }}
+                    >
+                      <Link href={`/room-view/${room.slug}`}>
+                        <img
+                          src={room.image}
+                          alt={room.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                          onError={(e) => {
+                            // Hide the broken image icon
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </Link>
 
                       {/* Rating Badge */}
                       <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
@@ -899,10 +830,12 @@ export default function RoomsGrid() {
                     {/* Content Section */}
                     <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
                       <div className='flex justify-between text-center'>
-                        <h3 className="text-[12px] md:text-[14px] lg:text-[16px] font-serif font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
-                          {room.name}
-                        </h3>
-                        <span>From $1.590</span>
+                        <Link href={`/room-view/${room.slug}`}>
+                          <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
+                            {room.name}
+                          </h3>
+                        </Link>
+                        <span>From ${room.price}</span>
 
                       </div>
 
@@ -940,9 +873,10 @@ export default function RoomsGrid() {
                           </div>
 
                           {room.beds.map((bed, idx) => (
+                            console.log('bed', bed),
                             <div key={idx} className="flex gap-[5px] items-center">
                               <PiBed className="text-[12px] text-[#c23535]" />
-                              <span className='text-[10px]'>Beds: {bed.count} {bed.type}</span>
+                              <span className='text-[10px]'>Beds:{bed.type}</span>
                             </div>
                           ))}
 
@@ -951,9 +885,19 @@ export default function RoomsGrid() {
                             <span className='text-[10px]'>Adults: {room.adults} Adults</span>
                           </div>
                         </div>
-                        <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[8px] py-[3px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <a href="" className="text-sm transition-colors duration-300 group-hover:text-[black]">Book</a>
-                          <IoIosArrowRoundForward className="text-[20px] transition-transform duration-300 group-hover:translate-x-1" />
+                        <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                          <button
+                            onClick={() => {
+                              if (isLoggedIn) {
+                                router.push(`/room-view/${room.slug}`);
+                              } else {
+                                useAuthStore.getState().openLoginModal();
+                              }
+                            }}
+                            className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]"
+                          >
+                            Book Now
+                          </button>
                         </div>
 
                       </div>
@@ -963,7 +907,7 @@ export default function RoomsGrid() {
               </div>
             ) : (
               <div className="w-full h-60 flex flex-col items-center justify-center text-gray-500">
-                <p className="text-xl font-serif mb-2">No rooms found</p>
+                <p className="text-xl noto-geogia-font mb-2">No rooms found</p>
                 <p className="text-sm">Try adjusting your filters</p>
               </div>
             )}

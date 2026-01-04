@@ -91,30 +91,30 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="bg-[#FAFAFA] w-full font-sans pb-20 min-h-screen">
+    <div className="bg-[#FAFAFA] w-full   pb-20 min-h-screen">
 
       {/* --- HEADER --- */}
       <div className="bg-[#283862] min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
-  {/* Background Image */}
-  <div className="absolute inset-0 opacity-40">
-    <img src="/image/gallery/background-image.webp" className="w-full h-full object-cover" alt="Header" />
-  </div>
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-40">
+          <img src="/image/gallery/background-image.webp" className="w-full h-full object-cover" alt="Header" />
+        </div>
 
-  {/* CENTER CONTENT */}
-  <div className="relative z-10 flex flex-col items-center justify-center">
-    <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] font-serif font-bold mb-4 drop-shadow-lg">
-      Gallery Grid
-    </h1>
+        {/* CENTER CONTENT */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
+            Gallery Grid
+          </h1>
 
-    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
-      <span className="hover:text-brand-red cursor-pointer transition-colors" onClick={onBack}>
-        Home
-      </span>
-      <span>/</span>
-      <span className="text-white">Gallery</span>
-    </div>
-  </div>
-</div>
+          <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
+            <span className="hover:text-brand-red cursor-pointer transition-colors" onClick={onBack}>
+              Home
+            </span>
+            <span>/</span>
+            <span className="text-white">Gallery</span>
+          </div>
+        </div>
+      </div>
 
 
 
@@ -127,8 +127,8 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
               key={cat}
               onClick={() => setFilter(cat)}
               className={`relative px-6 py-3 text-[11px] md:text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-sm ${filter === cat
-                  ? 'bg-[#283862] text-white shadow-lg transform -translate-y-1'
-                  : 'bg-white text-gray-500 hover:text-[#283862] hover:bg-gray-50 border border-gray-100'
+                ? 'bg-[#283862] text-white shadow-lg transform -translate-y-1'
+                : 'bg-white text-gray-500 hover:text-[#283862] hover:bg-gray-50 border border-gray-100'
                 }`}
             >
               {cat}
@@ -166,7 +166,7 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
                   <div className="w-10 h-10 rounded-full bg-brand-red text-white flex items-center justify-center mb-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
                     <FaPlus />
                   </div>
-                  <h3 className="text-white font-serif text-xl font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-100">{img.title}</h3>
+                  <h3 className="text-white noto-geogia-font text-xl font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-100">{img.title}</h3>
                   <span className="text-gray-300 text-xs uppercase tracking-widest mt-1 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-150">{img.category}</span>
                 </div>
               </motion.div>
@@ -207,7 +207,7 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
                 className="max-w-full max-h-[80vh] object-contain rounded-sm shadow-2xl"
               />
               <div className="mt-4 text-center">
-                <h3 className="text-white font-serif text-2xl">{filteredImages[lightboxIndex].title}</h3>
+                <h3 className="text-white noto-geogia-font text-2xl">{filteredImages[lightboxIndex].title}</h3>
                 <p className="text-gray-400 text-sm uppercase tracking-widest mt-1">{filteredImages[lightboxIndex].category}</p>
               </div>
             </div>
