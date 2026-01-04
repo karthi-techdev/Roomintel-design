@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { siteService } from '@/api/siteService';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useReviewStore } from '@/store/useReviewStore';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -51,7 +52,8 @@ export default function RoomsGrid() {
 
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
-
+  const { fetchReview ,reviews} = useReviewStore();
+  console.log('=========reviews',reviews)
   // Filters
   const [maxPrice, setMaxPrice] = useState(10000); // Will be updated from rooms data
   const [priceRange, setPriceRange] = useState(10000);
@@ -70,6 +72,8 @@ export default function RoomsGrid() {
   useEffect(() => {
     fetchRooms();
     fetchCategories();
+    fetchReview({status : 'approved'})
+
 
     // Fetch bed configuration
     const fetchBedConfig = async () => {
