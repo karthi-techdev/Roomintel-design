@@ -792,12 +792,18 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                                 <button
                                     onClick={handlePlaceOrder}
+<<<<<<< HEAD
                                     disabled={!cartItem || isProcessing || !isFormValid}
                                     className={`w-full bg-[#283862] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm   hover:shadow-lg 
         ${(!cartItem || isProcessing || !isFormValid)
                                             ? 'opacity-60 cursor-not-allowed'
                                             : 'hover:bg-[#c23535] cursor-pointer'
                                         }`}
+=======
+                                    // disabled={!cartItem || isProcessing || !isFormValid}
+                                    className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
+                                        `}
+>>>>>>> 18ec408 (Review integration rooms & rooms view)
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}
                                 </button>

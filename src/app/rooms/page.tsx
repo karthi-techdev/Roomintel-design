@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { siteService } from '@/api/siteService';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useReviewStore } from '@/store/useReviewStore';
+import { calculateStatsByRoom } from '@/utils/common';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -52,8 +53,7 @@ export default function RoomsGrid() {
 
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
-  const { fetchReview ,reviews} = useReviewStore();
-  console.log('=========reviews',reviews)
+  const { fetchReview, reviews } = useReviewStore();
   // Filters
   const [maxPrice, setMaxPrice] = useState(10000); // Will be updated from rooms data
   const [priceRange, setPriceRange] = useState(10000);
@@ -72,7 +72,7 @@ export default function RoomsGrid() {
   useEffect(() => {
     fetchRooms();
     fetchCategories();
-    fetchReview({status : 'approved'})
+    fetchReview({ status: 'approved' })
 
 
     // Fetch bed configuration
@@ -843,6 +843,7 @@ export default function RoomsGrid() {
             {/* Room Cards Grid */}
             {filteredAndSortedRooms.length > 0 ? (
               <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
+<<<<<<< HEAD
                 {filteredAndSortedRooms.map((room) => (
                   <motion.div
                     key={room.id}
@@ -857,30 +858,28 @@ export default function RoomsGrid() {
                     <div
                       className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
                       style={{ backgroundColor: getPastelColor(room.id) }}
+=======
+                {currentRooms.map((room) => {
+                  const roomId: string | number = room.id;
+                  const overAllRating = calculateStatsByRoom(reviews, roomId);
+                  return (
+                    <motion.div
+                      key={room.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3 }}
+                      className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
+>>>>>>> 18ec408 (Review integration rooms & rooms view)
                     >
-                      <Link href={`/room-view/${room.slug}`}>
-                        <img
-                          src={room.image}
-                          alt={room.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
-                          onError={(e) => {
-                            // Hide the broken image icon
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </Link>
-
-                      {/* Rating Badge */}
-                      <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
-                        <TfiStar className="text-yellow-400" />
-                        <span>({room.rating})</span>
-                      </div>
-                    </div>
-
-                    {/* Content Section */}
-                    <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
-                      <div className='flex justify-between text-center'>
+                      {/* Image Section */}
+                      <div
+                        className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
+                        style={{ backgroundColor: getPastelColor(room.id) }}
+                      >
                         <Link href={`/room-view/${room.slug}`}>
+<<<<<<< HEAD
                           <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
                             {room.name}
                           </h3>
@@ -946,12 +945,113 @@ export default function RoomsGrid() {
                           >
                             Book Now
                           </button>
+=======
+                          <img
+                            src={room.image}
+                            alt={room.name}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                            onError={(e) => {
+                              // Hide the broken image icon
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        </Link>
+
+                        {/* Rating Badge */}
+                        <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
+                          {overAllRating?.avgRating === "0.0" ?
+                            <>
+                              <span className="text-indigo-400">✨</span>
+                              <span>New</span>
+                            </>
+                            :
+                            <>
+                            <TfiStar className="text-yellow-400" />
+                            <span>({overAllRating?.avgRating})</span>
+                            </>
+                          }
+
+                        </div>
+                      </div>
+
+                      {/* Content Section */}
+                      <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
+                        <div className='flex justify-between text-center'>
+                          <Link href={`/room-view/${room.slug}`}>
+                            <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
+                              {room.name}
+                            </h3>
+                          </Link>
+                          <span>From ${room.price}</span>
+
+>>>>>>> 18ec408 (Review integration rooms & rooms view)
                         </div>
 
+                        <div className="mb-6">
+
+                          {/* GRID VIEW PARAGRAPH */}
+                          {viewMode === "grid" && (
+                            <div className="flex gap-1 items-center">
+                              <TbNorthStar />
+                              <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
+                                {room.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* LIST VIEW PARAGRAPH */}
+                          {viewMode === "list" && (
+                            <div className="flex gap-2 items-start">
+                              <p className="text-gray-600 text-[16px] leading-relaxed">
+                                {room.description} — On this easy to moderate walking tour, you will discover selected sections of the ancient trails of Lycia, otherwise known as the Lycian Way, revealing the region’s ancient heritage and wild beauty.
+                              </p>
+                            </div>
+                          )}
+
+
+
+                        </div>
+
+                        <div className='flex justify-between border-t-2 border-[#00000017] items-center'>
+
+                          <div className="flex flex-wrap gap-[10px]  border-gray-100 pt-4">
+                            <div className="flex gap-[5px] items-center">
+                              <PiArrowsOutSimple className="text-[12px] text-[#c23535]" />
+                              <span className='text-[10px]'>Size: {room.size} m²</span>
+                            </div>
+
+                            {room.beds.map((bed, idx) => (
+                              <div key={idx} className="flex gap-[5px] items-center">
+                                <PiBed className="text-[12px] text-[#c23535]" />
+                                <span className='text-[10px]'>Beds:{bed.type}</span>
+                              </div>
+                            ))}
+
+                            <div className="flex gap-[5px] items-center">
+                              <PiUsers className="text-[12px] text-[#c23535]" />
+                              <span className='text-[10px]'>Adults: {room.adults} Adults</span>
+                            </div>
+                          </div>
+                          <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                            <button
+                              onClick={() => {
+                                if (isLoggedIn) {
+                                  router.push(`/room-view/${room.slug}`);
+                                } else {
+                                  useAuthStore.getState().openLoginModal();
+                                }
+                              }}
+                              className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]"
+                            >
+                              Book Now
+                            </button>
+                          </div>
+
+                        </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  )
+                })}
               </div>
             ) : (
               <div className="w-full h-60 flex flex-col items-center justify-center text-gray-500">
