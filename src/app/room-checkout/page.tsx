@@ -727,23 +727,23 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     {/* --- RIGHT COLUMN: ORDER SUMMARY --- */}
                     <div className="w-full lg:w-1/3">
                         <div className="sticky top-24">
-                            <div className="bg-[#283862] text-white p-8 rounded-sm shadow-xl border border-gray-700/50">
-                                <h3 className="text-2xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Your Booking</h3>
+                                <h3 className="text-2xl text-[white] rounded-t-[8px] bg-[#283862] p-[15px] noto-geogia-font font-bold pb-4   ">Your Booking</h3>
+                            <div className="bg-[white] text-white p-8 rounded-b-[8px] shadow-xl border border-[#00000017]">
 
                                 {cartItems.length > 0 ? (
                                     <>
                                         {cartItems.map((item, idx) => (
                                             <div key={idx} className="flex justify-between items-start mb-4 text-sm">
                                                 <div>
-                                                    <div className="font-bold text-gray-300">{item.roomName}</div>
-                                                    <div className="text-xs text-gray-400">x {item.guestDetails?.rooms || 1} Rooms</div>
+                                                    <div className="font-bold text-[black]">{item.roomName}</div>
+                                                    <div className="text-xs text-[black] ">x {item.guestDetails?.rooms || 1} Rooms</div>
                                                 </div>
-                                                <span className="font-bold text-[#EDA337]">{fmt(item.financials?.baseTotal || item.price)}</span>
+                                                <span className="font-bold text-[#c23535]">{fmt(item.financials?.baseTotal || item.price)}</span>
                                             </div>
                                         ))}
 
                                         {totals.extrasTotal > 0 && (
-                                            <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
+                                            <div className="flex justify-between items-start mb-2 text-sm text-[black]">
                                                 <span>Extras</span>
                                                 <span>+{fmt(totals.extrasTotal)}</span>
                                             </div>
@@ -754,50 +754,47 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                                 <span>-{fmt(totals.discountAmount)}</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between items-start mb-2 text-sm text-gray-400">
-                                            <span>Taxes & Fees</span>
+                                        <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
+                                            <span className=' text-[#283862]'>Taxes & Fees</span>
                                             <span>+{fmt(totals.taxes + totals.serviceCharge)}</span>
                                         </div>
 
-                                        <div className="w-full h-[1px] bg-gray-600 mb-6"></div>
+                                        <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
 
                                         <div className="flex justify-between items-center mb-8">
-                                            <span className="text-lg font-bold">Total</span>
-                                            <span className="text-xl font-bold text-[#EDA337]">{fmt(totals.grandTotal)}</span>
+                                            <span className="text-lg text-[black] font-bold">Total</span>
+                                            <span className="text-xl font-bold text-[#c23535]">{fmt(totals.grandTotal)}</span>
                                         </div>
                                     </>
                                 ) : (
                                     <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
                                 )}
 
-                                <h3 className="text-xl noto-geogia-font font-bold mb-6">Payment Method</h3>
+                                <h3 className="text-xl noto-geogia-font text-[black] font-bold mb-6">Payment Method</h3>
 
                                 <div className="space-y-4 mb-8">
                                     <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'cash' ? 'border-[#EDA337]' : 'border-gray-500'}`}>
-                                            {paymentMethod === 'cash' && <div className="w-2 h-2 rounded-full bg-[#EDA337]"></div>}
+                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'cash' ? 'border-[#c23535]' : 'border-gray-500'}`}>
+                                            {paymentMethod === 'cash' && <div className="w-2 h-2 rounded-full bg-[#c23535]"></div>}
                                         </div>
                                         <input type="radio" name="payment" value="cash" checked={paymentMethod === 'cash'} onChange={() => setPaymentMethod('cash')} className="hidden" />
-                                        <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Pay on Arrival (Cash/Card)</span>
+                                        <span className={`text-sm font-medium ${paymentMethod === 'cash' ? 'text-[black]' : 'text-[black] group-hover:text-[#c23535]'}`}>Pay on Arrival (Cash/Card)</span>
                                     </label>
 
                                     <label className="flex items-center gap-3 cursor-pointer group">
-                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'card' ? 'border-[#EDA337]' : 'border-gray-500'}`}>
-                                            {paymentMethod === 'card' && <div className="w-2 h-2 rounded-full bg-[#EDA337]"></div>}
+                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${paymentMethod === 'card' ? 'border-[#c23535]' : 'border-gray-500'}`}>
+                                            {paymentMethod === 'card' && <div className="w-2 h-2 rounded-full bg-[#c23535]"></div>}
                                         </div>
                                         <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} className="hidden" />
-                                        <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>Online Payment (Razorpay)</span>
+                                        <span className={`text-sm font-medium ${paymentMethod === 'card' ? 'text-[black]' : 'text-[black] group-hover:text-[#c23535]'}`}>Online Payment (Razorpay)</span>
                                     </label>
                                 </div>
 
                                 <button
                                     onClick={handlePlaceOrder}
-                                    disabled={!cartItem || isProcessing || !isFormValid}
+                                    // disabled={!cartItem || isProcessing || !isFormValid}
                                     className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
-        ${(!cartItem || isProcessing || !isFormValid)
-                                            ? 'opacity-60 cursor-not-allowed'
-                                            : 'hover:bg-[#d8922f] cursor-pointer'
-                                        }`}
+                                        `}
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}
                                 </button>

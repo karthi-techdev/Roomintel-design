@@ -11,7 +11,7 @@ import {
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
-import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
+import { RiDoubleQuotesR } from "react-icons/ri";
 import { IoLogoLinkedin } from 'react-icons/io';
 import { FaStar } from "react-icons/fa6";
 import { FaStarHalfStroke } from "react-icons/fa6";
@@ -24,6 +24,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useTestimonialStore } from '@/store/useTestimonialStore';
 import { useCurrency } from '@/hooks/useCurrency';
+
 
 
 interface SlideData {
@@ -70,6 +71,9 @@ export default function Home() {
   const arrivalRef = useRef<HTMLInputElement>(null);
   const departureRef = useRef<HTMLInputElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Testimonial carousel
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
 
   const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
@@ -88,6 +92,60 @@ export default function Home() {
     };
     fetchBookedDates();
   }, []);
+
+
+  const dummyTestimonials = [
+    {
+      _id: "d1",
+      image:"./image/housekeeping-1.avif",
+      title: "Amazing Stay",
+      reviews: "Rooms were clean and service was excellent.",
+      reviewerName: "Arun",
+    },
+    {
+      _id: "d2",
+      title: "Perfect Resort",
+      image:"./image/housekeeping-2.jpg",
+      reviews: "Best place to relax with family.",
+      reviewerName: "Priya",
+    },
+    {
+      _id: "d3",
+      title: "Loved It",
+      image:"./image/housekeeping-3.avif",
+      reviews: "Food, ambience and staff were top notch.",
+      reviewerName: "Karthik",
+    },
+    {
+      _id: "d4",
+      title: "Highly Recommended",
+      image:"./image/housekeeping-4.jpg",
+      reviews: "Will definitely visit again.",
+      reviewerName: "Sanjay",
+    },
+  ];
+  const carouselTestimonials =
+    testimonials && testimonials.length > 1
+      ? testimonials
+      : dummyTestimonials;
+
+
+  useEffect(() => {
+    if (!testimonials || testimonials.length === 0) return;
+
+    const interval = setInterval(() => {
+      setTestimonialIndex((prev) =>
+        // (prev + 1) % testimonials.length
+        (prev + 1) % carouselTestimonials.length
+
+      );
+    }, 4000); // 4 sec
+
+    return () => clearInterval(interval);
+  }, [testimonials]);
+
+
+
 
 
 
@@ -792,66 +850,117 @@ export default function Home() {
 
       <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
 
-          {/* ================= Testimonials ================= */}
-          <div className="max-w-[1200px] mx-auto">
-            <div className="mb-16 max-w-4xl ml-5 md:ml-0">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[2px] bg-[#c23535]" />
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
-                  Testimonials
-                </span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
-                What Our Customer Says
-              </h2>
-
-              <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-                Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
-              </p>
+        {/* ================= Testimonials ================= */}
+        <div className="max-w-[1200px] mx-auto">
+          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-[2px] bg-[#c23535]" />
+              <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
+                Testimonials
+              </span>
             </div>
 
-            {testimonials.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {testimonials && testimonials.map((data) => {
-                return (
-                  <div
-                    key={data._id}
-                    className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
-                  >
-                    <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                      <RiDoubleQuotesL />
-                    </div>
+            <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
+              What Our Customer Says
+            </h2>
 
-                    <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                      {data.title}
-                    </h3>
-
-                    <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                      {data.reviews}
-                    </p>
-
-                    <div className="w-full h-[1px] bg-gray-200 mb-6" />
-
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                        <img
-                          src={data.image}
-                          className="w-full h-full object-cover grayscale"
-                        />
-                      </div>
-                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                        {data.reviewerName}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-              : 'No data found'}
+            <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
+              Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
+            </p>
           </div>
 
+          {testimonials.length > 0 ?
+            <div className="relative overflow-hidden w-full">
+              <div
+                className="flex transition-transform duration-700 ease-in-out"
+              style={{
+                transform: `translateX(-${testimonialIndex * 100}%)`,
+              }}
+              >
+                {carouselTestimonials.map((data) => (
+                  <div
+                    key={data._id}
+                    className="w-full flex-shrink-0 flex justify-center"
+                  >
 
-        </section>
+                    <div className="flex bg-[#F9F9F9] justify-between w-full md:w-[70%] p-8 sm:p-10 md:p-14 border border-gray-100/50" >
+                      <div className=" items-center gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden mb-2 bg-gray-300">
+                          <img
+                            src="./image/housekeeping-1.avif"
+                            className="w-full h-full object-cover grayscale"
+                          />
+                        </div>
+                        <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                          {data.reviewerName}
+                        </span>
+                      <div>
+                        <span className="flex mt-[10px] text-[#c23535d6]">
+                          <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfStroke />
+                        </span>
+                      </div>
+                      </div>
+                      <div>
+
+
+                        <div className="text-[#c23535] flex justify-end text-4xl opacity-80">
+                          <RiDoubleQuotesR />
+                        </div>
+                        <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
+                          {data.title}
+                        </h3>
+
+                        <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                          {data.reviews}
+                        </p>
+                      </div>
+
+
+
+
+                    </div>
+                    {/* Card */}
+                    {/* <div className="bg-[#F9F9F9] w-full md:w-[70%] p-8 sm:p-10 md:p-14 border border-gray-100/50">
+                      <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+                        <RiDoubleQuotesL />
+                      </div>
+
+                      <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
+                        {data.title}
+                      </h3>
+
+                      <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                        {data.reviews}
+                      </p>
+
+                      <div className="w-full h-[1px] bg-gray-200 mb-6" />
+
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                          <img
+                            src="./image/housekeeping-1.avif"
+                            className="w-full h-full object-cover grayscale"
+                          />
+                        </div>
+                        <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                          {data.reviewerName}
+                        </span>
+                      </div>
+
+                      <span className="flex mt-[10px] text-[#c23535d6]">
+                        <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfStroke />
+                      </span>
+                    </div> */}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            : 'No data found'}
+        </div>
+
+
+      </section>
     </main>
   );
 }

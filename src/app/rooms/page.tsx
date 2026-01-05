@@ -14,7 +14,8 @@ import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { siteService } from '@/api/siteService';
-import { useCurrency } from '@/hooks/useCurrency';
+import { useReviewStore } from '@/store/useReviewStore';
+import { calculateStatsByRoom } from '@/utils/common';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -35,6 +36,9 @@ interface Room {
 
 // --- CONSTANTS ---
 const locations = ["Argentina", "Australia", "Canada", "Germany", "United States"];
+const sizes = [100, 150, 200, 250];
+const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
+const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
 
 export default function RoomsGrid() {
@@ -43,18 +47,11 @@ export default function RoomsGrid() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
-
-  // Dynamic filter options
-  const [sizes, setSizes] = useState<number[]>([]);
-  const [bedsOptions, setBedsOptions] = useState<string[]>([]);
-  const [adultsOptions, setAdultsOptions] = useState<string[]>([]);
-
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
-
+  const { fetchReview, reviews } = useReviewStore();
   // Filters
-  const [maxPrice, setMaxPrice] = useState(10000); // Will be updated from rooms data
-  const [priceRange, setPriceRange] = useState(10000);
+  const [priceRange, setPriceRange] = useState(9900);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<number[]>([]);
@@ -63,30 +60,19 @@ export default function RoomsGrid() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  // Currency
-  const { formatPrice } = useCurrency();
-
   // Initial Fetch
   useEffect(() => {
     fetchRooms();
     fetchCategories();
+    fetchReview({ status: 'approved' })
+
 
     // Fetch bed configuration
     const fetchBedConfig = async () => {
       try {
         const res = await siteService.getConfigBySlug('bed-types');
-        console.log('Bed config response:', res);
         if (res && (res.status === true || res.success === true) && res.data) {
-          const bedFields = res.data.configFields || [];
-          console.log('Bed fields:', bedFields);
-          setBedConfig(bedFields);
-
-          // Set bed options from config
-          const bedLabels = bedFields
-            .map((field: any) => field.value)
-            .filter((value: string) => value && !value.toLowerCase().includes('unknown'));
-          console.log('Bed labels for filter:', bedLabels);
-          setBedsOptions(bedLabels);
+          setBedConfig(res.data.configFields || []);
         }
       } catch (e) {
         console.error("Failed to fetch bed config", e);
@@ -94,15 +80,6 @@ export default function RoomsGrid() {
     };
     fetchBedConfig();
   }, []);
-
-  // Debug: Log filter options when they change
-  useEffect(() => {
-    console.log('Filter options updated:', {
-      sizes,
-      bedsOptions,
-      adultsOptions
-    });
-  }, [sizes, bedsOptions, adultsOptions]);
 
   // Map Data from Store
   useEffect(() => {
@@ -136,50 +113,13 @@ export default function RoomsGrid() {
           description: r.description,
           size: parseInt(r.size) || 100,
           beds: [{ count: 1, type: bedLabel }],
-          adults: r.maxAdults || r.adults,
+          adults: r.adults,
           category: r.category?.name || "Uncategorized",
           location: r.locationName || "Unknown",
           date: r.createdAt || new Date().toISOString()
         };
       });
       setRooms(mappedRooms);
-
-      // Extract unique sizes from rooms (ascending order)
-      const uniqueSizes = Array.from(new Set(mappedRooms.map(r => r.size)))
-        .filter(size => size && size > 0)
-        .sort((a, b) => a - b);
-      console.log('Unique sizes:', uniqueSizes);
-      setSizes(uniqueSizes);
-
-      // Extract unique adults from rooms (ascending order, formatted)
-      console.log('Raw rooms for adults:', rawRooms.map((r: any) => ({
-        name: r.name,
-        maxAdults: r.maxAdults,
-        adults: r.adults
-      })));
-
-      const allMaxAdults = rawRooms.map((r: any) => r.maxAdults);
-      console.log('All maxAdults values:', allMaxAdults);
-
-      const uniqueAdultsNumbers = Array.from(new Set(allMaxAdults))
-        .filter(adults => adults && adults > 0)
-        .sort((a, b) => a - b);
-      console.log('Unique adult numbers:', uniqueAdultsNumbers);
-
-      const uniqueAdults = uniqueAdultsNumbers
-        .map(adults => `${adults} Adult${adults > 1 ? 's' : ''}`);
-      console.log('Unique adults options:', uniqueAdults);
-      setAdultsOptions(uniqueAdults);
-
-      // Calculate max price from rooms
-      const prices = mappedRooms.map(r => r.price).filter(p => p > 0);
-      if (prices.length > 0) {
-        const calculatedMaxPrice = Math.max(...prices);
-        console.log('Max price from rooms:', calculatedMaxPrice);
-        setMaxPrice(calculatedMaxPrice);
-        // Set initial price range to max price
-        setPriceRange(calculatedMaxPrice);
-      }
     }
   }, [rawRooms, rawCategories, storeLoading, bedConfig]);
 
@@ -199,7 +139,9 @@ export default function RoomsGrid() {
   const [sortBy, setSortBy] = useState<string>('newest');
   const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // Pagination removed - showing all rooms
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Helper function to generate pastel colors based on room ID
   const getPastelColor = (id: string | number): string => {
@@ -225,6 +167,7 @@ export default function RoomsGrid() {
   // --- HANDLERS ---
 
   const handleCategoryChange = (category: string) => {
+    setCurrentPage(1); // Reset to page 1 on filter change
     setSelectedCategories(prev =>
       prev.includes(category)
         ? prev.filter(c => c !== category)
@@ -259,12 +202,14 @@ export default function RoomsGrid() {
 
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCurrentPage(1);
     setPriceRange(Number(e.target.value));
   };
 
   const handleSortChange = (value: string) => {
     setSortBy(value);
     setIsSortOpen(false);
+    setCurrentPage(1);
   };
 
   // --- FILTER & SORT LOGIC ---
@@ -285,16 +230,24 @@ export default function RoomsGrid() {
       const matchesSize = selectedSizes.length === 0 || selectedSizes.includes(room.size);
 
       // Beds Filter
-      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(selectedBed => {
-        // Check if any of the room's bed types match the selected bed type
-        return room.beds.some(bed => {
-          // Case-insensitive comparison
-          return bed.type.toLowerCase().includes(selectedBed.toLowerCase()) ||
-            selectedBed.toLowerCase().includes(bed.type.toLowerCase());
-        });
+      const matchesBeds = selectedBeds.length === 0 || selectedBeds.some(sel => {
+        const totalBeds = room.beds.reduce((acc, b) => acc + b.count, 0);
+        const bedTypes = room.beds.map(b => b.type.toLowerCase()).join(" ");
+
+        if (sel === "2 Beds") return totalBeds === 2;
+        if (sel === "1 Bed") return totalBeds === 1;
+        if (sel === "1 King Bed") return totalBeds === 1 && bedTypes.includes("king");
+        if (sel === "1 Double Bed") return totalBeds === 1 && bedTypes.includes("double");
+        return false;
       });
 
-      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds;
+      // Adults Filter
+      const matchesAdults = selectedAdults.length === 0 || selectedAdults.some(sel => {
+        const num = parseInt(sel);
+        return room.adults === num;
+      });
+
+      return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds && matchesAdults;
     });
 
     // 2. Sort
@@ -310,9 +263,14 @@ export default function RoomsGrid() {
     });
 
     return result;
-  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, sortBy]);
+  }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
 
-  // --- SHOW ALL ROOMS (No Pagination) ---
+  // --- PAGINATION LOGIC ---
+
+  const totalPages = Math.ceil(filteredAndSortedRooms.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRooms = filteredAndSortedRooms.slice(indexOfFirstItem, indexOfLastItem);
 
   const getSortLabel = () => {
     switch (sortBy) {
@@ -325,49 +283,43 @@ export default function RoomsGrid() {
   return (
     <div className="w-full pb-20  ">
       {/* --- Page Header --- */}
-      <div className="relative h-[600px] w-full bg-brand-navy flex items-center justify-center text-white text-center px-4 overflow-hidden mb-4">
+      <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
 
-        {/* Background Image */}
-        <div className="absolute inset-0 opacity-40">
-          <img
-            src={Roombg.src}
-            alt="Header Background"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* CENTER CONTENT */}
-        <div className="relative z-10 flex flex-col items-center justify-center">
-          <h1 className="noto-geogia-font font-bold text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-[60px] mb-4 sm:mb-5 md:mb-6 lg:mb-[30px] drop-shadow-lg">
-            Our Rooms
-          </h1>
-
-          <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
-            <Link href="/">
-              <span className="hover:text-brand-red cursor-pointer transition-colors">
-                Home
-              </span>
-            </Link>
-            <span>/</span>
-            <span>Rooms</span>
+        {/* Background Image Wrapper */}
+        <div className="absolute inset-0 opacity-40 flex items-end">
+          <div className="relative w-full h-[220px]">
+            <img
+              src={Roombg.src}
+              alt="Header Background"
+              className="w-full h-full object-cover [mask-image:linear-gradient(to_top,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_top,transparent,black_35%)]"
+            />
           </div>
         </div>
-
       </div>
 
-
-
+      <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
+        <div className="z-10">
+          <h1 className="noto-geogia-font font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
+            Rooms Grid
+          </h1>
+          <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
+            <Link href="/"><span className="hover:text-brand-red cursor-pointer transition-colors">Home</span></Link>
+            <span>/</span>
+            <span>Rooms Grid</span>
+          </div>
+        </div>
+      </div>
 
 
       {/* --- Main Content --- */}
       <div className="max-w-[1450px] p-6 mx-auto lg:pt-20 bg-white rounded-[10px]">
-        <div className="flex flex-col justify-between px-10 lg:flex-row  pb-20">
+        <div className="flex flex-col lg:flex-row gap-12 pb-20">
 
           {/* --- Sidebar --- */}
 
 
 
-          <aside className="hidden lg:block w-full lg:w-[20%] border border-[#0000002e] border border-[#00000014] px-[30px] py-[20px] space-y-12 sticky top-24 h-fit">
+          <aside className="hidden lg:block w-full lg:w-[15%] space-y-12 sticky top-24 h-fit">
 
             {/* Price Filter */}
             <div className="bg-white">
@@ -379,7 +331,7 @@ export default function RoomsGrid() {
                 <input
                   type="range"
                   min="0"
-                  max={maxPrice}
+                  max="9900"
                   step="50"
                   value={priceRange}
                   onChange={handlePriceChange}
@@ -387,10 +339,10 @@ export default function RoomsGrid() {
                 />
               </div>
               <div className="text-gray-500 font-medium">
-                {formatPrice(0)} - {formatPrice(priceRange)}
+                $0 - ${priceRange}
               </div>
             </div>
-            <span className='bg-[#0000001f] flex h-[1px]'></span>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
             {/* Category Filter */}
             <div className="bg-white">
@@ -418,7 +370,7 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#0000001f] flex h-[1px]'></span>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
 
 
@@ -461,7 +413,7 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#0000001f] flex h-[1px]'></span>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
             <div className="bg-white">
               <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
@@ -502,7 +454,7 @@ export default function RoomsGrid() {
                 })}
               </div>
             </div>
-            <span className='bg-[#0000001f] flex h-[1px]'></span>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
             <div className="bg-white">
               <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
@@ -589,7 +541,7 @@ export default function RoomsGrid() {
                     <input
                       type="range"
                       min="0"
-                      max={maxPrice}
+                      max="9900"
                       step="50"
                       value={priceRange}
                       onChange={handlePriceChange}
@@ -597,10 +549,10 @@ export default function RoomsGrid() {
                     />
                   </div>
                   <div className="text-gray-500 font-medium">
-                    {formatPrice(0)} - {formatPrice(priceRange)}
+                    $0 - ${priceRange}
                   </div>
                 </div>
-                <span className='bg-[#0000001f] mb-[10px] flex h-[2px]'></span>
+                <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
 
                 {/* Category Filter */}
                 <div className="bg-white">
@@ -628,7 +580,7 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#0000001f] flex h-[1px]'></span>
+                <span className='bg-[#00000033] flex h-[2px]'></span>
 
 
 
@@ -671,7 +623,7 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
                   <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
@@ -711,7 +663,7 @@ export default function RoomsGrid() {
                     })}
                   </div>
                 </div>
-                <span className='bg-[#0000001f] mt-[10px] flex h-[2px]'></span>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
 
                 <div className="bg-white">
                   <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
@@ -837,117 +789,136 @@ export default function RoomsGrid() {
 
 
             {/* Room Cards Grid */}
-            {filteredAndSortedRooms.length > 0 ? (
+            {currentRooms.length > 0 ? (
               <div className={`grid gap-8 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
-                {filteredAndSortedRooms.map((room) => (
-                  <motion.div
-                    key={room.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
-                    className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
-                  >
-                    {/* Image Section */}
-                    <div
-                      className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
-                      style={{ backgroundColor: getPastelColor(room.id) }}
+                {currentRooms.map((room) => {
+                  const roomId: string | number = room.id;
+                  const overAllRating = calculateStatsByRoom(reviews, roomId);
+                  return (
+                    <motion.div
+                      key={room.id}
+                      layout
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.3 }}
+                      className={`bg-white group rounded-sm shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 overflow-hidden ${viewMode === 'list' ? 'flex flex-col md:flex-row' : ''}`}
                     >
-                      <Link href={`/room-view/${room.slug}`}>
-                        <img
-                          src={room.image}
-                          alt={room.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
-                          onError={(e) => {
-                            // Hide the broken image icon
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </Link>
-
-                      {/* Rating Badge */}
-                      <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
-                        <TfiStar className="text-yellow-400" />
-                        <span>({room.rating})</span>
-                      </div>
-                    </div>
-
-                    {/* Content Section */}
-                    <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
-                      <div className='flex justify-between text-center'>
+                      {/* Image Section */}
+                      <div
+                        className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-2/5 h-64 md:h-auto' : 'h-64'}`}
+                        style={{ backgroundColor: getPastelColor(room.id) }}
+                      >
                         <Link href={`/room-view/${room.slug}`}>
-                          <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
-                            {room.name}
-                          </h3>
+                          <img
+                            src={room.image}
+                            alt={room.name}
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 cursor-pointer"
+                            onError={(e) => {
+                              // Hide the broken image icon
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                         </Link>
-                        <span>From {formatPrice(room.price)}</span>
 
+                        {/* Rating Badge */}
+                        <div className="absolute top-4 left-4 bg-[#283862] text-white py-1 px-3 flex items-center gap-1 flex items-center justify-center text-xs font-bold shadow-lg z-10 rounded-[30px]">
+                          {overAllRating?.avgRating === "0.0" ?
+                            <>
+                              <span className="text-indigo-400">✨</span>
+                              <span>New</span>
+                            </>
+                            :
+                            <>
+                              <TfiStar className="text-yellow-400" />
+                              <span>({overAllRating?.avgRating})</span>
+                            </>
+                          }
+
+                        </div>
                       </div>
 
-                      <div className="mb-6">
+                      {/* Content Section */}
+                      <div className={`p-6 ${viewMode === 'list' ? 'w-full md:w-3/5 flex flex-col justify-center' : ''}`}>
+                        <div className='flex justify-between text-center'>
+                          <Link href={`/room-view/${room.slug}`}>
+                            <h3 className="text-[12px] md:text-[14px] lg:text-[16px] noto-geogia-font font-bold text-[#283862] mb-3 group-hover:text-[#c23535] transition-colors cursor-pointer">
+                              {room.name}
+                            </h3>
+                          </Link>
+                          <span>From ${room.price}</span>
 
-                        {/* GRID VIEW PARAGRAPH */}
-                        {viewMode === "grid" && (
-                          <div className="flex gap-1 items-center">
-                            <TbNorthStar />
-                            <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
-                              {room.description}
-                            </p>
-                          </div>
-                        )}
+                        </div>
 
-                        {/* LIST VIEW PARAGRAPH */}
-                        {viewMode === "list" && (
-                          <div className="flex gap-2 items-start">
-                            <p className="text-gray-600 text-[16px] leading-relaxed">
-                              {room.description} — On this easy to moderate walking tour, you will discover selected sections of the ancient trails of Lycia, otherwise known as the Lycian Way, revealing the region’s ancient heritage and wild beauty.
-                            </p>
-                          </div>
-                        )}
+                        <div className="mb-6">
+
+                          {/* GRID VIEW PARAGRAPH */}
+                          {viewMode === "grid" && (
+                            <div className="flex gap-1 items-center">
+                              <TbNorthStar />
+                              <p className="text-gray-500 text-sm leading-relaxed line-clamp-2">
+                                {room.description}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* LIST VIEW PARAGRAPH */}
+                          {viewMode === "list" && (
+                            <div className="flex gap-2 items-start">
+                              <p className="text-gray-600 text-[16px] leading-relaxed">
+                                {room.description} — On this easy to moderate walking tour, you will discover selected sections of the ancient trails of Lycia, otherwise known as the Lycian Way, revealing the region’s ancient heritage and wild beauty.
+                              </p>
+                            </div>
+                          )}
 
 
 
-                      </div>
+                        </div>
 
-                      <div className='flex justify-between border-t-2 border-[#00000017] items-center'>
+                        <div className='flex justify-between border-t-2 border-[#00000017] items-center'>
 
-                        <div className="flex flex-wrap gap-[10px]  border-gray-100 pt-4">
-                          <div className="flex gap-[5px] items-center">
-                            <PiArrowsOutSimple className="text-[12px] text-[#c23535]" />
-                            <span className='text-[10px]'>Size: {room.size} m²</span>
-                          </div>
+                          <div className="flex flex-wrap gap-[10px]  border-gray-100 pt-4">
+                            <div className="flex gap-[5px] items-center">
+                              <PiArrowsOutSimple className="text-[12px] text-[#c23535]" />
+                              <span className='text-[10px]'>Size: {room.size} m²</span>
+                            </div>
 
-                          {room.beds
-                            .filter((bed) => bed.type && !bed.type.toLowerCase().includes('unknown'))
-                            .map((bed, idx) => (
-                              console.log('bed', bed),
+                            {room.beds.map((bed, idx) => (
                               <div key={idx} className="flex gap-[5px] items-center">
                                 <PiBed className="text-[12px] text-[#c23535]" />
                                 <span className='text-[10px]'>Beds:{bed.type}</span>
                               </div>
                             ))}
 
+                            <div className="flex gap-[5px] items-center">
+                              <PiUsers className="text-[12px] text-[#c23535]" />
+                              <span className='text-[10px]'>Adults: {room.adults} Adults</span>
+                            </div>
+                          </div>
+                          <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                            <button
+                              onClick={() => {
+                                if (isLoggedIn) {
+                                  router.push(`/room-view/${room.slug}`);
+                                } else {
+                                  useAuthStore.getState().openLoginModal();
+                                }
+                              }}
+                              className="text-sm transition-colors duration-300 group-hover:text-[#c23535] font-semibold uppercase text-[.70rem]"
+                            >
+                              Book Now
+                            </button>
+                          </div>
                         </div>
-                        <div className="group flex justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[10px] py-[6px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
-                          <button
-                            onClick={() => {
-                              if (isLoggedIn) {
-                                router.push(`/room-view/${room.slug}`);
-                              } else {
-                                useAuthStore.getState().openLoginModal();
-                              }
-                            }}
-                            className="px-6 py-3 bg-[#c23535] text-white font-bold uppercase text-xs rounded-lg hover:bg-[#a82d2d] transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-                          >
-                            Book Now
-                          </button>
+                        <div className="group flex  justify-center gap-[10px] bg-[#e1d8d869] mt-[10px] rounded-[5px] px-[8px] py-[3px] cursor-pointer transition-all duration-300 hover:bg-[#e1d8d8a5]">
+                          <a href="" className="text-sm transition-colors duration-300 group-hover:text-[black]">Book</a>
+                          <IoIosArrowRoundForward className="text-[20px] transition-transform duration-300 group-hover:translate-x-1" />
                         </div>
 
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  )
+                })}
               </div>
             ) : (
               <div className="w-full h-60 flex flex-col items-center justify-center text-gray-500">
@@ -956,8 +927,28 @@ export default function RoomsGrid() {
               </div>
             )}
 
-            {/* Pagination removed - showing all rooms */}
-
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-16 flex justify-center gap-2">
+                {/* Page Buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 400, behavior: 'smooth' });
+                    }}
+                    className={`w-10 h-10 flex items-center justify-center font-bold rounded-full transition-all duration-300 shadow-md
+                        ${currentPage === page
+                        ? 'bg-[#c23535] text-white scale-110'
+                        : 'bg-white text-[#c23535] hover:bg-gray-100'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            )}
           </main>
         </div>
       </div>
