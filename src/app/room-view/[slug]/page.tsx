@@ -44,15 +44,10 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
     const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
-<<<<<<< HEAD
     const { isLoggedIn, openLoginModal } = useAuthStore();
 
     const { fetchReview ,reviews} = useReviewStore();
     const filteredReview = reviews &&reviews.filter((item) => {
-=======
-    const { fetchReview, reviews } = useReviewStore();
-    const filteredReview = reviews && reviews.filter((item) => {
->>>>>>> 18ec408 (Review integration rooms & rooms view)
         return item?.bookingId?.room?.slug === slug;
     });
     // --- REFS FOR SCROLLING ---
@@ -156,10 +151,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // --- CONSTANTS ---
-<<<<<<< HEAD
-    console.log('room:', room);
-=======
->>>>>>> 18ec408 (Review integration rooms & rooms view)
     const basePrice = room ? room.price : 1590;
 
     // Config values
