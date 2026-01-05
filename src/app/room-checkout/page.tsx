@@ -762,12 +762,9 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                                 <button
                                     onClick={handlePlaceOrder}
-                                    disabled={!cartItem || isProcessing || !isFormValid}
+                                    // disabled={!cartItem || isProcessing || !isFormValid}
                                     className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
-        ${(!cartItem || isProcessing || !isFormValid)
-                                            ? 'opacity-60 cursor-not-allowed'
-                                            : 'hover:bg-[#d8922f] cursor-pointer'
-                                        }`}
+                                        `}
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}
                                 </button>

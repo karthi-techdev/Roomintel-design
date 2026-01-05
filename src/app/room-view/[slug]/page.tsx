@@ -30,19 +30,18 @@ import { useRoomStore } from '@/store/useRoomStore';
 import { useCartStore } from '@/store/useCartStore';
 import { Reviews, useReviewStore } from '@/store/useReviewStore';
 import RoomReview from '@/components/room-view/RoomReview';
+import RoomOverAllReview from '@/components/room-view/RoomOverAllReview';
 
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
-    console.log('==========slug',slug)
     const router = useRouter();
 
     const { selectedRoom: room, loading: roomLoading, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
-    const { fetchReview ,reviews} = useReviewStore();
-    const filteredReview = reviews &&reviews.filter((item) => {
+    const { fetchReview, reviews } = useReviewStore();
+    const filteredReview = reviews && reviews.filter((item) => {
         return item?.bookingId?.room?.slug === slug;
     });
-    console.log('=-=-=-=-=-==--filteredReview',filteredReview)
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
     const infoRef = useRef<HTMLDivElement>(null);
@@ -99,9 +98,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     // Review Effect
     useEffect(() => {
         if (slug) {
-            fetchReview({ 
-                status: 'approved', 
-                slug: 'deluxe-sea-view' 
+            fetchReview({
+                status: 'approved',
+                slug: 'deluxe-sea-view'
             });
         }
     }, [slug])
@@ -144,7 +143,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // --- CONSTANTS ---
-    console.log('room:',room);
     const basePrice = room ? room.price : 1590;
 
     // Config values
@@ -438,11 +436,19 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <RoomFaq faqs={faqData} />
                         </div>
 
-                        <div ref={reviewRef}>
-                        <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Ratings & Reviews</h3>
-                        {filteredReview && filteredReview.map((item : Reviews) => {
-                           return <RoomReview item={item}/>
-                        })}
+                        {/* Reviews & Rating sec */}
+                        <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
+                            <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
+                            <RoomOverAllReview reviews={filteredReview} />
+                            {filteredReview && filteredReview.slice(0 ,8).map((item: Reviews) => {
+                                return <RoomReview item={item} />
+                            })}
+                            {/* View All Reviews Button */}
+                            {filteredReview && filteredReview.length > 10 &&
+                                <button className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
+                                    All {filteredReview.length} reviews →
+                                </button>
+                            }
                         </div>
 
                         {/* Nearby */}
