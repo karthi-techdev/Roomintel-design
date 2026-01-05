@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -371,7 +372,7 @@ export default function RoomCart() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 mt-16 lg:mt-0">
+            <div className="max-w-5xl mx-auto mx-auto px-4 sm:px-6 py-6 lg:py-8 mt-16 lg:mt-0">
                 {loading ? (
                     <div className="flex justify-center items-center py-20">
                         <div className="w-12 h-12 border-4 border-[#283862] border-t-transparent rounded-full animate-spin"></div>
