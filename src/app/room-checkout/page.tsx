@@ -477,17 +477,17 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     if (isBooked) {
         return (
             <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
-                <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-                    <div className="bg-[#283862] py-16 px-8 text-center text-white relative">
+                <div className="w-[500px] mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
+                    <div className="bg-[#283862] py-10 px-8 text-center text-white relative">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10">
                             <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461" alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="relative z-10">
-                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
+                            <div className="w-18 h-18 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
                                 <FaCheckCircle className="text-white text-4xl" />
                             </div>
                             <h2 className="text-4xl noto-geogia-font font-bold mb-2">Booking Confirmed!</h2>
-                            <p className="text-gray-300">Thank you for choosing RoomIntel. Your stay is secured.</p>
+                            <p className="text-gray-300 ">Thank you for choosing RoomIntel. Your stay is secured.</p>
                         </div>
                     </div>
 
@@ -496,22 +496,22 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             <h4 className="text-sm font-bold text-[#283862] uppercase tracking-wider mb-4 border-b pb-2">What's Next?</h4>
                             <ul className="space-y-3">
                                 <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
                                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                     </div>
-                                    <span>You will receive a confirmation email with all details shortly.</span>
+                                    <span className='text-[10px]'>You will receive a confirmation email with all details shortly.</span>
                                 </li>
                                 <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
                                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                     </div>
-                                    <span>Please present your ID card at the reception during check-in.</span>
+                                    <span className='text-[10px]'>Please present your ID card at the reception during check-in.</span>
                                 </li>
                                 <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
+                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
                                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
                                     </div>
-                                    <span>Need help? Contact our support via your dashboard or call +91 XXX-XXX-XXXX.</span>
+                                    <span className='text-[10px]'>Need help? Contact our support via your dashboard or call +91 XXX-XXX-XXXX.</span>
                                 </li>
                             </ul>
                         </div>
@@ -519,13 +519,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
                                 onClick={() => router.push('/')}
-                                className="flex items-center justify-center gap-2 px-8 py-4 bg-[#283862] text-white rounded-xl font-bold hover:bg-[#1c2a4a] transition-all shadow-md active:scale-95"
+                                className="flex items-center justify-center gap-2 px-2 py-2 bg-[#283862] text-white rounded-xl font-bold hover:bg-[#1c2a4a] transition-all shadow-md active:scale-95"
                             >
                                 <FaHome /> Go to Home
                             </button>
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="flex items-center justify-center gap-2 px-8 py-4 border-2 border-[#283862] text-[#283862] rounded-xl font-bold hover:bg-[#283862] hover:text-white transition-all shadow-sm active:scale-95"
+                                className="flex items-center justify-center gap-2 px-2 py-2 border-2 border-[#283862] text-[#283862] rounded-xl font-bold hover:bg-[#283862] hover:text-white transition-all shadow-sm active:scale-95"
                             >
                                 <FaListAlt /> View My Bookings
                             </button>
