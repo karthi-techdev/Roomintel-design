@@ -46,8 +46,8 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const { addToCart, fetchCart } = useCartStore();
     const { isLoggedIn, openLoginModal } = useAuthStore();
 
-    const { fetchReview ,reviews} = useReviewStore();
-    const filteredReview = reviews &&reviews.filter((item) => {
+    const { fetchReview, reviews } = useReviewStore();
+    const filteredReview = reviews && reviews.filter((item) => {
         return item?.bookingId?.room?.slug === slug;
     });
     // --- REFS FOR SCROLLING ---
@@ -108,7 +108,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         if (slug) {
             fetchReview({
                 status: 'approved',
-                slug: 'deluxe-sea-view'
+                slug: slug
             });
         }
     }, [slug])
@@ -469,7 +469,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
-                            {filteredReview && filteredReview.slice(0 ,8).map((item: Reviews) => {
+                            {filteredReview && filteredReview.slice(0, 8).map((item: Reviews) => {
                                 return <RoomReview item={item} />
                             })}
                             {/* View All Reviews Button */}
