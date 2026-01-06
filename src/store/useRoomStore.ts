@@ -13,6 +13,7 @@ export interface Room {
     maxChildren: number;
     maxRooms: number;
     baseAdults: number;
+    bookedDates: string[];
     baseChildren: number;
     extraAdultPrice: number;
     extraChildPrice: number;

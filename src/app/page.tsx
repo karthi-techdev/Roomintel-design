@@ -12,18 +12,14 @@ import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
 import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import { IoLogoLinkedin } from 'react-icons/io';
-import { FaStar } from "react-icons/fa6";
-import { FaStarHalfStroke } from "react-icons/fa6";
-
-
-import { showAlert } from '../utils/alertStore';
+import {  getImageUrl } from '../utils/getImage';
 import { useSliderStore } from '../store/useSliderStore';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useTestimonialStore } from '@/store/useTestimonialStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAccommodationStore } from '@/store/useAccomodationStore';
 
 
 interface SlideData {
@@ -43,6 +39,7 @@ export default function Home() {
   }, [fetchTestimonial])
 
   const { slides, fetchActiveSlides, loading } = useSliderStore();
+  const { accommodations, fetchAccommodations, isLoading: accommodationsLoading } = useAccommodationStore();
   const router = useRouter();
 
   const handleCheckAvailability = () => {
@@ -57,7 +54,8 @@ export default function Home() {
 
   useEffect(() => {
     fetchActiveSlides();
-  }, [fetchActiveSlides]);
+    fetchAccommodations();
+  }, [fetchActiveSlides, fetchAccommodations]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
@@ -96,45 +94,22 @@ export default function Home() {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
   }
 
-  const rooms = [
-    {
-      id: 1,
-      name: "Junior Suite",
-      image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop",
-      price: 150,
-      description: "Our Junior Suites offer a perfect blend of comfort and luxury, featuring a spacious living area and a private balcony with stunning views/.",
-      amenities: {
-        beds: 1,
-        baths: 1,
-        area: 45
-      }
+  const rooms = accommodations.map((acc: any) => ({
+    id: acc._id,
+    name: acc.title,
+    price: acc.price,
+    description: acc.description,
+    amenities: {
+      beds: acc.beds || 1,
+      baths: acc.bathroom || 1,
+      area: 45 // Default area as it's not in the backend model yet
     },
-    {
-      id: 2,
-      name: "Family Room",
-      image: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=2574&auto=format&fit=crop",
-      price: 250,
-      description: "Designed with families in mind, this spacious room offers multiple beds and a cozy atmosphere for a memorable stay.",
-      amenities: {
-        beds: 3,
-        baths: 2,
-        area: 75
-      }
-    },
-    {
-      id: 3,
-      name: "Double Room",
-      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2574&auto=format&fit=crop",
-      price: 180,
-      description: "Ideal for couples or solo travelers, our Double Rooms provide a tranquil retreat with modern amenities and elegant decor.",
-      amenities: {
-        beds: 2,
-        baths: 1,
-        area: 35
-      }
-    }
-  ];
-
+    image: getImageUrl(
+    acc.image,
+    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
+  ),
+  }));
+console.log('rooms',rooms)
 
 
   // Carousel Navigation
@@ -194,6 +169,7 @@ export default function Home() {
   };
 
   const prevSlideCarousel = () => {
+    if (rooms.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + rooms.length) % rooms.length);
   };
 
@@ -204,7 +180,12 @@ export default function Home() {
     return "hidden";
   };
 
-  const activeRoom = rooms[currentIndex];
+  if (accommodationsLoading || accommodations.length === 0) {
+    if (accommodationsLoading) return <div className="w-full h-[500px] flex justify-center items-center">Loading Accommodations...</div>;
+    // return null; // Or some fallback
+  }
+
+  const activeRoom = rooms[currentIndex] || rooms[0];
 
   const amenities = [
     {
@@ -246,15 +227,22 @@ export default function Home() {
 
       <section className="relative w-full h-[850px] overflow-hidden">
         {/* Background Image with Transition */}
+        {/* Background Image with Transition */}
         <div className="absolute inset-0 z-0">
-          <AnimatePresence mode='popLayout'>
-            <img
-              src="/image/666.jpg"
-              alt="Gallery Background"
-              className="w-full h-[600px] object-cover absolute inset-0"
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentSlide} // Ensures animation triggers on slide change
+              src={currentData.image || "/image/666.jpg"} // Dynamic image from store, fallback to old one
+              alt={currentData.title || "Hero Background"}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="w-full h-full object-cover absolute inset-0"
             />
           </AnimatePresence>
-          {/* Subtle overlay to make text pop against the blue water/sky */}
+
+          {/* Subtle overlay to make text readable */}
           <div className="absolute inset-0 bg-black/10 z-10"></div>
         </div>
 
@@ -654,14 +642,14 @@ export default function Home() {
       </section>
 
 
-      <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
+      {/* <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
         <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
-          {/* Restaurant */}
+          
           <div className="max-w-[1400px] mx-auto px-6 lg:px-16 mb-32 lg:mb-48">
             <div className="flex flex-col lg:flex-row items-center">
-              {/* Image Side */}
+             
               <div className="w-full lg:w-[40%] relative mb-16 lg:mb-0">
-                {/* Vertical Text */}
+               
                 <span className="hidden lg:block absolute -left-12 top-10 -rotate-90 origin-top-left text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
                   Restaurant
                 </span>
@@ -681,12 +669,12 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              {/* Content Side */}
+             
 
               <div className="w-full lg:w-[60%] bg-[#F8F9FA] mt-52 relative lg:-ml-12 z-10">
-                {/* Background Box */}
+               
                 <div className="bg-[#F8F9FA] pl-0 md:pl-10 pt-10 pb-10 lg:pl-16 lg:pt-16 lg:pb-16 relative">
-                  {/* Vertical Text */}
+                  
                   <span className="hidden lg:block absolute -left-0 top-1/2 -translate-y-1/2 -rotate-90 text-lg font-bold tracking-[0.3em] text-gray-300 uppercase">
                     Fresh Food
                   </span>
@@ -712,10 +700,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Wellness */}
+         
           <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
             <div className="flex flex-col lg:flex-row-reverse items-center">
-              {/* Image Side */}
+             
               <div className="w-full lg:w-1/2 relative mb-16 lg:mb-0">
                 <div className="relative ml-8 lg:ml-16">
                   <img
@@ -733,7 +721,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Content Side */}
+             
               <div className="w-full lg:w-1/2 relative lg:-mr-12 z-10">
                 <div className="bg-[#F8F9FA] p-10 lg:p-16">
                   <div className="flex items-center gap-4 mb-4">
@@ -753,7 +741,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </div>
+      </div> */}
       <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 opacity-10">
@@ -795,66 +783,66 @@ export default function Home() {
 
       <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
 
-          {/* ================= Testimonials ================= */}
-          <div className="max-w-[1200px] mx-auto">
-            <div className="mb-16 max-w-4xl ml-5 md:ml-0">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[2px] bg-[#c23535]" />
-                <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
-                  Testimonials
-                </span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
-                What Our Customer Says
-              </h2>
-
-              <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-                Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
-              </p>
+        {/* ================= Testimonials ================= */}
+        <div className="max-w-[1200px] mx-auto">
+          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-[2px] bg-[#c23535]" />
+              <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
+                Testimonials
+              </span>
             </div>
 
-            {testimonials.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {testimonials && testimonials.map((data) => {
-                return (
-                  <div
-                    key={data._id}
-                    className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
-                  >
-                    <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                      <RiDoubleQuotesL />
-                    </div>
+            <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
+              What Our Customer Says
+            </h2>
 
-                    <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                      {data.title}
-                    </h3>
-
-                    <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                      {data.reviews}
-                    </p>
-
-                    <div className="w-full h-[1px] bg-gray-200 mb-6" />
-
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                        <img
-                          src={data.image}
-                          className="w-full h-full object-cover grayscale"
-                        />
-                      </div>
-                      <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                        {data.reviewerName}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-              : 'No data found'}
+            <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
+              Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
+            </p>
           </div>
 
+          {testimonials.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {testimonials && testimonials.map((data) => {
+              return (
+                <div
+                  key={data._id}
+                  className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
+                >
+                  <div className="text-[#c23535] text-4xl mb-6 opacity-80">
+                    <RiDoubleQuotesL />
+                  </div>
 
-        </section>
+                  <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
+                    {data.title}
+                  </h3>
+
+                  <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                    {data.reviews}
+                  </p>
+
+                  <div className="w-full h-[1px] bg-gray-200 mb-6" />
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
+                      <img
+                        src={data.image}
+                        className="w-full h-full object-cover grayscale"
+                      />
+                    </div>
+                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
+                      {data.reviewerName}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+            : 'No data found'}
+        </div>
+
+
+      </section>
     </main>
   );
 }

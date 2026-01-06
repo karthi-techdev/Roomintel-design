@@ -41,7 +41,7 @@ const Dashboard: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+  console.log('Rendered Dashboard with bookings:', bookings);
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -71,23 +71,39 @@ const Dashboard: React.FC = () => {
         try {
           const bookingsRes = await bookingService.getMyBookings();
           if (bookingsRes?.status && Array.isArray(bookingsRes.data)) {
-            const mappedBookings = bookingsRes.data.map((bk: any) => ({
-              id: bk._id,
-              roomName: bk.room?.title || bk.roomName || "Unknown Room",
-              image: bk.room?.images?.[0] || bk.room?.image || "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop",
-              checkIn: new Date(bk.checkIn).toLocaleDateString(),
-              checkOut: new Date(bk.checkOut).toLocaleDateString(),
-              guests: Array.isArray(bk.guestDetails)
-                ? bk.guestDetails.map((g: any) => `${g.value} ${g.key || g.label || 'Guests'}`).join(', ')
+            const mappedBookings = bookingsRes.data.map((bk: any) => {
+              // Extract primary room data
+              const primaryRoom = bk.room || bk.rooms?.[0]?.roomId || bk.rooms?.[0] || {};
+              const roomImage = primaryRoom?.images?.[0] || primaryRoom?.image || bk.rooms?.[0]?.room?.images?.[0];
+
+              // Resolve Image URL
+              const finalImage = roomImage
+                ? (roomImage.startsWith('http') ? roomImage : `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000'}/uploads/rooms/${roomImage}`)
+                : "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop";
+
+              // Resolve Guest Details
+              const gd = bk.guestDetails || bk.rooms?.[0]?.guestDetails || bk.guests;
+              const guestsString = Array.isArray(gd)
+                ? gd.map((g: any) => `${g.value} ${g.key || g.label || 'Guests'}`).join(', ')
                 : [
-                  (bk.guestDetails?.adults || 0) > 0 ? `${bk.guestDetails?.adults} Adult${(bk.guestDetails?.adults || 0) > 1 ? 's' : ''}` : null,
-                  (bk.guestDetails?.children || 0) > 0 ? `${bk.guestDetails?.children} Child${(bk.guestDetails?.children || 0) !== 1 ? 'ren' : ''}` : null
-                ].filter(Boolean).join(', ') || '0 Guests',
-              price: formatPrice(bk.totalAmount),
-              status: bk.bookingStatus || "Upcoming",
-              features: [],
-              originalCheckIn: bk.checkIn
-            }));
+                  (gd?.adults || 0) > 0 ? `${gd?.adults} Adult${(gd?.adults || 0) > 1 ? 's' : ''}` : null,
+                  (gd?.children || 0) > 0 ? `${gd?.children} Child${(gd?.children || 0) !== 1 ? 'ren' : ''}` : null,
+                  (gd?.rooms || 0) > 0 ? `${gd?.rooms} Room${(gd?.rooms || 0) > 1 ? 's' : ''}` : null
+                ].filter(Boolean).join(', ') || '0 Guests';
+
+              return {
+                id: bk._id,
+                roomName: primaryRoom?.title || primaryRoom?.name || bk.roomName || "Unknown Room",
+                image: finalImage,
+                checkIn: new Date(bk.checkIn).toLocaleDateString(),
+                checkOut: new Date(bk.checkOut).toLocaleDateString(),
+                guests: guestsString,
+                price: formatPrice(bk.totalAmount),
+                status: bk.bookingStatus || "Upcoming",
+                features: [],
+                originalCheckIn: bk.checkIn
+              };
+            });
             setBookings(mappedBookings);
           }
         } catch (e) { console.error("Bookings fetch failed", e); }
@@ -490,7 +506,6 @@ const Dashboard: React.FC = () => {
                         <div className="flex flex-col md:flex-row">
                           <div className="w-full md:w-[280px] h-[200px] md:h-auto relative overflow-hidden shrink-0">
                             <img src={booking.image} alt={booking.roomName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                            <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[#283862] text-[10px] font-bold uppercase px-3 py-1 rounded-sm">{booking.id}</div>
                           </div>
                           <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
                             <div>

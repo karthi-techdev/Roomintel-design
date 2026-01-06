@@ -1,7 +1,9 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaChevronLeft, FaChevronRight, FaPlus } from 'react-icons/fa';
+import galleryService, { GalleryItem, GalleryCategory } from '../../api/galleryService';
+import { getImageUrl } from '../../utils/getImage';
 
 interface GalleryProps {
   onBack: () => void;
@@ -10,67 +12,41 @@ interface GalleryProps {
 const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   const [filter, setFilter] = useState('All');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [galleries, setGalleries] = useState<GalleryItem[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const categories = ['All', 'Spaces', 'Activities', 'Pools', 'Restaurants', 'Spa'];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [galleryRes, categoryRes] = await Promise.all([
+          galleryService.getGalleries(),
+          galleryService.getCategories()
+        ]);
 
-  const images = [
-    {
-      id: 1,
-      src: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=1200&auto=format&fit=crop",
-      category: "Pools",
-      title: "Infinity Pool View"
-    },
-    {
-      id: 2,
-      src: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1200&auto=format&fit=crop",
-      category: "Spaces",
-      title: "Luxury Bedroom"
-    },
-    {
-      id: 3,
-      src: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=1200&auto=format&fit=crop",
-      category: "Spaces",
-      title: "Garden Villa Exterior"
-    },
-    {
-      id: 4,
-      src: "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=1200&auto=format&fit=crop",
-      category: "Pools",
-      title: "Tropical Poolside"
-    },
-    {
-      id: 5,
-      src: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=1200&auto=format&fit=crop",
-      category: "Spaa",
-      title: "Relaxing Spa Treatment"
-    },
-    {
-      id: 6,
-      src: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop",
-      category: "Restaurants",
-      title: "Fine Dining"
-    },
-    {
-      id: 7,
-      src: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1200&auto=format&fit=crop",
-      category: "Spaces",
-      title: "Mountain Chalet"
-    },
-    {
-      id: 8,
-      src: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1200&auto=format&fit=crop",
-      category: "Activities",
-      title: "Beachfront Relaxation"
-    },
-    {
-      id: 9,
-      src: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=1200&auto=format&fit=crop",
-      category: "Restaurants",
-      title: "Gourmet Experience"
-    }
-  ];
+        if (galleryRes.success) {
+          setGalleries(galleryRes.data);
+        }
+        if (categoryRes.success) {
+          const catNames = categoryRes.data.map((c: GalleryCategory) => c.name);
+          setCategories(['All', ...catNames]);
+        }
+      } catch (err) {
+        console.error("Error fetching gallery data:", err);
+        setError("Failed to load gallery items. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const filteredImages = filter === 'All' ? images : images.filter(img => img.category === filter);
+    fetchData();
+  }, []);
+
+  const filteredImages = filter === 'All'
+    ? galleries
+    : galleries.filter(img => img.galleryCategory.name === filter);
 
   // Lightbox Handlers
   const openLightbox = (index: number) => setLightboxIndex(index);
@@ -140,39 +116,54 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
         </div>
 
         {/* --- MASONRY GRID --- */}
-        <motion.div
-          layout
-          className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6"
-        >
-          <AnimatePresence>
-            {filteredImages.map((img, index) => (
-              <motion.div
-                layout
-                key={img.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="break-inside-avoid relative group cursor-pointer rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-shadow"
-                onClick={() => openLightbox(index)}
-              >
-                <img
-                  src={img.src}
-                  alt={img.title}
-                  className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-[#283862]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 text-center">
-                  <div className="w-10 h-10 rounded-full bg-brand-red text-white flex items-center justify-center mb-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
-                    <FaPlus />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="w-12 h-12 border-4 border-[#283862] border-t-brand-red rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-500 font-bold tracking-widest uppercase text-xs">Loading Gallery...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-20">
+            <p className="text-brand-red font-bold">{error}</p>
+          </div>
+        ) : filteredImages.length === 0 ? (
+          <div className="text-center py-20 text-gray-500 uppercase tracking-widest text-sm">
+            No images found in this category.
+          </div>
+        ) : (
+          <motion.div
+            layout
+            className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6"
+          >
+            <AnimatePresence>
+              {filteredImages.map((img, index) => (
+                <motion.div
+                  layout
+                  key={img._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                  className="break-inside-avoid relative group cursor-pointer rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-shadow"
+                  onClick={() => openLightbox(index)}
+                >
+                  <img
+                    src={getImageUrl(img.image, '/image/placeholder.jpg')}
+                    alt={img.name}
+                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-[#283862]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 text-center">
+                    <div className="w-10 h-10 rounded-full bg-brand-red text-white flex items-center justify-center mb-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">
+                      <FaPlus />
+                    </div>
+                    <h3 className="text-white noto-geogia-font text-xl font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-100">{img.name}</h3>
+                    <span className="text-gray-300 text-xs uppercase tracking-widest mt-1 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-150">{img.galleryCategory.name}</span>
                   </div>
-                  <h3 className="text-white noto-geogia-font text-xl font-bold transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-100">{img.title}</h3>
-                  <span className="text-gray-300 text-xs uppercase tracking-widest mt-1 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-150">{img.category}</span>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        )}
 
       </div>
 
@@ -202,13 +193,13 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
 
             <div className="max-w-5xl w-full max-h-full flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
               <img
-                src={filteredImages[lightboxIndex].src}
-                alt={filteredImages[lightboxIndex].title}
+                src={getImageUrl(filteredImages[lightboxIndex].image, '/image/placeholder.jpg')}
+                alt={filteredImages[lightboxIndex].name}
                 className="max-w-full max-h-[80vh] object-contain rounded-sm shadow-2xl"
               />
               <div className="mt-4 text-center">
-                <h3 className="text-white noto-geogia-font text-2xl">{filteredImages[lightboxIndex].title}</h3>
-                <p className="text-gray-400 text-sm uppercase tracking-widest mt-1">{filteredImages[lightboxIndex].category}</p>
+                <h3 className="text-white noto-geogia-font text-2xl">{filteredImages[lightboxIndex].name}</h3>
+                <p className="text-gray-400 text-sm uppercase tracking-widest mt-1">{filteredImages[lightboxIndex].galleryCategory.name}</p>
               </div>
             </div>
 
