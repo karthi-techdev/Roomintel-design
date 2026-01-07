@@ -124,7 +124,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isBooked, setIsBooked] = useState(false);
+    const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+    const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
 
     // Aggregate calculations for all items (same as cart page)
@@ -430,10 +431,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         setErrors(prev => ({ ...prev, ...dateErrors }));
     };
 
-    const finalizeOrder = async () => {
+    const finalizeOrder = async (bookingData: any) => {
         await clearCart();
-        setIsBooked(true);
+        setConfirmedBookingDetails(bookingData);
+        setIsBookingConfirmed(true);
         setIsProcessing(false);
+        // Scroll to top to see the confirmation
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePlaceOrder = async () => {
@@ -473,7 +477,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             checkOut: item.checkOut || dates.checkOut,
             guestDetails: item.guestDetails
         }));
-        console.log('==========bookedRooms',bookedRooms)
+
         const primaryRoomId = bookedRooms[0]?.roomId;
 
         const bookingPayload = {
@@ -498,147 +502,163 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             bookingStatus: 'Pending'
         };
         console.log('============bookingPayload======',bookingPayload)
-        // try {
-        //     if (paymentMethod === 'cash') {
-        //         // CASH FLOW
-        //         await bookingService.createBooking(bookingPayload);
-        //         const pointsEarned = Math.floor(totalAmount * 10);
-        //         showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-        //         await finalizeOrder();
+        try {
+            if (paymentMethod === 'cash') {
+                // CASH FLOW
+                await bookingService.createBooking(bookingPayload);
+                const pointsEarned = Math.floor(totalAmount * 10);
+                showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                await finalizeOrder(bookingPayload);
 
-        //     } else if (paymentMethod === 'card') {
-        //         // RAZORPAY / ONLINE FLOW
-        //         const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
+            } else if (paymentMethod === 'card') {
+                // RAZORPAY / ONLINE FLOW
+                const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
 
-        //         if (paymentRes.status === false) throw new Error(paymentRes.message);
+                if (paymentRes.status === false) throw new Error(paymentRes.message);
 
-        //         const orderData = paymentRes.data;
+                const orderData = paymentRes.data;
 
-        //         const options = {
-        //             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        //             amount: orderData.amount,
-        //             currency: orderData.currency,
-        //             name: "RoomIntel Booking",
-        //             description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
-        //             order_id: orderData.razorpayOrderId,
-        //             handler: async function (response: any) {
-        //                 console.log("Payment Successful:", response);
+                const options = {
+                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    name: "RoomIntel Booking",
+                    description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
+                    order_id: orderData.razorpayOrderId,
+                    handler: async function (response: any) {
+                        console.log("Payment Successful:", response);
 
-        //                 // Update payload with payment success
-        //                 const paidPayload = {
-        //                     ...bookingPayload,
-        //                     paymentStatus: 'Paid',
-        //                     paymentMode: 'Card',
-        //                 };
+                        // Update payload with payment success
+                        const paidPayload = {
+                            ...bookingPayload,
+                            paymentStatus: 'Paid',
+                            paymentMode: 'Card',
+                        };
 
-        //                 try {
-        //                     await bookingService.createBooking(paidPayload);
-        //                     const pointsEarned = Math.floor(totalAmount * 10);
-        //                     showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-        //                     await finalizeOrder();
-        //                 } catch (err) {
-        //                     console.error("Failed to save booking after payment", err);
-        //                     showAlert.error("Payment successful but booking failed to save. Please contact support.");
-        //                     setIsProcessing(false);
-        //                 }
-        //             },
-        //             prefill: {
-        //                 name: formData.name,
-        //                 email: formData.email,
-        //                 contact: formData.phone,
-        //             },
-        //             theme: {
-        //                 color: "#EDA337",
-        //             },
-        //             modal: {
-        //                 ondismiss: function () {
-        //                     console.log('Payment cancelled by user');
-        //                     setIsProcessing(false);
-        //                     showAlert.info("Payment cancelled");
-        //                 }
-        //             }
-        //         };
+                        try {
+                            await bookingService.createBooking(paidPayload);
+                            const pointsEarned = Math.floor(totalAmount * 10);
+                            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                            await finalizeOrder(bookingPayload);
+                        } catch (err) {
+                            console.error("Failed to save booking after payment", err);
+                            showAlert.error("Payment successful but booking failed to save. Please contact support.");
+                            setIsProcessing(false);
+                        }
+                    },
+                    prefill: {
+                        name: formData.name,
+                        email: formData.email,
+                        contact: formData.phone,
+                    },
+                    theme: {
+                        color: "#EDA337",
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            console.log('Payment cancelled by user');
+                            setIsProcessing(false);
+                            showAlert.info("Payment cancelled");
+                        }
+                    }
+                };
 
-        //         if (typeof window !== "undefined" && (window as any).Razorpay) {
-        //             const rzp = new (window as any).Razorpay(options);
-        //             rzp.on('payment.failed', function (response: any) {
-        //                 showAlert.error("Payment Failed: " + response.error.description);
-        //                 setIsProcessing(false);
-        //             });
-        //             rzp.open();
-        //         } else {
-        //             showAlert.error("Razorpay SDK not loaded. Check connection.");
-        //             setIsProcessing(false);
-        //         }
-        //     } else {
-        //         showAlert.warning("Selected payment method not supported yet.");
-        //         setIsProcessing(false);
-        //     }
+                if (typeof window !== "undefined" && (window as any).Razorpay) {
+                    const rzp = new (window as any).Razorpay(options);
+                    rzp.on('payment.failed', function (response: any) {
+                        showAlert.error("Payment Failed: " + response.error.description);
+                        setIsProcessing(false);
+                    });
+                    rzp.open();
+                } else {
+                    showAlert.error("Razorpay SDK not loaded. Check connection.");
+                    setIsProcessing(false);
+                }
+            } else {
+                showAlert.warning("Selected payment method not supported yet.");
+                setIsProcessing(false);
+            }
 
-        // } catch (error: any) {
-        //     console.error("Order processing error:", error);
-        //     showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
-        //     setIsProcessing(false);
-        // }
+        } catch (error: any) {
+            console.error("Order processing error:", error);
+            showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
+            setIsProcessing(false);
+        }
     };
 
 
-    if (isBooked) {
+    if (isBookingConfirmed) {
         return (
-            <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
-                <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-                    <div className="bg-[#283862] py-16 px-8 text-center text-white relative">
-                        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                            <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461" alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <div className="relative z-10">
-                            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
-                                <FaCheckCircle className="text-white text-4xl" />
-                            </div>
-                            <h2 className="text-4xl noto-geogia-font font-bold mb-2">Booking Confirmed!</h2>
-                            <p className="text-gray-300">Thank you for choosing RoomIntel. Your stay is secured.</p>
-                        </div>
-                    </div>
+            <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
+                <div className="max-w-[700px] w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                    {/* Top Accent Bar */}
+                    <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
                     <div className="p-8 md:p-12 text-center">
-                        <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left inline-block w-full">
-                            <h4 className="text-sm font-bold text-[#283862] uppercase tracking-wider mb-4 border-b pb-2">What's Next?</h4>
-                            <ul className="space-y-3">
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span>You will receive a confirmation email with all details shortly.</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span>Please present your ID card at the reception during check-in.</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span>Need help? Contact our support via your dashboard or call +91 XXX-XXX-XXXX.</span>
-                                </li>
-                            </ul>
+                        {/* Success Icon */}
+                        <div className="mb-8 relative inline-block">
+                            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
+                                <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-8 h-8 bg-[#EDA337] rounded-full flex items-center justify-center text-white border-4 border-white">
+                                <span className="text-lg">✨</span>
+                            </div>
+                        </div>
+
+                        <h2 className="text-3xl md:text-4xl noto-geogia-font font-bold text-[#283862] mb-4">
+                            Booking Confirmed!
+                        </h2>
+                        <p className="text-gray-500 mb-10 max-w-md mx-auto">
+                            Thank you for choosing RoomIntel. Your reservation has been successfully processed and a confirmation email is on its way.
+                        </p>
+
+                        {/* Details Card */}
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-10 text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
+                                    <p className="font-mono text-[#283862] font-semibold">#{confirmedBookingDetails?.id?.slice(-8).toUpperCase() || 'RT-XXXXX'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
+                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.amount || 0)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
+                                    <p className="text-green-600 font-bold">🎉 +{confirmedBookingDetails?.points || 0} Points</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Payment Status</label>
+                                    <p className="text-blue-600 font-semibold">{confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
-                                onClick={() => router.push('/')}
-                                className="flex items-center justify-center gap-2 px-8 py-4 bg-[#283862] text-white rounded-xl font-bold hover:bg-[#1c2a4a] transition-all shadow-md active:scale-95"
+                                onClick={() => router.push('/dashboard')}
+                                className="px-8 py-4 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
                             >
-                                <FaHome /> Go to Home
+                                View Dashboard
                             </button>
                             <button
-                                onClick={() => router.push('/dashboard')}
-                                className="flex items-center justify-center gap-2 px-8 py-4 border-2 border-[#283862] text-[#283862] rounded-xl font-bold hover:bg-[#283862] hover:text-white transition-all shadow-sm active:scale-95"
+                                onClick={() => router.push('/')}
+                                className="px-8 py-4 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
                             >
-                                <FaListAlt /> View My Bookings
+                                Back to Home
                             </button>
                         </div>
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400 font-medium">
+                        <span>Need help? Contact support</span>
+                        <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            Secure Booking System
+                        </span>
                     </div>
                 </div>
             </div>

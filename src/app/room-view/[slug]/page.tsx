@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect, use } from 'react';
+import React, { useState, useRef, useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { format, addMonths, differenceInDays } from 'date-fns';
 import {
     FaStar,
     FaCheck,
@@ -14,19 +15,25 @@ import {
     FaChevronDown
 } from 'react-icons/fa';
 import {
+
+
+
     PiCheckCircle,
     PiArrowsOutSimple,
     PiBed,
     PiUsers,
 } from 'react-icons/pi';
+// Add this import at the top with other imports
+import SimpleCalendar from '../../../utils/calender';
 import { BsGeoAlt, BsClock } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
-import { siteService } from '../../../api/siteService'; // Keep for faqs/banner if needed
+import { siteService } from '../../../api/siteService';
 import RoomLightbox from '../../../components/room-view/RoomLightbox';
 import RoomImageGrid from '../../../components/room-view/RoomImageGrid';
 import RoomFaq from '../../../components/room-view/RoomFaq';
 import RoomAmenities from '../../../components/room-view/RoomAmenities';
 import { useRoomStore } from '@/store/useRoomStore';
+import { bookingService } from '@/api/bookingService';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { showAlert } from '@/utils/alertStore';
@@ -35,6 +42,10 @@ import { Reviews, useReviewStore } from '@/store/useReviewStore';
 import RoomReview from '@/components/room-view/RoomReview';
 import RoomOverAllReview from '@/components/room-view/RoomOverAllReview';
 
+interface DateRange {
+    checkIn: Date | null;
+    checkOut: Date | null;
+}
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
 
     // ?checkIn=2026-01-06&checkOut=2026-01-07
@@ -42,11 +53,10 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const { slug } = use(params);
     const router = useRouter();
     const { formatPrice, currencyIcon } = useCurrency();
-
-
-
     const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
+    const [roomBookings, setRoomBookings] = useState<any[]>([]);
+    const [availabilityLoading, setAvailabilityLoading] = useState(true);
     const { isLoggedIn, openLoginModal } = useAuthStore();
 
     const { fetchReview, reviews } = useReviewStore();
@@ -59,10 +69,67 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const amenitiesRef = useRef<HTMLDivElement>(null);
     const faqRef = useRef<HTMLDivElement>(null);
     const reviewRef = useRef<HTMLDivElement>(null);
+    const [rooms, setRooms] = useState(1);
+    const [adults, setAdults] = useState(2);
+    const [children, setChildren] = useState(0);
+    const [checkInDate, setCheckInDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [checkOutDate, setCheckOutDate] = useState<string>(
+        new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    );
 
-    // --- STATE ---
+    // New state for calendar visibility and range
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [selectedRange, setSelectedRange] = useState<DateRange>({
+        checkIn: new Date(),
+        checkOut: new Date(Date.now() + 86400000),
+    });
 
-    // Fetch Banner and Room Data
+    const bookedDates: Date[] = room?.bookedDates
+        ?.map((dateStr: string) => new Date(dateStr))
+        .filter((date) => !isNaN(date.getTime())) || [];
+
+    // Lightbox State
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [photoIndex, setPhotoIndex] = useState(0);
+
+    // Related Rooms Carousel State
+    const [relatedIndex, setRelatedIndex] = useState(0);
+
+    // Banner State
+    const [banner, setBanner] = useState<{
+        image: string;
+        title: string;
+        description: string;
+        buttonName: string;
+    } | null>(null);
+
+    // FAQ Data State
+    const [faqData, setFaqData] = useState<{ question: string; answer: string }[]>([]);
+
+    // Config State
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+
+    // --- CONSTANTS ---
+    const basePrice = room ? room.price : 1590;
+
+    // Config values
+    const maxAdults = room ? (room.maxAdults || 2) : 2;
+    const maxChildren = room ? (room.maxChildren || 1) : 1;
+    const baseAdults = room ? (room.baseAdults || 2) : 2;
+    const baseChildren = room ? (room.baseChildren || 0) : 0;
+    const extraAdultPrice = room ? (room.extraAdultPrice || 0) : 0;
+    const extraChildPrice = room ? (room.extraChildPrice || 0) : 0;
+    const extraAdultsCount = Math.max(0, adults - baseAdults);
+    const extraChildrenCount = Math.max(0, children - baseChildren);
+    const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
+
+    const roomPricePerNight = basePrice + extrasPerRoom;
+    const totalPrice = roomPricePerNight * rooms;
+
+    const roomImages = room && room.images ? room.images : [];
+
+    const relatedRooms: any[] = []; // Placeholder
+
     useEffect(() => {
         const fetchBanner = async () => {
             try {
@@ -77,7 +144,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
         const fetchBedConfig = async () => {
             try {
-                // Fetch config for beds
                 const res = await siteService.getConfigBySlug('bed-types');
                 // Check if status is true or success is true (handle various backend standards just in case)
                 if (res && (res.status === true || res.success === true) && res.data) {
@@ -123,60 +189,28 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
     }, [room]);
 
-    const [rooms, setRooms] = useState(1);
-    const [adults, setAdults] = useState(2);
-    const [children, setChildren] = useState(0);
-    const [checkInDate, setCheckInDate] = useState(new Date().toISOString().split('T')[0]);
-    const [checkOutDate, setCheckOutDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+    useEffect(() => {
+        if (!slug || !room) return;
 
-    // FAQ State
-    const [activeAccordion, setActiveAccordion] = useState<number | null>(0);
+        const fetchRoomAvailability = async () => {
+            setAvailabilityLoading(true);
+            try {
+                const bookings = await bookingService.getRoomBookings(slug);
+                setRoomBookings(bookings);
+                console.log('All room bookings fetched:', bookings);
+            } catch (err) {
+                console.error('Failed to fetch room availability:', err);
+                setRoomBookings([]);
+            } finally {
+                setAvailabilityLoading(false);
+            }
+        };
 
-    // Lightbox State
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [photoIndex, setPhotoIndex] = useState(0);
+        fetchRoomAvailability();
+    }, [slug, room]);
 
-    // Related Rooms Carousel State
-    const [relatedIndex, setRelatedIndex] = useState(0);
 
-    // Banner State
-    const [banner, setBanner] = useState<{
-        image: string;
-        title: string;
-        description: string;
-        buttonName: string;
-    } | null>(null);
-
-    // FAQ Data State
-    const [faqData, setFaqData] = useState<{ question: string; answer: string }[]>([]);
-
-    // Config State
-    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
-
-    // --- CONSTANTS ---
-    const basePrice = room ? room.price : 1590;
-
-    // Config values
-    const maxAdults = room ? (room.maxAdults || 2) : 2;
-    const maxChildren = room ? (room.maxChildren || 1) : 1;
-    const baseAdults = room ? (room.baseAdults || 2) : 2;
-    const baseChildren = room ? (room.baseChildren || 0) : 0;
-    const extraAdultPrice = room ? (room.extraAdultPrice || 0) : 0;
-    const extraChildPrice = room ? (room.extraChildPrice || 0) : 0;
-
-    // Calculate per-room extras
-    const extraAdultsCount = Math.max(0, adults - baseAdults);
-    const extraChildrenCount = Math.max(0, children - baseChildren);
-    const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
-
-    const roomPricePerNight = basePrice + extrasPerRoom;
-    const totalPrice = roomPricePerNight * rooms;
-
-    const roomImages = room && room.images ? room.images : [];
-
-    const relatedRooms: any[] = []; // Placeholder
-
-    // --- HANDLERS ---
+    console.log('roomBookings:', roomBookings);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         if (ref.current) {
@@ -186,6 +220,30 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
     };
 
+    const blockedDates: Date[] = useMemo(() => {
+        if (!Array.isArray(roomBookings) || roomBookings.length === 0) {
+            return [];
+        }
+
+        const dates = new Set<string>();
+
+        roomBookings.forEach((booking: any) => {
+            const checkIn = new Date(booking.checkIn);
+            const checkOut = new Date(booking.checkOut);
+
+            // Skip invalid dates
+            if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return;
+
+            let current = new Date(checkIn);
+            while (current < checkOut) {
+                dates.add(format(current, 'yyyy-MM-dd'));
+                current.setDate(current.getDate() + 1);
+            }
+        });
+
+        return Array.from(dates).map(dateStr => new Date(dateStr));
+    }, [roomBookings]);
+
     const openLightbox = (index: number) => {
         setPhotoIndex(index);
         setLightboxOpen(true);
@@ -194,7 +252,21 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const closeLightbox = () => {
         setLightboxOpen(false);
     };
+    useEffect(() => {
+        if (selectedRange.checkIn) {
+            setCheckInDate(format(selectedRange.checkIn, 'yyyy-MM-dd'));
+        }
+        if (selectedRange.checkOut) {
+            setCheckOutDate(format(selectedRange.checkOut, 'yyyy-MM-dd'));
+        }
+    }, [selectedRange]);
 
+    const handleRangeSelect = (checkIn: Date | null, checkOut: Date | null) => {
+        setSelectedRange({ checkIn, checkOut });
+        if (checkIn && checkOut) {
+            setShowCalendar(false); // Auto-close when range is complete
+        }
+    };
     const handleBookRoom = async () => {
         if (!room) return;
 
@@ -250,9 +322,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         //     totalAmount: grandTotal
         // };
 
-        // If useCartStore uses a different structure, we should align.
-        // Based on previous file, it was saving a large object.
-        // For now, I will pass this object.
 
         // await addToCart(cartItem);
         // router.push('/room-cart');
@@ -530,101 +599,142 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         <div className="sticky top-24 space-y-8">
 
                             {/* Booking Widget */}
-                            <h3 className="text-2xl rounded-t-[8px] text-[white] bg-[#283862] mb-0 p-5 noto-geogia-font font-bold pb-4 ">Book This Room</h3>
-                            <div className="bg-[white] rounded-b-[8px]  overflow-hidden text-white shadow-xl border border border-[#0000001c]">
-
+                            <h3 className="text-2xl rounded-t-[8px] text-white bg-[#283862] mb-0 p-5 noto-geogia-font font-bold pb-4">
+                                Book This Room
+                            </h3>
+                            <div className="bg-white rounded-b-[8px] overflow-hidden shadow-xl border border-[#0000001c]">
                                 <div className="p-6 md:p-8 space-y-5">
-
                                     <div className="space-y-4 pt-2">
-                                        {/* Date Selection */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-[black] uppercase tracking-wider">Check-In</label>
-                                                <input
-                                                    type="date"
-                                                    value={checkInDate}
-                                                    onChange={(e) => setCheckInDate(e.target.value)}
-                                                    min={new Date().toISOString().split('T')[0]}
-                                                    className="w-full border border-gray-300 rounded-sm p-3 text-sm text-black focus:outline-none focus:border-[#EDA337]"
-                                                />
+
+                                        {/* Custom Calendar Picker */}
+                                        <div className="relative">
+                                            <div
+                                                onClick={() => setShowCalendar(!showCalendar)}
+                                                className="cursor-pointer"
+                                            >
+                                                <div className="w-full border border-gray-300 rounded-lg bg-white p-4 hover:border-[#283862] transition-all duration-200 hover:shadow-sm">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex-1">
+                                                            <div className="text-sm font-medium text-gray-700 mb-1">Check-In</div>
+                                                            <div className="text-base font-semibold text-[#283862]">
+                                                                {selectedRange.checkIn
+                                                                    ? format(selectedRange.checkIn, 'EEE, MMM d')
+                                                                    : 'Select date'}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex flex-col items-center mx-4">
+                                                            <div className="text-xs text-gray-400 mb-1">→</div>
+                                                            {selectedRange.checkIn && selectedRange.checkOut && (
+                                                                <div className="text-xs font-medium text-[#c23535] bg-[#c23535]/5 px-2 py-0.5 rounded">
+                                                                    {differenceInDays(selectedRange.checkOut, selectedRange.checkIn)} night(s)
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex-1 text-right">
+                                                            <div className="text-sm font-medium text-gray-700 mb-1">Check-Out</div>
+                                                            <div className="text-base font-semibold text-[#283862]">
+                                                                {selectedRange.checkOut
+                                                                    ? format(selectedRange.checkOut, 'EEE, MMM d')
+                                                                    : 'Select date'}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="ml-4 text-gray-400">
+                                                            <FaChevronDown className={`transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
+                                                        </div>
+                                                    </div>
+
+
+                                                </div>
                                             </div>
-                                            <div className="space-y-2">
-                                                <label className="text-xs font-medium text-[black] uppercase tracking-wider">Check-Out</label>
-                                                <input
-                                                    type="date"
-                                                    value={checkOutDate}
-                                                    onChange={(e) => setCheckOutDate(e.target.value)}
-                                                    min={checkInDate}
-                                                    className="w-full border border-gray-300 rounded-sm p-3 text-sm text-black focus:outline-none focus:border-[#EDA337]"
-                                                />
-                                            </div>
+
+
+                                            {/* Calendar Dropdown */}
+                                            <AnimatePresence>
+                                                {showCalendar && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                        transition={{ duration: 0.2 }}
+                                                        className="absolute top-full left-0 right-0 mt-4 z-50"
+                                                    >
+                                                        <div className="relative">
+                                                            <div className="p-1 bg-white rounded-lg shadow-xl">
+                                                                <SimpleCalendar
+                                                                    selectedRange={selectedRange}
+                                                                    onRangeSelect={handleRangeSelect}
+                                                                    bookedDates={blockedDates}
+                                                                    onClose={() => setShowCalendar(false)}
+                                                                />
+                                                            </div>
+                                                            {/* Close button for mobile */}
+                                                            <button
+                                                                onClick={() => setShowCalendar(false)}
+                                                                className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                                                            >
+                                                                <FaTimes className="text-gray-600 text-xs" />
+                                                            </button>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
 
-                                        <div className="flex justify-between items-center  p-3 rounded-sm border border-gray-300">
-                                            <span className="text-sm text-[black] font-medium pl-1">Number</span>
-                                            <div className="flex items-center gap-4 text-gray-300">
-                                                <button
-                                                    onClick={() => setRooms(Math.max(1, rooms - 1))}
-                                                    className=" text-[black] hover:text-[#EDA337] transition-colors"
-                                                >
+                                        {/* Rest of the booking controls remain the same */}
+                                        <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300">
+                                            <span className="text-sm text-black font-medium pl-1">Number of Rooms</span>
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={() => setRooms(Math.max(1, rooms - 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-black">{rooms}</span>
-                                                <button
-                                                    onClick={() => setRooms(Math.min(room?.maxRooms || 10, rooms + 1))}
-                                                    className="text-[black] hover:text-[#EDA337] transition-colors"
-                                                >
+                                                <span className="text-sm font-bold w-8 text-center text-black">{rooms}</span>
+                                                <button onClick={() => setRooms(Math.min(room?.maxRooms || 10, rooms + 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
                                         </div>
+
                                         {rooms >= (room?.maxRooms || 10) && (
                                             <div className="text-[10px] text-yellow-400 text-center py-1">
                                                 Maximum booking limit reached
                                             </div>
                                         )}
-                                        <div className="text-[10px] text-[black] text-right uppercase tracking-wider font-bold">
-                                            x {formatPrice(basePrice)} = {formatPrice(basePrice * rooms)}
+
+                                        <div className="text-[10px] text-black text-right uppercase tracking-wider font-bold">
+                                            × {formatPrice(basePrice)} = {formatPrice(basePrice * rooms)}
                                         </div>
 
+                                        {/* Adults */}
                                         <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300">
-                                            <span className="text-sm text-[black] font-medium pl-1">Adults (per room)</span>
-                                            <div className="flex items-center gap-4 text-gray-300">
-                                                <button
-                                                    onClick={() => setAdults(Math.max(1, adults - 1))}
-                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
-                                                >
+                                            <span className="text-sm text-black font-medium pl-1">Adults (per room)</span>
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={() => setAdults(Math.max(1, adults - 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-[black]">{adults}</span>
-                                                <button
-                                                    onClick={() => setAdults(Math.min(maxAdults, adults + 1))}
-                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
-                                                >
+                                                <span className="text-sm font-bold w-8 text-center text-black">{adults}</span>
+                                                <button onClick={() => setAdults(Math.min(maxAdults, adults + 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
                                         </div>
                                         {extraAdultPrice > 0 && (
-                                            <div className="text-[10px] text-[black] text-gray-400 text-right uppercase tracking-wider font-bold">
+                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
                                                 +{formatPrice(extraAdultPrice)} per extra adult
                                             </div>
                                         )}
 
+                                        {/* Children */}
                                         <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300 mt-2">
-                                            <span className="text-sm text-[black] font-medium pl-1">Children (per room)</span>
-                                            <div className="flex items-center gap-4 text-gray-300">
-                                                <button
-                                                    onClick={() => setChildren(Math.max(0, children - 1))}
-                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
-                                                >
+                                            <span className="text-sm text-black font-medium pl-1">Children (per room)</span>
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={() => setChildren(Math.max(0, children - 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaMinus size={10} />
                                                 </button>
-                                                <span className="text-sm font-bold w-4 text-center text-[black]">{children}</span>
-                                                <button
-                                                    onClick={() => setChildren(Math.min(maxChildren, children + 1))}
-                                                    className="hover:text-[#EDA337] text-[black] transition-colors"
-                                                >
+                                                <span className="text-sm font-bold w-8 text-center text-black">{children}</span>
+                                                <button onClick={() => setChildren(Math.min(maxChildren, children + 1))} className="text-black hover:text-[#EDA337] transition-colors">
                                                     <FaPlus size={10} />
                                                 </button>
                                             </div>
@@ -637,22 +747,23 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     </div>
 
                                     <div className="border-t border-[#00000029] my-4 pt-4 flex justify-between font-bold text-lg text-[#1e2c4e]">
-                                        <span>Total:</span>
-                                        <span className='text-[#c23535]'>{formatPrice(totalPrice)}</span>
+                                        <span>Total (per night):</span>
+                                        <span className="text-[#c23535]">{formatPrice(totalPrice)}</span>
                                     </div>
 
                                     <button
                                         onClick={handleBookRoom}
-                                        className="w-full bg-[#1e2c4e] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md cursor-pointer"
+                                        disabled={!selectedRange.checkIn || !selectedRange.checkOut}
+                                        className="w-full bg-[#1e2c4e] hover:bg-[#c23535] disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-4 text-xs uppercase tracking-widest transition-colors rounded-sm shadow-md"
                                     >
                                         Book This Room
                                     </button>
 
-                                    <div className="relative text-center ">
+                                    <div className="relative text-center">
                                         <div className="absolute inset-0 flex items-center">
                                             <div className="w-full border-t border-[#00000029]"></div>
                                         </div>
-                                        <div className="relative inline-block bg-[white] px-4 text-xs text-[black] font-bold">OR</div>
+                                        <div className="relative inline-block bg-white px-4 text-xs text-black font-bold">OR</div>
                                     </div>
 
                                     <button
