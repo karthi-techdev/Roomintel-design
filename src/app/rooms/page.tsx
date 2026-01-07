@@ -53,7 +53,7 @@ export default function RoomsGrid() {
   const { isLoggedIn } = useAuthStore();
   const { fetchReview, reviews } = useReviewStore();
   // Filters
-  const [priceRange, setPriceRange] = useState(9900);
+  const [priceRange, setPriceRange] = useState(100000);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<number[]>([]);

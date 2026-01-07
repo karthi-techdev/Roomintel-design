@@ -116,10 +116,26 @@ export const useCartStore = create<CartState>((set, get) => ({
         set({ loading: true });
         try {
             const currentItems = get().cartItems;
-            // Check if item already exists (optional, but good for UX)
-            // For rooms, maybe we allow multiple of same room? Or different dates?
-            // Simple approach: just add it.
-            const newItems = [...currentItems, item];
+
+            // Check if room already exists in cart
+            const existingIndex = currentItems.findIndex(i =>
+                (i.roomId === item.roomId) ||
+                (typeof i.roomId === 'object' && i.roomId._id === item.roomId) ||
+                (typeof i.roomId === 'object' && typeof item.roomId === 'object' && i.roomId._id === item.roomId._id)
+            );
+
+            let newItems;
+            if (existingIndex > -1) {
+                // Update existing item
+                newItems = [...currentItems];
+                newItems[existingIndex] = {
+                    ...newItems[existingIndex],
+                    ...item
+                };
+            } else {
+                // Add new item
+                newItems = [...currentItems, item];
+            }
 
             // Update Local Storage
             if (typeof window !== 'undefined') {
