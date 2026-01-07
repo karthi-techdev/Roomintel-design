@@ -47,6 +47,9 @@ interface DateRange {
     checkOut: Date | null;
 }
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
+
+    // ?checkIn=2026-01-06&checkOut=2026-01-07
+
     const { slug } = use(params);
     const router = useRouter();
     const { formatPrice, currencyIcon } = useCurrency();
@@ -165,9 +168,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         if (slug) {
             fetchRoomBySlug(slug);
         }
-        fetchCart();
+        // fetchCart();
         fetchFaqs();
-    }, [slug, fetchRoomBySlug, fetchCart]);
+    }, [slug, fetchRoomBySlug,]);
 
     // Review Effect
     useEffect(() => {
@@ -207,7 +210,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     }, [slug, room]);
 
 
-console.log('roomBookings:', roomBookings);
+    console.log('roomBookings:', roomBookings);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         if (ref.current) {
@@ -217,29 +220,29 @@ console.log('roomBookings:', roomBookings);
         }
     };
 
-const blockedDates: Date[] = useMemo(() => {
-  if (!Array.isArray(roomBookings) || roomBookings.length === 0) {
-    return [];
-  }
+    const blockedDates: Date[] = useMemo(() => {
+        if (!Array.isArray(roomBookings) || roomBookings.length === 0) {
+            return [];
+        }
 
-  const dates = new Set<string>();
+        const dates = new Set<string>();
 
-  roomBookings.forEach((booking: any) => {
-    const checkIn = new Date(booking.checkIn);
-    const checkOut = new Date(booking.checkOut);
+        roomBookings.forEach((booking: any) => {
+            const checkIn = new Date(booking.checkIn);
+            const checkOut = new Date(booking.checkOut);
 
-    // Skip invalid dates
-    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return;
+            // Skip invalid dates
+            if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return;
 
-    let current = new Date(checkIn);
-    while (current < checkOut) {
-      dates.add(format(current, 'yyyy-MM-dd'));
-      current.setDate(current.getDate() + 1);
-    }
-  });
+            let current = new Date(checkIn);
+            while (current < checkOut) {
+                dates.add(format(current, 'yyyy-MM-dd'));
+                current.setDate(current.getDate() + 1);
+            }
+        });
 
-  return Array.from(dates).map(dateStr => new Date(dateStr));
-}, [roomBookings]);
+        return Array.from(dates).map(dateStr => new Date(dateStr));
+    }, [roomBookings]);
 
     const openLightbox = (index: number) => {
         setPhotoIndex(index);
@@ -274,48 +277,55 @@ const blockedDates: Date[] = useMemo(() => {
             return;
         }
 
-        const roomsCount = rooms;
-        const totalBase = roomPricePerNight * roomsCount;
-        const taxes = totalBase * 0.10;
-        const serviceCharge = totalBase * 0.05;
-        const grandTotal = totalBase + taxes + serviceCharge;
-        const cartItem: any = {
-            roomId: room._id,
-            roomSlug: slug,
-            roomName: room.title || room.name || "Room",
-            roomTitle: room.title || room.name,
-            image: room.previewImage || room.images?.[0] || "",
-            price: basePrice,
-            checkIn: checkInDate,
-            checkOut: checkOutDate,
-            guestDetails: {
-                rooms: rooms,
-                adults: adults,
-                children: children
-            },
-            rateConfig: {
-                baseAdults,
-                baseChildren,
-                maxAdults,
-                maxChildren,
-                extraAdultPrice,
-                extraChildPrice
-            },
-            financials: {
-                baseTotal: totalBase,
-                extrasTotal: 0,
-                taxes: taxes,
-                serviceCharge: serviceCharge,
-                discountAmount: 0,
-                grandTotal: grandTotal,
-                currency: currencyIcon
-            },
-            totalAmount: grandTotal
-        };
+        // =======================Note :: Don't remove below comment line =========================================
+
+        // const roomsCount = rooms;
+        // const totalBase = roomPricePerNight * roomsCount;
+        // const taxes = totalBase * 0.10;
+        // const serviceCharge = totalBase * 0.05;
+        // const grandTotal = totalBase + taxes + serviceCharge;
 
 
-        await addToCart(cartItem);
-        router.push('/room-cart');
+        // Construct Cart Item matching usage in other components or define interface
+        // Assuming update to useCartStore handles this object
+        // const cartItem: any = {
+        //     roomId: room._id,
+        //     roomSlug: slug,
+        //     roomName: room.title || room.name || "Room",
+        //     roomTitle: room.title || room.name,
+        //     image: room.previewImage || room.images?.[0] || "",
+        //     price: basePrice,
+        //     checkIn: checkInDate,
+        //     checkOut: checkOutDate,
+        //     guestDetails: {
+        //         rooms: rooms,
+        //         adults: adults,
+        //         children: children
+        //     },
+        //     rateConfig: {
+        //         baseAdults,
+        //         baseChildren,
+        //         maxAdults,
+        //         maxChildren,
+        //         extraAdultPrice,
+        //         extraChildPrice
+        //     },
+        //     financials: {
+        //         baseTotal: totalBase,
+        //         extrasTotal: 0,
+        //         taxes: taxes,
+        //         serviceCharge: serviceCharge,
+        //         discountAmount: 0,
+        //         grandTotal: grandTotal,
+        //         currency: currencyIcon
+        //     },
+        //     totalAmount: grandTotal
+        // };
+
+
+        // await addToCart(cartItem);
+        // router.push('/room-cart');
+        router.push(`/room-checkout/${room.slug}`);
     };
 
 
@@ -534,8 +544,8 @@ const blockedDates: Date[] = useMemo(() => {
                         <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
-                            {filteredReview && filteredReview.slice(0, 8).map((item: Reviews, index) => {
-                                return <RoomReview item={item} key={index} />
+                            {filteredReview && filteredReview.slice(0, 8).map((item: Reviews) => {
+                                return <RoomReview item={item} key={item._id} />
                             })}
                             {/* View All Reviews Button */}
                             {filteredReview && filteredReview.length > 10 &&

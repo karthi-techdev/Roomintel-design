@@ -6,7 +6,7 @@ import { HiCursorArrowRays } from "react-icons/hi2";
 import { TfiStar } from "react-icons/tfi";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import { TbNorthStar } from "react-icons/tb";
-import { FaChevronRight, FaFilter, FaStar, FaTh, FaList, FaChevronDown, FaCheck } from "react-icons/fa";
+import { FaChevronRight, FaFilter, FaStar, FaTh, FaList, FaChevronDown, FaCheck, FaShareAlt, FaShare } from "react-icons/fa";
 import { PiBed, PiUsers, PiArrowsOutSimple } from 'react-icons/pi';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -18,6 +18,7 @@ import { useReviewStore } from '@/store/useReviewStore';
 import { calculateStatsByRoom } from '@/utils/common';
 import { ArrowRight, BedDouble, Heart, Maximize, Search, ShoppingCart, Star, Users } from 'lucide-react';
 import { IND_CURRENCY } from '@/utils/constant';
+import ShareModal from '@/components/socialMedia/ShareModal';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -61,13 +62,23 @@ export default function RoomsGrid() {
   const [selectedAdults, setSelectedAdults] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
+  const [roomSlug, setRoomSlug] = useState<string>('');
+  const [currentOrigin, setCurrentOrigin] = useState("");
+
+  //Share social media
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+        setCurrentOrigin(window.location.origin);
+    }
+}, []);
 
   // Initial Fetch
   useEffect(() => {
     fetchRooms();
     fetchCategories();
     fetchReview({ status: 'approved' })
-
 
     // Fetch bed configuration
     const fetchBedConfig = async () => {
@@ -143,7 +154,7 @@ export default function RoomsGrid() {
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 10;
 
   // Helper function to generate pastel colors based on room ID
   const getPastelColor = (id: string | number): string => {
@@ -246,12 +257,11 @@ export default function RoomsGrid() {
       // Adults Filter
       const matchesAdults = selectedAdults.length === 0 || selectedAdults.some(sel => {
         const num = parseInt(sel);
-        return room.adults === num;
+        return room.adults >= num; // Change === to >=
       });
 
       return matchesPrice && matchesCategory && matchesLocation && matchesSize && matchesBeds && matchesAdults;
     });
-
     // 2. Sort
     result.sort((a, b) => {
       if (sortBy === 'priceAsc') {
@@ -266,14 +276,12 @@ export default function RoomsGrid() {
 
     return result;
   }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
-
   // --- PAGINATION LOGIC ---
 
   const totalPages = Math.ceil(filteredAndSortedRooms.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentRooms = filteredAndSortedRooms.slice(indexOfFirstItem, indexOfLastItem);
-
   const getSortLabel = () => {
     switch (sortBy) {
       case 'priceAsc': return 'Price: Low to High';
@@ -282,8 +290,19 @@ export default function RoomsGrid() {
     }
   };
 
+  const handleShowShareModel = (slug: string) => {
+    setIsShareOpen(true);
+    setRoomSlug(slug);
+  }
+
+
   return (
     <div className="w-full pb-20  ">
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        shareUrl={`${currentOrigin}/rooms/${roomSlug}`}
+      />
       {/* --- Page Header --- */}
       <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
 
@@ -341,7 +360,7 @@ export default function RoomsGrid() {
                 />
               </div>
               <div className="text-gray-500 font-medium">
-              {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
+                {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
               </div>
             </div>
             <span className='bg-[#00000033] flex h-[2px]'></span>
@@ -837,10 +856,14 @@ export default function RoomsGrid() {
                               </>
                             )}
                           </div>
-
-                          <button className="p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 transition-all duration-300 shadow-lg border border-white/10">
-                            <Heart size={20} fill="currentColor" fillOpacity={0} className="hover:fill-red-500 transition-all" />
-                          </button>
+                          <div className="absolute top-0 right-0 flex flex-col gap-3">
+                            <button className="p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 transition-all duration-300 shadow-lg border border-white/10">
+                              <Heart size={20} fill="currentColor" fillOpacity={0} className="hover:fill-red-500 transition-all" />
+                            </button>
+                            <button onClick={() => handleShowShareModel(room.slug)} className="flex items-center justify-center rounded-full h-[46px] w-[46px] p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-300 text-slate-600 hover:text-red-500 group">
+                              <FaShare className="text-lg group-active:scale-90 transition-transform" />
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -900,12 +923,12 @@ export default function RoomsGrid() {
                             <ArrowRight size={18} className="group-hover/btn:translate-x-1.5 transition-transform" />
                           </button>
 
-                          <button
+                          {/* <button
                             className="flex-1 bg-slate-100 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-colors group/cart"
                             title="Add to wishlist"
                           >
                             <ShoppingCart size={20} className="group-hover/cart:scale-110 transition-transform" />
-                          </button>
+                          </button> */}
                         </div>
                       </div>
                     </motion.div>

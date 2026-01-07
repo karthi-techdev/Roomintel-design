@@ -308,7 +308,7 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
 
-                    <Link
+                    {/* <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
@@ -318,7 +318,7 @@ const Navbar: React.FC = () => {
                                 {cartCount}
                             </span>
                         )}
-                    </Link>
+                    </Link> */}
 
                    
 
