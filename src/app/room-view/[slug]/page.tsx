@@ -36,6 +36,9 @@ import RoomReview from '@/components/room-view/RoomReview';
 import RoomOverAllReview from '@/components/room-view/RoomOverAllReview';
 
 export default function RoomView({ params }: { params: Promise<{ slug: string }> }) {
+
+    // ?checkIn=2026-01-06&checkOut=2026-01-07
+
     const { slug } = use(params);
     const router = useRouter();
     const { formatPrice, currencyIcon } = useCurrency();
@@ -99,9 +102,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         if (slug) {
             fetchRoomBySlug(slug);
         }
-        fetchCart();
+        // fetchCart();
         fetchFaqs();
-    }, [slug, fetchRoomBySlug, fetchCart]);
+    }, [slug, fetchRoomBySlug,]);
 
     // Review Effect
     useEffect(() => {
@@ -202,55 +205,58 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             return;
         }
 
-        const roomsCount = rooms;
-        const totalBase = roomPricePerNight * roomsCount;
-        const taxes = totalBase * 0.10;
-        const serviceCharge = totalBase * 0.05;
-        const grandTotal = totalBase + taxes + serviceCharge;
+        // =======================Note :: Don't remove below comment line =========================================
+
+        // const roomsCount = rooms;
+        // const totalBase = roomPricePerNight * roomsCount;
+        // const taxes = totalBase * 0.10;
+        // const serviceCharge = totalBase * 0.05;
+        // const grandTotal = totalBase + taxes + serviceCharge;
 
 
         // Construct Cart Item matching usage in other components or define interface
         // Assuming update to useCartStore handles this object
-        const cartItem: any = {
-            roomId: room._id,
-            roomSlug: slug,
-            roomName: room.title || room.name || "Room",
-            roomTitle: room.title || room.name,
-            image: room.previewImage || room.images?.[0] || "",
-            price: basePrice,
-            checkIn: checkInDate,
-            checkOut: checkOutDate,
-            guestDetails: {
-                rooms: rooms,
-                adults: adults,
-                children: children
-            },
-            rateConfig: {
-                baseAdults,
-                baseChildren,
-                maxAdults,
-                maxChildren,
-                extraAdultPrice,
-                extraChildPrice
-            },
-            financials: {
-                baseTotal: totalBase,
-                extrasTotal: 0,
-                taxes: taxes,
-                serviceCharge: serviceCharge,
-                discountAmount: 0,
-                grandTotal: grandTotal,
-                currency: currencyIcon
-            },
-            totalAmount: grandTotal
-        };
+        // const cartItem: any = {
+        //     roomId: room._id,
+        //     roomSlug: slug,
+        //     roomName: room.title || room.name || "Room",
+        //     roomTitle: room.title || room.name,
+        //     image: room.previewImage || room.images?.[0] || "",
+        //     price: basePrice,
+        //     checkIn: checkInDate,
+        //     checkOut: checkOutDate,
+        //     guestDetails: {
+        //         rooms: rooms,
+        //         adults: adults,
+        //         children: children
+        //     },
+        //     rateConfig: {
+        //         baseAdults,
+        //         baseChildren,
+        //         maxAdults,
+        //         maxChildren,
+        //         extraAdultPrice,
+        //         extraChildPrice
+        //     },
+        //     financials: {
+        //         baseTotal: totalBase,
+        //         extrasTotal: 0,
+        //         taxes: taxes,
+        //         serviceCharge: serviceCharge,
+        //         discountAmount: 0,
+        //         grandTotal: grandTotal,
+        //         currency: currencyIcon
+        //     },
+        //     totalAmount: grandTotal
+        // };
 
         // If useCartStore uses a different structure, we should align.
         // Based on previous file, it was saving a large object.
         // For now, I will pass this object.
 
-        await addToCart(cartItem);
-        router.push('/room-cart');
+        // await addToCart(cartItem);
+        // router.push('/room-cart');
+        router.push(`/room-checkout/${room.slug}`);
     };
 
 
@@ -470,7 +476,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
                             {filteredReview && filteredReview.slice(0, 8).map((item: Reviews) => {
-                                return <RoomReview item={item} />
+                                return <RoomReview item={item} key={item._id} />
                             })}
                             {/* View All Reviews Button */}
                             {filteredReview && filteredReview.length > 10 &&

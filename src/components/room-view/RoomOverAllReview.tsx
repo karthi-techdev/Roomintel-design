@@ -26,9 +26,9 @@ const  RoomOverAllReview : React.FC<RoomOverAllReviewProps>= ({reviews}) => {
 
                     {/* Star Distribution Bars */}
                     <div className="flex-1 w-full max-w-sm space-y-2">
-                        {distribution.map((item) => {
+                        {distribution.map((item , index) => {
                             return(
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4" key={index}>
                                 <span className="text-xs font-bold text-slate-600 w-3">{item.star}★</span>
                                 <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                     <div

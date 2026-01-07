@@ -1,24 +1,122 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, use } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-import { authService } from '../../api/authService';
-import { bookingService } from '../../api/bookingService';
-import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
-import { showAlert } from '../../utils/alertStore';
+import { authService } from '../../../api/authService';
+import { bookingService } from '../../../api/bookingService';
+import countryData from '../../../data/countries-states-cities-database/json/countries+states.json';
+import { showAlert } from '../../../utils/alertStore';
 import { useCartStore } from '@/store/useCartStore';
-import { siteService } from '../../api/siteService';
+import { siteService } from '../../../api/siteService';
 import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
+import RoomCartCard from '@/components/room-view/RoomCardSingle';
+import { Room, useRoomStore } from '@/store/useRoomStore';
+
+interface SingleBookingInfo {
+    room: number;
+    adults: number;
+    children: number;
+    roomTotal: number;
+    serviceTotal: number;
+    tax: number;
+    serviceCharge: number;
+    grandTotal: number;
+}
 
 interface RoomCheckoutProps {
     onBack?: () => void;
     onPlaceOrder?: () => void;
+    params: {
+        slug?: string[];
+    };
+    handleUpdateGuests: () => void;
+    handleUpdateRoom: () => void;
+    handleUpdateChildren: () => void;
+    handleUpdateAdult: () => void;
+    onUpdate: (data: any) => void;
 }
 
-const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
+const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpdate }) => {
     const router = useRouter();
+    const params = useParams();
+    // Set User Data
+    const user = authService.getCurrentUser(); 
+
+    // ============Single booking 
+    const { fetchRoomBySlug, selectedRoom } = useRoomStore();
+
+
+    const [selectedRoomByslug, setSelectedRoomByslug] = useState<Room>();
+    const [singleItemInfo, setSingleItemInfo] = useState<SingleBookingInfo>({
+        room: 0,
+        adults: 0,
+        children: 0,
+        roomTotal: 0,
+        serviceTotal: 0,
+        tax: 0,
+        serviceCharge: 0,
+        grandTotal: 0,
+    });
+    const [singleBookingInfo, setSingleBookingInfo] = useState();
+
+    // Slug check
+    const slug = params?.slug as string[] | undefined;
+    const isSlug = slug ? slug?.[0] : null;
+
+    // Fetch room
+    useEffect(() => {
+        if (isSlug) {
+            fetchRoomBySlug(isSlug);
+        };
+        
+    }, [isSlug]);
+
+    useEffect(() => {
+        if (selectedRoom) {
+            setSelectedRoomByslug(selectedRoom);
+            setFormData(prev => {
+                if (prev.email) return prev;
+                return {
+                    ...prev,
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    phone: user?.phone || '',
+                };
+            });
+        }
+    }, [selectedRoom]);
+
+
+    const onUpdateGetData = (data: any) => {
+        setSingleItemInfo((prev) => ({
+            ...prev,
+            room: data?.room,
+            roomTotal: data?.roomTotal,
+            serviceTotal: data?.serviceTotal,
+            tax: data?.tax,
+            serviceCharge: data?.serviceCharge,
+            grandTotal: data?.grandTotal
+        }));
+    }
+    console.log('=======AAAAAAAAAAAA====', user);
+
+    console.log('=======selectedRoom====', selectedRoomByslug);
+
+
+
+
+
+
+
+
+
+
+
+
+    // =====================================
+
 
     // --- STORE ---
     const { cartItems, fetchCart, clearCart } = useCartStore();
@@ -172,10 +270,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     checkOut: new Date(cartItem.checkOut).toISOString().split('T')[0]
                 });
             }
-
-            // Set User Data
-            const user = authService.getCurrentUser(); // Still good to check user for fallback
-            // Cart might have contact info if previously saved? Not in current CartItem but typically user data persists
 
             setFormData(prev => {
                 // If form is already filled, don't overwrite with defaults unless empty
@@ -343,7 +437,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     };
 
     const handlePlaceOrder = async () => {
-        if (cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
+        
+        if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
         // Validate form
         if (!validateForm()) {
@@ -356,7 +451,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         const totalAmount = totals.grandTotal;
 
         // Prepare rooms array for backend
-        const bookedRooms = cartItems.map(item => ({
+        const bookedRooms =isSlug ? [{
+            roomId : selectedRoomByslug?._id,
+            roomName: selectedRoomByslug?.title,
+            price: singleItemInfo.grandTotal,
+            // checkIn: item.checkIn || dates.checkIn,
+            // checkOut: item.checkOut || dates.checkOut,
+            guestDetails: {
+                    rooms: singleItemInfo?.room,
+                    adults: singleItemInfo.adults,
+                    children: singleItemInfo.children
+            }
+        }
+        ] 
+        : 
+        cartItems.map(item => ({
             roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
             roomName: item.roomName,
             price: item.financials?.grandTotal || item.price,
@@ -364,7 +473,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             checkOut: item.checkOut || dates.checkOut,
             guestDetails: item.guestDetails
         }));
-
+        console.log('==========bookedRooms',bookedRooms)
         const primaryRoomId = bookedRooms[0]?.roomId;
 
         const bookingPayload = {
@@ -375,7 +484,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             rooms: bookedRooms,
             checkIn: dates.checkIn,
             checkOut: dates.checkOut,
-            totalAmount: totalAmount,
+            totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
             specialRequests: formData.notes,
             billingAddress: {
                 street: formData.address,
@@ -388,89 +497,89 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
+        console.log('============bookingPayload======',bookingPayload)
+        // try {
+        //     if (paymentMethod === 'cash') {
+        //         // CASH FLOW
+        //         await bookingService.createBooking(bookingPayload);
+        //         const pointsEarned = Math.floor(totalAmount * 10);
+        //         showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+        //         await finalizeOrder();
 
-        try {
-            if (paymentMethod === 'cash') {
-                // CASH FLOW
-                await bookingService.createBooking(bookingPayload);
-                const pointsEarned = Math.floor(totalAmount * 10);
-                showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                await finalizeOrder();
+        //     } else if (paymentMethod === 'card') {
+        //         // RAZORPAY / ONLINE FLOW
+        //         const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
 
-            } else if (paymentMethod === 'card') {
-                // RAZORPAY / ONLINE FLOW
-                const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
+        //         if (paymentRes.status === false) throw new Error(paymentRes.message);
 
-                if (paymentRes.status === false) throw new Error(paymentRes.message);
+        //         const orderData = paymentRes.data;
 
-                const orderData = paymentRes.data;
+        //         const options = {
+        //             key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        //             amount: orderData.amount,
+        //             currency: orderData.currency,
+        //             name: "RoomIntel Booking",
+        //             description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
+        //             order_id: orderData.razorpayOrderId,
+        //             handler: async function (response: any) {
+        //                 console.log("Payment Successful:", response);
 
-                const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                    amount: orderData.amount,
-                    currency: orderData.currency,
-                    name: "RoomIntel Booking",
-                    description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
-                    order_id: orderData.razorpayOrderId,
-                    handler: async function (response: any) {
-                        console.log("Payment Successful:", response);
+        //                 // Update payload with payment success
+        //                 const paidPayload = {
+        //                     ...bookingPayload,
+        //                     paymentStatus: 'Paid',
+        //                     paymentMode: 'Card',
+        //                 };
 
-                        // Update payload with payment success
-                        const paidPayload = {
-                            ...bookingPayload,
-                            paymentStatus: 'Paid',
-                            paymentMode: 'Card',
-                        };
+        //                 try {
+        //                     await bookingService.createBooking(paidPayload);
+        //                     const pointsEarned = Math.floor(totalAmount * 10);
+        //                     showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+        //                     await finalizeOrder();
+        //                 } catch (err) {
+        //                     console.error("Failed to save booking after payment", err);
+        //                     showAlert.error("Payment successful but booking failed to save. Please contact support.");
+        //                     setIsProcessing(false);
+        //                 }
+        //             },
+        //             prefill: {
+        //                 name: formData.name,
+        //                 email: formData.email,
+        //                 contact: formData.phone,
+        //             },
+        //             theme: {
+        //                 color: "#EDA337",
+        //             },
+        //             modal: {
+        //                 ondismiss: function () {
+        //                     console.log('Payment cancelled by user');
+        //                     setIsProcessing(false);
+        //                     showAlert.info("Payment cancelled");
+        //                 }
+        //             }
+        //         };
 
-                        try {
-                            await bookingService.createBooking(paidPayload);
-                            const pointsEarned = Math.floor(totalAmount * 10);
-                            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                            await finalizeOrder();
-                        } catch (err) {
-                            console.error("Failed to save booking after payment", err);
-                            showAlert.error("Payment successful but booking failed to save. Please contact support.");
-                            setIsProcessing(false);
-                        }
-                    },
-                    prefill: {
-                        name: formData.name,
-                        email: formData.email,
-                        contact: formData.phone,
-                    },
-                    theme: {
-                        color: "#EDA337",
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            console.log('Payment cancelled by user');
-                            setIsProcessing(false);
-                            showAlert.info("Payment cancelled");
-                        }
-                    }
-                };
+        //         if (typeof window !== "undefined" && (window as any).Razorpay) {
+        //             const rzp = new (window as any).Razorpay(options);
+        //             rzp.on('payment.failed', function (response: any) {
+        //                 showAlert.error("Payment Failed: " + response.error.description);
+        //                 setIsProcessing(false);
+        //             });
+        //             rzp.open();
+        //         } else {
+        //             showAlert.error("Razorpay SDK not loaded. Check connection.");
+        //             setIsProcessing(false);
+        //         }
+        //     } else {
+        //         showAlert.warning("Selected payment method not supported yet.");
+        //         setIsProcessing(false);
+        //     }
 
-                if (typeof window !== "undefined" && (window as any).Razorpay) {
-                    const rzp = new (window as any).Razorpay(options);
-                    rzp.on('payment.failed', function (response: any) {
-                        showAlert.error("Payment Failed: " + response.error.description);
-                        setIsProcessing(false);
-                    });
-                    rzp.open();
-                } else {
-                    showAlert.error("Razorpay SDK not loaded. Check connection.");
-                    setIsProcessing(false);
-                }
-            } else {
-                showAlert.warning("Selected payment method not supported yet.");
-                setIsProcessing(false);
-            }
-
-        } catch (error: any) {
-            console.error("Order processing error:", error);
-            showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
-            setIsProcessing(false);
-        }
+        // } catch (error: any) {
+        //     console.error("Order processing error:", error);
+        //     showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
+        //     setIsProcessing(false);
+        // }
     };
 
 
@@ -560,6 +669,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
+                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} availableServices={availableServices} onUpdate={onUpdateGetData} />
                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">
@@ -608,13 +718,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
                                     <input
+                                        disabled={formData.name ? true : false}
                                         type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('name')}
                                         placeholder="e.g. John Doe"
-                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.name && errors.name
+                                        className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.name ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.name && errors.name
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
                                             }`}
@@ -626,13 +737,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
                                     <input
+                                        disabled={formData.email ? true : false}
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('email')}
                                         placeholder="e.g. john@example.com"
-                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.email && errors.email
+                                        className={`w-full  border rounded-sm p-4 text-sm text-[#283862] ${formData.email ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.email && errors.email
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
                                             }`}
@@ -646,13 +758,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
                                 <input
+                                    disabled={formData.phone ? true : false}
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     onBlur={() => handleBlur('phone')}
                                     placeholder="+1 234 567 8900"
-                                    className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.phone && errors.phone
+                                    className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.phone ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.phone && errors.phone
                                         ? 'border-red-500 focus:border-red-500'
                                         : 'border-gray-300 focus:border-[#EDA337]'
                                         }`}
@@ -727,48 +840,78 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     {/* --- RIGHT COLUMN: ORDER SUMMARY --- */}
                     <div className="w-full lg:w-1/3">
                         <div className="sticky top-24">
-                                <h3 className="text-2xl text-[white] rounded-t-[8px] bg-[#283862] p-[15px] noto-geogia-font font-bold pb-4   ">Your Booking</h3>
+                            <h3 className="text-2xl text-[white] rounded-t-[8px] bg-[#283862] p-[15px] noto-geogia-font font-bold pb-4   ">Your Booking</h3>
                             <div className="bg-[white] text-white p-8 rounded-b-[8px] shadow-xl border border-[#00000017]">
-
-                                {cartItems.length > 0 ? (
-                                    <>
-                                        {cartItems.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-start mb-4 text-sm">
+                                {isSlug ? <>
+                                    {selectedRoomByslug &&
+                                        <>
+                                            <div className="flex justify-between items-start mb-4 text-sm">
                                                 <div>
-                                                    <div className="font-bold text-[black]">{item.roomName}</div>
-                                                    <div className="text-xs text-[black] ">x {item.guestDetails?.rooms || 1} Rooms</div>
+                                                    <div className="font-bold text-[black]">{selectedRoomByslug.roomName}</div>
+                                                    <div className="text-xs text-[black] ">x {singleItemInfo?.room} Rooms</div>
                                                 </div>
-                                                <span className="font-bold text-[#c23535]">{fmt(item.financials?.baseTotal || item.price)}</span>
+                                                <span className="font-bold text-[#c23535]">{fmt(singleItemInfo?.roomTotal)}</span>
                                             </div>
-                                        ))}
-
-                                        {totals.extrasTotal > 0 && (
-                                            <div className="flex justify-between items-start mb-2 text-sm text-[black]">
-                                                <span>Extras</span>
-                                                <span>+{fmt(totals.extrasTotal)}</span>
+                                            {singleItemInfo?.serviceTotal > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-[black]">
+                                                    <span>Extras</span>
+                                                    <span>+{fmt(singleItemInfo?.serviceTotal)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
+                                                <span className=' text-[#283862]'>Taxes & Fees</span>
+                                                <span>+{fmt(singleItemInfo?.tax + singleItemInfo?.serviceCharge)}</span>
                                             </div>
-                                        )}
-                                        {totals.discountAmount > 0 && (
-                                            <div className="flex justify-between items-start mb-2 text-sm text-green-400">
-                                                <span>Discount</span>
-                                                <span>-{fmt(totals.discountAmount)}</span>
+                                            <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+
+                                            <div className="flex justify-between items-center mb-8">
+                                                <span className="text-lg text-[black] font-bold">Total</span>
+                                                <span className="text-xl font-bold text-[#c23535]">{fmt(singleItemInfo?.grandTotal)}</span>
                                             </div>
-                                        )}
-                                        <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
-                                            <span className=' text-[#283862]'>Taxes & Fees</span>
-                                            <span>+{fmt(totals.taxes + totals.serviceCharge)}</span>
-                                        </div>
+                                        </>
+                                    }
+                                </> : <>
+                                    {cartItems.length > 0 ? (
+                                        <>
+                                            {cartItems.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-start mb-4 text-sm">
+                                                    <div>
+                                                        <div className="font-bold text-[black]">{item.roomName}</div>
+                                                        <div className="text-xs text-[black] ">x {item.guestDetails?.rooms || 1} Rooms</div>
+                                                    </div>
+                                                    <span className="font-bold text-[#c23535]">{fmt(item.financials?.baseTotal || item.price)}</span>
+                                                </div>
+                                            ))}
 
-                                        <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+                                            {totals.extrasTotal > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-[black]">
+                                                    <span>Extras</span>
+                                                    <span>+{fmt(totals.extrasTotal)}</span>
+                                                </div>
+                                            )}
+                                            {totals.discountAmount > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-green-400">
+                                                    <span>Discount</span>
+                                                    <span>-{fmt(totals.discountAmount)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
+                                                <span className=' text-[#283862]'>Taxes & Fees</span>
+                                                <span>+{fmt(totals.taxes + totals.serviceCharge)}</span>
+                                            </div>
 
-                                        <div className="flex justify-between items-center mb-8">
-                                            <span className="text-lg text-[black] font-bold">Total</span>
-                                            <span className="text-xl font-bold text-[#c23535]">{fmt(totals.grandTotal)}</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
-                                )}
+                                            <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+
+                                            <div className="flex justify-between items-center mb-8">
+                                                <span className="text-lg text-[black] font-bold">Total</span>
+                                                <span className="text-xl font-bold text-[#c23535]">{fmt(totals.grandTotal)}</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
+                                    )}
+
+                                </>}
 
                                 <h3 className="text-xl noto-geogia-font text-[black] font-bold mb-6">Payment Method</h3>
 
