@@ -14,7 +14,6 @@ export default function ReviewImage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   
-  // single overall view — slug drives which room's reviews are shown
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 3;
 
@@ -22,7 +21,6 @@ export default function ReviewImage() {
   const { selectedRoom, fetchRoomBySlug } = useRoomStore();
   const { reviews, fetchReview } = useReviewStore();
 
-  // prefer store's selectedRoom image when available, otherwise use the bundled fallback
   const getPrimaryImage = () => {
     if (selectedRoom) {
       if (selectedRoom.previewImage) return selectedRoom.previewImage;
@@ -34,14 +32,12 @@ export default function ReviewImage() {
   useEffect(() => {
     if (slug) {
       fetchRoomBySlug(slug);
-      // set page to 1 after reviews have loaded to avoid synchronous setState in effect
       fetchReview({ status: 'approved', slug }).then(() => {
         setCurrentPage(1);
       }).catch(() => {});
     }
   }, [slug, fetchRoomBySlug, fetchReview]);
 
-  // derive reviews for the current room (filter by slug or selectedRoom id)
   const roomReviews: Reviews[] = reviews
     ? reviews.filter(
         (r) => r?.bookingId?.room?.slug === slug || (selectedRoom && r?.bookingId?.room?._id === selectedRoom._id)
@@ -69,9 +65,7 @@ export default function ReviewImage() {
     }
   };
 
-  // Function to generate pagination numbers based on current page
   const getPaginationNumbers = () => {
-    // On mobile: always show 1, 2, 3, current page (if > 3), and total pages
     if (typeof window !== 'undefined' && window.innerWidth < 640) {
       const mobilePages = [1, 2, 3];
       if (currentPage > 3 && currentPage < totalPages) {
@@ -83,7 +77,6 @@ export default function ReviewImage() {
       return mobilePages;
     }
     
-    // On tablet and above: show pages 1..totalPages
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   };
 
@@ -93,12 +86,10 @@ export default function ReviewImage() {
   return (
     <section className="bg-white">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Changed to flex container for better centering */}
         <div className="flex justify-center">
           <div className="w-full max-w-7xl">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               
-              {/* Left: Product Image Section - Centered */}
               <div className="lg:col-span-4 mt-17">
                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 sticky top-25">
                   <div className="p-6">
@@ -135,9 +126,6 @@ export default function ReviewImage() {
                 </div>
               </div>
 
-              {/* Center divider (visible on large screens) */}
-              {/* <div className="hidden lg:block lg:col-span-1 flex items-center justify-center">
-              </div> */}
 
               {/* Right: Reviews Section - Centered */}
               <div className="lg:col-span-8 mt-17">
