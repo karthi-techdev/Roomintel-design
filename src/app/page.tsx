@@ -13,13 +13,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
 import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
 import {  getImageUrl } from '../utils/getImage';
+import { RiDoubleQuotesR } from "react-icons/ri";
+import { IoIosArrowRoundBack, IoIosArrowRoundForward, IoLogoLinkedin } from 'react-icons/io';
+import { FaStar } from "react-icons/fa6";
+import { FaStarHalfStroke } from "react-icons/fa6";
+
+
+import { showAlert } from '../utils/alertStore';
 import { useSliderStore } from '../store/useSliderStore';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useTestimonialStore } from '@/store/useTestimonialStore';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useAccommodationStore } from '@/store/useAccomodationStore';
+import { Reviews, useReviewStore } from '@/store/useReviewStore';
+
 
 
 interface SlideData {
@@ -31,12 +39,22 @@ interface SlideData {
 }
 
 export default function Home() {
-  const { testimonials, fetchTestimonial } = useTestimonialStore();
   const { formatPrice } = useCurrency();
+  const { fetchReview, reviews } = useReviewStore();
+  const [testimonialData, setTestimonialData] = useState<Reviews[]>()
 
   useEffect(() => {
-    fetchTestimonial();
-  }, [fetchTestimonial])
+    fetchReview({ status: 'approved' });
+  }, []);
+
+  useEffect(() => {
+    if (reviews) {
+      const topReviews = reviews.filter(item => item.rating > 3);
+      const visibleMax: Reviews[] = topReviews.length > 10 ? topReviews.slice(0, 10) : topReviews;
+      setTestimonialData(visibleMax);
+    }
+  }, [reviews])
+
 
   const { slides, fetchActiveSlides, loading } = useSliderStore();
   const { accommodations, fetchAccommodations, isLoading: accommodationsLoading } = useAccommodationStore();
@@ -68,6 +86,9 @@ export default function Home() {
   const arrivalRef = useRef<HTMLInputElement>(null);
   const departureRef = useRef<HTMLInputElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Testimonial carousel
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+
 
   const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
@@ -87,8 +108,22 @@ export default function Home() {
     fetchBookedDates();
   }, []);
 
+  const carouselTestimonials: Reviews[] | undefined = testimonialData;
 
 
+  useEffect(() => {
+    if (!testimonialData || testimonialData.length === 0) return;
+
+    const interval = setInterval(() => {
+      if (carouselTestimonials) {
+        setTestimonialIndex((prev) =>
+          // (prev + 1) % testimonialData.length
+          (prev + 1) % carouselTestimonials.length
+        );
+      }
+    }, 4000); // 4 sec
+    return () => clearInterval(interval);
+    }, [testimonialData]);
 
   if (loading || slides.length === 0) {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
@@ -785,7 +820,7 @@ console.log('rooms',rooms)
 
         {/* ================= Testimonials ================= */}
         <div className="max-w-[1200px] mx-auto">
-          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
+          <div className="mb-8 max-w-4xl ml-5 md:ml-0">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-[2px] bg-[#c23535]" />
               <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
@@ -802,43 +837,116 @@ console.log('rooms',rooms)
             </p>
           </div>
 
-          {testimonials.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {testimonials && testimonials.map((data) => {
-              return (
+          {testimonialData && testimonialData.length > 0 ? (
+            <div className="max-w-[1400px] mx-auto px-0 pt-10">
+
+              {/* CAROUSEL WINDOW: This clips the side cards perfectly */}
+              <div className="relative overflow-hidden">
                 <div
-                  key={data._id}
-                  className="bg-[#F9F9F9] p-8 sm:p-10 md:p-14 border border-gray-100/50"
+                  className="flex transition-transform duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                  style={{
+                    // Moves by 50% because each card is 50% width on desktop
+                    transform: `translateX(-${testimonialIndex * 50}%)`,
+                  }}
                 >
-                  <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                    <RiDoubleQuotesL />
-                  </div>
+                  {carouselTestimonials && carouselTestimonials.map((data) => (
+                    <div
+                      key={data._id}
+                      className="w-full md:w-1/2 flex-shrink-0 px-4" // px-4 creates the gap between cards
+                    >
+                      {/* CARD: Ensure no 'border' class is present here */}
+                      <div className="group bg-white rounded-[2.5rem] p-10 md:p-14 shadow-sm border border-solid border-[#ccc] hover:shadow-lg transition-all duration-500 flex flex-col relative overflow-hidden h-full ">
 
-                  <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                    {data.title}
-                  </h3>
+                        {/* Decorative Quote */}
+                        <div className="absolute -top-6 -right-6 text-slate-50 text-9xl pointer-events-none group-hover:text-red-50 transition-colors">
+                          <RiDoubleQuotesR />
+                        </div>
 
-                  <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                    {data.reviews}
-                  </p>
+                        <div className="relative z-10">
+                          {/* Rating Section */}
+                          <div className="flex justify-between items-start mb-8">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <FaStar
+                                    key={star}
+                                    className={`text-sm transition-all duration-500 ${star <= data.rating ? "text-[#c23535] scale-110" : "text-gray-200"
+                                      }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[#283862] text-[10px] font-black tracking-widest uppercase py-1 px-4 bg-slate-50 rounded-full w-fit">
+                                Verified Guest
+                              </span>
+                            </div>
+                            <div className="text-[#c23535] text-4xl opacity-20 group-hover:opacity-100 transition-opacity">
+                              <RiDoubleQuotesR />
+                            </div>
+                          </div>
 
-                  <div className="w-full h-[1px] bg-gray-200 mb-6" />
+                          <p className="text-slate-500 text-lg leading-relaxed mb-10 italic font-medium">
+                            "{data?.comment}"
+                          </p>
+                        </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                      <img
-                        src={data.image}
-                        className="w-full h-full object-cover grayscale"
-                      />
+                        {/* Reviewer Profile */}
+                        <div className="flex items-center gap-4 relative z-10 pt-6 mt-auto">
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg border-2 border-white transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                            <img
+                              src="./image/housekeeping-1.avif"
+                              alt="User"
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                            />
+                          </div>
+                          <div>
+                            <h4 className="text-[#283862] font-black uppercase text-sm tracking-tight">
+                              {data?.userId?.name}
+                            </h4>
+                            <p className="text-[#c23535] text-[10px] font-bold uppercase tracking-widest">
+                              Executive Suite Guest
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                      {data.reviewerName}
-                    </span>
-                  </div>
+                  ))}
                 </div>
-              )
-            })}
-          </div>
-            : 'No data found'}
+              </div>
+
+              {/* Navigation Controls - Placed outside the overflow-hidden div */}
+              <div className="flex justify-center items-center gap-6 mt-12">
+                <button
+                  onClick={() => setTestimonialIndex(prev => Math.max(0, prev - 1))}
+                  disabled={testimonialIndex === 0}
+                  className="w-14 h-14 rounded-full border border-slate-200 flex items-center justify-center text-[#283862] hover:bg-[#283862] hover:text-white transition-all group shadow-xl shadow-slate-100 disabled:opacity-30"
+                >
+                  <IoIosArrowRoundBack size={30} className="group-hover:-translate-x-1 transition-transform" />
+                </button>
+
+                {/* Progress Indicators */}
+                {carouselTestimonials &&
+                  <div className="flex gap-2">
+                    {Array.from({ length: Math.ceil(carouselTestimonials.length / 2) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${testimonialIndex === i ? 'w-8 bg-[#c23535]' : 'w-2 bg-slate-200'
+                          }`}
+                      />
+                    ))}
+                  </div>}
+                {carouselTestimonials &&
+                  <button
+                    onClick={() => setTestimonialIndex(prev => (prev + 1) % (carouselTestimonials.length - 1))}
+                    className="w-14 h-14 rounded-full border border-slate-200 flex items-center justify-center text-[#283862] hover:bg-[#283862] hover:text-white transition-all group shadow-xl shadow-slate-100"
+                  >
+                    <IoIosArrowRoundForward size={30} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                }
+              </div>
+            </div>
+          ) : (
+            <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest">No reviews found</div>
+          )}
         </div>
 
 

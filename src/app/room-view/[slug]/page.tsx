@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, use } from 'react';
+import React, { useState, useRef, useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, addMonths, differenceInDays } from 'date-fns';
 import {
@@ -33,10 +33,14 @@ import RoomImageGrid from '../../../components/room-view/RoomImageGrid';
 import RoomFaq from '../../../components/room-view/RoomFaq';
 import RoomAmenities from '../../../components/room-view/RoomAmenities';
 import { useRoomStore } from '@/store/useRoomStore';
+import { bookingService } from '@/api/bookingService';
 import { useCartStore } from '@/store/useCartStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { showAlert } from '@/utils/alertStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { Reviews, useReviewStore } from '@/store/useReviewStore';
+import RoomReview from '@/components/room-view/RoomReview';
+import RoomOverAllReview from '@/components/room-view/RoomOverAllReview';
 
 interface DateRange {
     checkIn: Date | null;
@@ -46,23 +50,83 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const { slug } = use(params);
     const router = useRouter();
     const { formatPrice, currencyIcon } = useCurrency();
-
-
-
     const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
+    const [roomBookings, setRoomBookings] = useState<any[]>([]);
+    const [availabilityLoading, setAvailabilityLoading] = useState(true);
     const { isLoggedIn, openLoginModal } = useAuthStore();
 
+    const { fetchReview, reviews } = useReviewStore();
+    const filteredReview = reviews && reviews.filter((item) => {
+        return item?.bookingId?.room?.slug === slug;
+    });
     // --- REFS FOR SCROLLING ---
     const aboutRef = useRef<HTMLDivElement>(null);
     const infoRef = useRef<HTMLDivElement>(null);
     const amenitiesRef = useRef<HTMLDivElement>(null);
     const faqRef = useRef<HTMLDivElement>(null);
-    const commentsRef = useRef<HTMLDivElement>(null);
+    const reviewRef = useRef<HTMLDivElement>(null);
+    const [rooms, setRooms] = useState(1);
+    const [adults, setAdults] = useState(2);
+    const [children, setChildren] = useState(0);
+    const [checkInDate, setCheckInDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [checkOutDate, setCheckOutDate] = useState<string>(
+        new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    );
 
-    // --- STATE ---
+    // New state for calendar visibility and range
+    const [showCalendar, setShowCalendar] = useState(false);
+    const [selectedRange, setSelectedRange] = useState<DateRange>({
+        checkIn: new Date(),
+        checkOut: new Date(Date.now() + 86400000),
+    });
 
-    // Fetch Banner and Room Data
+    const bookedDates: Date[] = room?.bookedDates
+        ?.map((dateStr: string) => new Date(dateStr))
+        .filter((date) => !isNaN(date.getTime())) || [];
+
+    // Lightbox State
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [photoIndex, setPhotoIndex] = useState(0);
+
+    // Related Rooms Carousel State
+    const [relatedIndex, setRelatedIndex] = useState(0);
+
+    // Banner State
+    const [banner, setBanner] = useState<{
+        image: string;
+        title: string;
+        description: string;
+        buttonName: string;
+    } | null>(null);
+
+    // FAQ Data State
+    const [faqData, setFaqData] = useState<{ question: string; answer: string }[]>([]);
+
+    // Config State
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+
+    // --- CONSTANTS ---
+    const basePrice = room ? room.price : 1590;
+
+    // Config values
+    const maxAdults = room ? (room.maxAdults || 2) : 2;
+    const maxChildren = room ? (room.maxChildren || 1) : 1;
+    const baseAdults = room ? (room.baseAdults || 2) : 2;
+    const baseChildren = room ? (room.baseChildren || 0) : 0;
+    const extraAdultPrice = room ? (room.extraAdultPrice || 0) : 0;
+    const extraChildPrice = room ? (room.extraChildPrice || 0) : 0;
+    const extraAdultsCount = Math.max(0, adults - baseAdults);
+    const extraChildrenCount = Math.max(0, children - baseChildren);
+    const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
+
+    const roomPricePerNight = basePrice + extrasPerRoom;
+    const totalPrice = roomPricePerNight * rooms;
+
+    const roomImages = room && room.images ? room.images : [];
+
+    const relatedRooms: any[] = []; // Placeholder
+
     useEffect(() => {
         const fetchBanner = async () => {
             try {
@@ -105,78 +169,45 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         fetchFaqs();
     }, [slug, fetchRoomBySlug, fetchCart]);
 
+    // Review Effect
+    useEffect(() => {
+        if (slug) {
+            fetchReview({
+                status: 'approved',
+                slug: slug
+            });
+        }
+    }, [slug])
+
     useEffect(() => {
         if (room) {
             setAdults(room.baseAdults || room.adults || 2);
             setChildren(room.baseChildren || 0);
         }
     }, [room]);
-    // At the top of your component where you define states
-    const [rooms, setRooms] = useState(1);
-    const [adults, setAdults] = useState(2);
-    const [children, setChildren] = useState(0);
-    const [checkInDate, setCheckInDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [checkOutDate, setCheckOutDate] = useState<string>(
-        new Date(Date.now() + 86400000).toISOString().split('T')[0]
-    );
-console.log('-----------',room);
-    // New state for calendar visibility and range
-    const [showCalendar, setShowCalendar] = useState(false);
-    const [selectedRange, setSelectedRange] = useState<DateRange>({
-        checkIn: new Date(),
-        checkOut: new Date(Date.now() + 86400000),
-    });
-    // FAQ State
-    const [activeAccordion, setActiveAccordion] = useState<number | null>(0);
-    const bookedDates: Date[] = room?.bookedDates
-  ?.map((dateStr: string) => new Date(dateStr))
-  .filter((date) => !isNaN(date.getTime())) || [];
 
-    // Lightbox State
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [photoIndex, setPhotoIndex] = useState(0);
+    useEffect(() => {
+        if (!slug || !room) return;
 
-    // Related Rooms Carousel State
-    const [relatedIndex, setRelatedIndex] = useState(0);
+        const fetchRoomAvailability = async () => {
+            setAvailabilityLoading(true);
+            try {
+                const bookings = await bookingService.getRoomBookings(slug);
+                setRoomBookings(bookings);
+                console.log('All room bookings fetched:', bookings);
+            } catch (err) {
+                console.error('Failed to fetch room availability:', err);
+                setRoomBookings([]);
+            } finally {
+                setAvailabilityLoading(false);
+            }
+        };
 
-    // Banner State
-    const [banner, setBanner] = useState<{
-        image: string;
-        title: string;
-        description: string;
-        buttonName: string;
-    } | null>(null);
-
-    // FAQ Data State
-    const [faqData, setFaqData] = useState<{ question: string; answer: string }[]>([]);
-
-    // Config State
-    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+        fetchRoomAvailability();
+    }, [slug, room]);
 
 
-    const basePrice = room ? room.price : 1590;
-
-    // Config values
-    const maxAdults = room ? (room.maxAdults || 2) : 2;
-    const maxChildren = room ? (room.maxChildren || 1) : 1;
-    const baseAdults = room ? (room.baseAdults || 2) : 2;
-    const baseChildren = room ? (room.baseChildren || 0) : 0;
-    const extraAdultPrice = room ? (room.extraAdultPrice || 0) : 0;
-    const extraChildPrice = room ? (room.extraChildPrice || 0) : 0;
-
-    // Calculate per-room extras
-    const extraAdultsCount = Math.max(0, adults - baseAdults);
-    const extraChildrenCount = Math.max(0, children - baseChildren);
-    const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
-
-    const roomPricePerNight = basePrice + extrasPerRoom;
-    const totalPrice = roomPricePerNight * rooms;
-
-    const roomImages = room && room.images ? room.images : [];
-
-    const relatedRooms: any[] = []; // Placeholder
-
-    // --- HANDLERS ---
+console.log('roomBookings:', roomBookings);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         if (ref.current) {
@@ -185,6 +216,30 @@ console.log('-----------',room);
             window.scrollTo({ top, behavior: 'smooth' });
         }
     };
+
+const blockedDates: Date[] = useMemo(() => {
+  if (!Array.isArray(roomBookings) || roomBookings.length === 0) {
+    return [];
+  }
+
+  const dates = new Set<string>();
+
+  roomBookings.forEach((booking: any) => {
+    const checkIn = new Date(booking.checkIn);
+    const checkOut = new Date(booking.checkOut);
+
+    // Skip invalid dates
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return;
+
+    let current = new Date(checkIn);
+    while (current < checkOut) {
+      dates.add(format(current, 'yyyy-MM-dd'));
+      current.setDate(current.getDate() + 1);
+    }
+  });
+
+  return Array.from(dates).map(dateStr => new Date(dateStr));
+}, [roomBookings]);
 
     const openLightbox = (index: number) => {
         setPhotoIndex(index);
@@ -224,10 +279,6 @@ console.log('-----------',room);
         const taxes = totalBase * 0.10;
         const serviceCharge = totalBase * 0.05;
         const grandTotal = totalBase + taxes + serviceCharge;
-
-
-        // Construct Cart Item matching usage in other components or define interface
-        // Assuming update to useCartStore handles this object
         const cartItem: any = {
             roomId: room._id,
             roomSlug: slug,
@@ -262,9 +313,6 @@ console.log('-----------',room);
             totalAmount: grandTotal
         };
 
-        // If useCartStore uses a different structure, we should align.
-        // Based on previous file, it was saving a large object.
-        // For now, I will pass this object.
 
         await addToCart(cartItem);
         router.push('/room-cart');
@@ -350,7 +398,7 @@ console.log('-----------',room);
                         { label: "Useful Info", ref: infoRef },
                         { label: "Amenities", ref: amenitiesRef },
                         { label: "FAQ", ref: faqRef },
-                        { label: "Comments", ref: commentsRef }
+                        { label: "Review & Rating", ref: reviewRef }
                     ].map((tab, idx) => (
                         <button
                             key={idx}
@@ -482,6 +530,21 @@ console.log('-----------',room);
                             <RoomFaq faqs={faqData} />
                         </div>
 
+                        {/* Reviews & Rating sec */}
+                        <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
+                            <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
+                            <RoomOverAllReview reviews={filteredReview} />
+                            {filteredReview && filteredReview.slice(0, 8).map((item: Reviews, index) => {
+                                return <RoomReview item={item} key={index} />
+                            })}
+                            {/* View All Reviews Button */}
+                            {filteredReview && filteredReview.length > 10 &&
+                                <button className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
+                                    All {filteredReview.length} reviews →
+                                </button>
+                            }
+                        </div>
+
                         {/* Nearby */}
                         <div>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-6">Where To Go Nearby</h3>
@@ -593,7 +656,7 @@ console.log('-----------',room);
                                                                 <SimpleCalendar
                                                                     selectedRange={selectedRange}
                                                                     onRangeSelect={handleRangeSelect}
-                                                                    bookedDates={bookedDates}
+                                                                    bookedDates={blockedDates}
                                                                     onClose={() => setShowCalendar(false)}
                                                                 />
                                                             </div>
