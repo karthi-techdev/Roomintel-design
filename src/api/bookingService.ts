@@ -1,6 +1,12 @@
 import { CpuIcon } from 'lucide-react';
 import axiosInstance from './axiosInstance';
 
+export interface ApiResponse<T> {
+  status: boolean;
+  data: T;
+  message?: string;
+}
+
 export interface Booking {
   id: string;
   roomName: string;
@@ -10,8 +16,9 @@ export interface Booking {
   originalCheckIn: string;  
   guests: string;           
   price: string;            
-  status: 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed'; 
-  features?: string[];   
+  status: Boolean; 
+  features?: string[];  
+  data: Booking[];
 }
 
 
@@ -19,7 +26,9 @@ export interface PaymentInitiateResponse {
   orderId: string;         
   amount: number;
   currency: string;
-
+  status: boolean;
+  message?: string;
+  razorpayOrderId: string;
 }
 
 export const bookingService = {
@@ -32,7 +41,7 @@ export const bookingService = {
   initiatePayment: async (
     amount: number,
     currency: string = 'INR'
-  ): Promise<PaymentInitiateResponse> => {
+  ): Promise<ApiResponse<PaymentInitiateResponse>> => {
     const receiptId = `rcpt_${Date.now()}`;
     const data = {
       orederAmount: amount,    
@@ -44,10 +53,9 @@ export const bookingService = {
     return response.data;
   },
 
-  // Get logged-in user's bookings
-  getMyBookings: async (): Promise<Booking[]> => {
+ getMyBookings: async (): Promise<ApiResponse<Booking[]>> => {
     const response = await axiosInstance.get('/site/bookings/my-bookings');
-    return response.data;
+    return response.data; // Now correctly typed as { status: boolean; data: Booking[] }
   },
 
   // Cancel a booking

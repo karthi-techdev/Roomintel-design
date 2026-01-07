@@ -70,6 +70,7 @@ const Dashboard: React.FC = () => {
         // 2. Refresh Bookings
         try {
           const bookingsRes = await bookingService.getMyBookings();
+          console.log('Fetched bookings:', bookingsRes);
           if (bookingsRes?.status && Array.isArray(bookingsRes.data)) {
             const mappedBookings = bookingsRes.data.map((bk: any) => {
               // Extract primary room data
@@ -242,7 +243,7 @@ const Dashboard: React.FC = () => {
       const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
 
       if (paymentRes.status === false) {
-        showAlert.error(paymentRes.message);
+        showAlert.error(paymentRes.message!); // Forces TS to trust you
         return;
       }
 
