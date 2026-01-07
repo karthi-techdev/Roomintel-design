@@ -28,12 +28,11 @@ export default function RoomCart() {
 
     // --- STORE ---
     const { cartItems, loading, fetchCart, updateCartItem, removeFromCart, addToCart } = useCartStore();
-
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
     // --- LOCAL STATE ---
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [allRooms, setAllRooms] = useState<any[]>([]);
     const [roomsLoading, setRoomsLoading] = useState(false);
-    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // Alert/Promo
     const [promoCode, setPromoCode] = useState('');
@@ -436,7 +435,11 @@ export default function RoomCart() {
 
                                                 <div className="flex flex-col sm:flex-row gap-6 mb-6">
                                                     <div className="w-full sm:w-40 h-32 rounded-lg overflow-hidden shrink-0">
-                                                        <img src={item.image || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400&auto=format&fit=crop"} alt="Room" className="w-full h-full object-cover" />
+                                                        <img
+                                                            src={item.image || (typeof item.roomId === 'object' ? item.roomId.previewImage : "") || (typeof item.roomId === 'object' && item.roomId.images?.[0]) || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400&auto=format&fit=crop"}
+                                                            alt="Room"
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     </div>
                                                     <div className="flex-1 space-y-4">
                                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

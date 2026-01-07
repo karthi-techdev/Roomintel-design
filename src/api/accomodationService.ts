@@ -15,8 +15,8 @@ export interface Accommodation {
 export const accommodationService = {
   // Get all active accommodations (public)
   getAllAccommodations: async (): Promise<Accommodation[]> => {
-    const response = await axiosInstance.get('/site/accommodations'); // adjust if route differs
-    return response.data.data || response.data; // adjust based on your response structure
+    const response = await axiosInstance.get('/site/accommodations');
+    return response.data.data.data || [];
   },
 
   // Optional: get single
