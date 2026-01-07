@@ -399,7 +399,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                 const pointsEarned = Math.floor(totalAmount * 10);
 
                 await finalizeOrder({
-                    id: bookingRes?.data?._id || 'N/A',
+                    id: bookingRes?.data || 'N/A',
                     amount: totalAmount,
                     points: pointsEarned,
                     paymentMode: 'Cash'
@@ -435,7 +435,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             const pointsEarned = Math.floor(totalAmount * 10);
 
                             await finalizeOrder({
-                                id: bookingRes?.data?._id || 'N/A',
+                                id: bookingRes?.data || 'N/A',
                                 amount: totalAmount,
                                 points: pointsEarned,
                                 paymentMode: 'Card',

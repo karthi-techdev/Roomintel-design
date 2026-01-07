@@ -1,6 +1,7 @@
 // src/store/useBookingStore.ts
 import { create } from 'zustand';
-import { Booking, bookingService, } from '@/api/bookingService';
+import { bookingService } from '@/api/bookingService';
+import type { Booking } from '@/api/bookingService'; // if Booking type is exported
 
 interface BookingState {
   bookings: Booking[];
@@ -18,8 +19,14 @@ export const useBookingStore = create<BookingState>((set) => ({
   fetchBookings: async () => {
     set({ isLoading: true, error: null });
     try {
-      const data = await bookingService.getMyBookings();
-      set({ bookings: data, isLoading: false });
+      const response = await bookingService.getMyBookings();
+      
+      // Check if the request was successful and extract the actual bookings array
+      if (response.status && Array.isArray(response.data)) {
+        set({ bookings: response.data, isLoading: false });
+      } else {
+        throw new Error(response.message || 'Invalid response from server');
+      }
     } catch (err: any) {
       set({
         isLoading: false,
