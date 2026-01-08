@@ -308,7 +308,7 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
 
-                    <Link
+                    {/* <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
@@ -318,12 +318,9 @@ const Navbar: React.FC = () => {
                                 {cartCount}
                             </span>
                         )}
-                    </Link>
+                    </Link> */}
 
-                    {/* Enquiry Button */}
-                    <Link href="/contact-us" className="hidden flex items-center w-max lg:flex bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
-                        Send an enquiry
-                    </Link>
+                   
 
                     {/* Mobile Toggle */}
                     <button

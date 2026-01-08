@@ -11,8 +11,10 @@ import {
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
+import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
+import {  getImageUrl } from '../utils/getImage';
 import { RiDoubleQuotesR } from "react-icons/ri";
-import { IoLogoLinkedin } from 'react-icons/io';
+import { IoIosArrowRoundBack, IoIosArrowRoundForward, IoLogoLinkedin } from 'react-icons/io';
 import { FaStar } from "react-icons/fa6";
 import { FaStarHalfStroke } from "react-icons/fa6";
 
@@ -22,8 +24,9 @@ import { useSliderStore } from '../store/useSliderStore';
 import { useRouter } from 'next/navigation';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useTestimonialStore } from '@/store/useTestimonialStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useAccommodationStore } from '@/store/useAccomodationStore';
+import { Reviews, useReviewStore } from '@/store/useReviewStore';
 
 
 
@@ -36,14 +39,25 @@ interface SlideData {
 }
 
 export default function Home() {
-  const { testimonials, fetchTestimonial } = useTestimonialStore();
   const { formatPrice } = useCurrency();
+  const { fetchReview, reviews } = useReviewStore();
+  const [testimonialData, setTestimonialData] = useState<Reviews[]>()
 
   useEffect(() => {
-    fetchTestimonial();
-  }, [fetchTestimonial])
+    fetchReview({ status: 'approved' });
+  }, []);
+
+  useEffect(() => {
+    if (reviews) {
+      const topReviews = reviews.filter(item => item.rating > 3);
+      const visibleMax: Reviews[] = topReviews.length > 10 ? topReviews.slice(0, 10) : topReviews;
+      setTestimonialData(visibleMax);
+    }
+  }, [reviews])
+
 
   const { slides, fetchActiveSlides, loading } = useSliderStore();
+  const { accommodations, fetchAccommodations, isLoading: accommodationsLoading } = useAccommodationStore();
   const router = useRouter();
 
   const handleCheckAvailability = () => {
@@ -58,7 +72,8 @@ export default function Home() {
 
   useEffect(() => {
     fetchActiveSlides();
-  }, [fetchActiveSlides]);
+    fetchAccommodations();
+  }, [fetchActiveSlides, fetchAccommodations]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
@@ -93,106 +108,43 @@ export default function Home() {
     fetchBookedDates();
   }, []);
 
-
-  const dummyTestimonials = [
-    {
-      _id: "d1",
-      image:"./image/housekeeping-1.avif",
-      title: "Amazing Stay",
-      reviews: "Rooms were clean and service was excellent.",
-      reviewerName: "Arun",
-    },
-    {
-      _id: "d2",
-      title: "Perfect Resort",
-      image:"./image/housekeeping-2.jpg",
-      reviews: "Best place to relax with family.",
-      reviewerName: "Priya",
-    },
-    {
-      _id: "d3",
-      title: "Loved It",
-      image:"./image/housekeeping-3.avif",
-      reviews: "Food, ambience and staff were top notch.",
-      reviewerName: "Karthik",
-    },
-    {
-      _id: "d4",
-      title: "Highly Recommended",
-      image:"./image/housekeeping-4.jpg",
-      reviews: "Will definitely visit again.",
-      reviewerName: "Sanjay",
-    },
-  ];
-  const carouselTestimonials =
-    testimonials && testimonials.length > 1
-      ? testimonials
-      : dummyTestimonials;
+  const carouselTestimonials: Reviews[] | undefined = testimonialData;
 
 
   useEffect(() => {
-    if (!testimonials || testimonials.length === 0) return;
+    if (!testimonialData || testimonialData.length === 0) return;
 
     const interval = setInterval(() => {
-      setTestimonialIndex((prev) =>
-        // (prev + 1) % testimonials.length
-        (prev + 1) % carouselTestimonials.length
-
-      );
+      if (carouselTestimonials) {
+        setTestimonialIndex((prev) =>
+          // (prev + 1) % testimonialData.length
+          (prev + 1) % carouselTestimonials.length
+        );
+      }
     }, 4000); // 4 sec
-
     return () => clearInterval(interval);
-  }, [testimonials]);
-
-
-
-
-
-
+    }, [testimonialData]);
 
   if (loading || slides.length === 0) {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
   }
 
-  const rooms = [
-    {
-      id: 1,
-      name: "Junior Suite",
-      image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop",
-      price: 150,
-      description: "Our Junior Suites offer a perfect blend of comfort and luxury, featuring a spacious living area and a private balcony with stunning views/.",
-      amenities: {
-        beds: 1,
-        baths: 1,
-        area: 45
-      }
+  const rooms = accommodations.map((acc: any) => ({
+    id: acc._id,
+    name: acc.title,
+    price: acc.price,
+    description: acc.description,
+    amenities: {
+      beds: acc.beds || 1,
+      baths: acc.bathroom || 1,
+      area: 45 // Default area as it's not in the backend model yet
     },
-    {
-      id: 2,
-      name: "Family Room",
-      image: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?q=80&w=2574&auto=format&fit=crop",
-      price: 250,
-      description: "Designed with families in mind, this spacious room offers multiple beds and a cozy atmosphere for a memorable stay.",
-      amenities: {
-        beds: 3,
-        baths: 2,
-        area: 75
-      }
-    },
-    {
-      id: 3,
-      name: "Double Room",
-      image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?q=80&w=2574&auto=format&fit=crop",
-      price: 180,
-      description: "Ideal for couples or solo travelers, our Double Rooms provide a tranquil retreat with modern amenities and elegant decor.",
-      amenities: {
-        beds: 2,
-        baths: 1,
-        area: 35
-      }
-    }
-  ];
-
+    image: getImageUrl(
+    acc.image,
+    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
+  ),
+  }));
+console.log('rooms',rooms)
 
 
   // Carousel Navigation
@@ -252,6 +204,7 @@ export default function Home() {
   };
 
   const prevSlideCarousel = () => {
+    if (rooms.length === 0) return;
     setCurrentIndex((prev) => (prev - 1 + rooms.length) % rooms.length);
   };
 
@@ -262,7 +215,12 @@ export default function Home() {
     return "hidden";
   };
 
-  const activeRoom = rooms[currentIndex];
+  if (accommodationsLoading || accommodations.length === 0) {
+    if (accommodationsLoading) return <div className="w-full h-[500px] flex justify-center items-center">Loading Accommodations...</div>;
+    // return null; // Or some fallback
+  }
+
+  const activeRoom = rooms[currentIndex] || rooms[0];
 
   const amenities = [
     {
@@ -304,15 +262,22 @@ export default function Home() {
 
       <section className="relative w-full h-[850px] overflow-hidden">
         {/* Background Image with Transition */}
+        {/* Background Image with Transition */}
         <div className="absolute inset-0 z-0">
-          <AnimatePresence mode='popLayout'>
-            <img
-              src="/image/666.jpg"
-              alt="Gallery Background"
-              className="w-full h-[600px] object-cover absolute inset-0"
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentSlide} // Ensures animation triggers on slide change
+              src={currentData.image || "/image/666.jpg"} // Dynamic image from store, fallback to old one
+              alt={currentData.title || "Hero Background"}
+              initial={{ opacity: 0, scale: 1.1 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="w-full h-full object-cover absolute inset-0"
             />
           </AnimatePresence>
-          {/* Subtle overlay to make text pop against the blue water/sky */}
+
+          {/* Subtle overlay to make text readable */}
           <div className="absolute inset-0 bg-black/10 z-10"></div>
         </div>
 
@@ -357,12 +322,15 @@ export default function Home() {
               <div className="flex flex-col gap-3">
                 <label className="text-[#1a1a1a] font-bold text-[14px] tracking-wide">Arrival Date</label>
                 <div className="relative group cursor-pointer z-50">
+                  {/* Arrival Date */}
                   <DatePicker
                     selected={formData.arrival ? new Date(formData.arrival) : null}
-                    onChange={(date) => handleInputChange('arrival', date ? date.toISOString().split('T')[0] : '')}
+                    onChange={(date: Date | null) =>
+                      handleInputChange('arrival', date ? date.toISOString().split('T')[0] : '')
+                    }
                     excludeDates={bookedDates}
                     placeholderText="Arrival Date"
-                    className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
+                    className="..."
                     dateFormat="yyyy-MM-dd"
                     minDate={new Date()}
                   />
@@ -375,7 +343,7 @@ export default function Home() {
                 <div className="relative cursor-pointer z-50">
                   <DatePicker
                     selected={formData.departure ? new Date(formData.departure) : null}
-                    onChange={(date) => handleInputChange('departure', date ? date.toISOString().split('T')[0] : '')}
+                    onChange={(date: Date | null) => handleInputChange('departure', date ? date.toISOString().split('T')[0] : '')}
                     excludeDates={bookedDates}
                     placeholderText="Departure Date"
                     className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
@@ -709,14 +677,14 @@ export default function Home() {
       </section>
 
 
-      <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
+      {/* <div className='before:absolute before:-top-[12px] before:left-5 before:w-[91%] md:before:w-[95%] lg:before:w-[97%] before:h-[13px] before:content-[""] before:bg-white/45 before:rounded-t-[8px]  after:left-5 after:w-[91%] md:after:w-[95%] lg:after:w-[97%] after:h-[13px] after:content-[""] after:bg-white/45 after:rounded-b-[8px] after:absolute after:top-auto  w-full relative'>
         <section className="bg-white py-20 lg:py-32 overflow-hidden   rounded-[10px]">
-          {/* Restaurant */}
+          
           <div className="max-w-[1400px] mx-auto px-6 lg:px-16 mb-32 lg:mb-48">
             <div className="flex flex-col lg:flex-row items-center">
-              {/* Image Side */}
+             
               <div className="w-full lg:w-[40%] relative mb-16 lg:mb-0">
-                {/* Vertical Text */}
+               
                 <span className="hidden lg:block absolute -left-12 top-10 -rotate-90 origin-top-left text-xs font-bold tracking-[0.3em] text-gray-300 uppercase">
                   Restaurant
                 </span>
@@ -736,12 +704,12 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              {/* Content Side */}
+             
 
               <div className="w-full lg:w-[60%] bg-[#F8F9FA] mt-52 relative lg:-ml-12 z-10">
-                {/* Background Box */}
+               
                 <div className="bg-[#F8F9FA] pl-0 md:pl-10 pt-10 pb-10 lg:pl-16 lg:pt-16 lg:pb-16 relative">
-                  {/* Vertical Text */}
+                  
                   <span className="hidden lg:block absolute -left-0 top-1/2 -translate-y-1/2 -rotate-90 text-lg font-bold tracking-[0.3em] text-gray-300 uppercase">
                     Fresh Food
                   </span>
@@ -767,10 +735,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Wellness */}
+         
           <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
             <div className="flex flex-col lg:flex-row-reverse items-center">
-              {/* Image Side */}
+             
               <div className="w-full lg:w-1/2 relative mb-16 lg:mb-0">
                 <div className="relative ml-8 lg:ml-16">
                   <img
@@ -788,7 +756,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Content Side */}
+             
               <div className="w-full lg:w-1/2 relative lg:-mr-12 z-10">
                 <div className="bg-[#F8F9FA] p-10 lg:p-16">
                   <div className="flex items-center gap-4 mb-4">
@@ -808,7 +776,7 @@ export default function Home() {
             </div>
           </div>
         </section>
-      </div>
+      </div> */}
       <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0 opacity-10">
@@ -852,7 +820,7 @@ export default function Home() {
 
         {/* ================= Testimonials ================= */}
         <div className="max-w-[1200px] mx-auto">
-          <div className="mb-16 max-w-4xl ml-5 md:ml-0">
+          <div className="mb-8 max-w-4xl ml-5 md:ml-0">
             <div className="flex items-center gap-4 mb-4">
               <div className="w-12 h-[2px] bg-[#c23535]" />
               <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
@@ -869,94 +837,116 @@ export default function Home() {
             </p>
           </div>
 
-          {testimonials.length > 0 ?
-            <div className="relative overflow-hidden w-full">
-              <div
-                className="flex transition-transform duration-700 ease-in-out"
-              style={{
-                transform: `translateX(-${testimonialIndex * 100}%)`,
-              }}
-              >
-                {carouselTestimonials.map((data) => (
-                  <div
-                    key={data._id}
-                    className="w-full flex-shrink-0 flex justify-center"
-                  >
+          {testimonialData && testimonialData.length > 0 ? (
+            <div className="max-w-[1400px] mx-auto px-0 pt-10">
 
-                    <div className="flex bg-[#F9F9F9] justify-between w-full md:w-[70%] p-8 sm:p-10 md:p-14 border border-gray-100/50" >
-                      <div className=" items-center gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden mb-2 bg-gray-300">
-                          <img
-                            src="./image/housekeeping-1.avif"
-                            className="w-full h-full object-cover grayscale"
-                          />
-                        </div>
-                        <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                          {data.reviewerName}
-                        </span>
-                      <div>
-                        <span className="flex mt-[10px] text-[#c23535d6]">
-                          <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfStroke />
-                        </span>
-                      </div>
-                      </div>
-                      <div>
+              {/* CAROUSEL WINDOW: This clips the side cards perfectly */}
+              <div className="relative overflow-hidden">
+                <div
+                  className="flex transition-transform duration-1000 ease-[cubic-bezier(0.23,1,0.32,1)]"
+                  style={{
+                    // Moves by 50% because each card is 50% width on desktop
+                    transform: `translateX(-${testimonialIndex * 50}%)`,
+                  }}
+                >
+                  {carouselTestimonials && carouselTestimonials.map((data) => (
+                    <div
+                      key={data._id}
+                      className="w-full md:w-1/2 flex-shrink-0 px-4" // px-4 creates the gap between cards
+                    >
+                      {/* CARD: Ensure no 'border' class is present here */}
+                      <div className="group bg-white rounded-[2.5rem] p-10 md:p-14 shadow-sm border border-solid border-[#ccc] hover:shadow-lg transition-all duration-500 flex flex-col relative overflow-hidden h-full ">
 
-
-                        <div className="text-[#c23535] flex justify-end text-4xl opacity-80">
+                        {/* Decorative Quote */}
+                        <div className="absolute -top-6 -right-6 text-slate-50 text-9xl pointer-events-none group-hover:text-red-50 transition-colors">
                           <RiDoubleQuotesR />
                         </div>
-                        <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                          {data.title}
-                        </h3>
 
-                        <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                          {data.reviews}
-                        </p>
-                      </div>
+                        <div className="relative z-10">
+                          {/* Rating Section */}
+                          <div className="flex justify-between items-start mb-8">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <FaStar
+                                    key={star}
+                                    className={`text-sm transition-all duration-500 ${star <= data.rating ? "text-[#c23535] scale-110" : "text-gray-200"
+                                      }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[#283862] text-[10px] font-black tracking-widest uppercase py-1 px-4 bg-slate-50 rounded-full w-fit">
+                                Verified Guest
+                              </span>
+                            </div>
+                            <div className="text-[#c23535] text-4xl opacity-20 group-hover:opacity-100 transition-opacity">
+                              <RiDoubleQuotesR />
+                            </div>
+                          </div>
 
-
-
-
-                    </div>
-                    {/* Card */}
-                    {/* <div className="bg-[#F9F9F9] w-full md:w-[70%] p-8 sm:p-10 md:p-14 border border-gray-100/50">
-                      <div className="text-[#c23535] text-4xl mb-6 opacity-80">
-                        <RiDoubleQuotesL />
-                      </div>
-
-                      <h3 className="text-xl sm:text-2xl noto-geogia-font text-[#283862] font-bold mb-4">
-                        {data.title}
-                      </h3>
-
-                      <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                        {data.reviews}
-                      </p>
-
-                      <div className="w-full h-[1px] bg-gray-200 mb-6" />
-
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-300">
-                          <img
-                            src="./image/housekeeping-1.avif"
-                            className="w-full h-full object-cover grayscale"
-                          />
+                          <p className="text-slate-500 text-lg leading-relaxed mb-10 italic font-medium">
+                            "{data?.comment}"
+                          </p>
                         </div>
-                        <span className="text-[#c23535] text-xs font-bold tracking-[0.15em] uppercase">
-                          {data.reviewerName}
-                        </span>
-                      </div>
 
-                      <span className="flex mt-[10px] text-[#c23535d6]">
-                        <FaStar /><FaStar /><FaStar /><FaStar /><FaStarHalfStroke />
-                      </span>
-                    </div> */}
-                  </div>
-                ))}
+                        {/* Reviewer Profile */}
+                        <div className="flex items-center gap-4 relative z-10 pt-6 mt-auto">
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden shadow-lg border-2 border-white transform rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                            <img
+                              src="./image/housekeeping-1.avif"
+                              alt="User"
+                              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                            />
+                          </div>
+                          <div>
+                            <h4 className="text-[#283862] font-black uppercase text-sm tracking-tight">
+                              {data?.userId?.name}
+                            </h4>
+                            <p className="text-[#c23535] text-[10px] font-bold uppercase tracking-widest">
+                              Executive Suite Guest
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Navigation Controls - Placed outside the overflow-hidden div */}
+              <div className="flex justify-center items-center gap-6 mt-12">
+                <button
+                  onClick={() => setTestimonialIndex(prev => Math.max(0, prev - 1))}
+                  disabled={testimonialIndex === 0}
+                  className="w-14 h-14 rounded-full border border-slate-200 flex items-center justify-center text-[#283862] hover:bg-[#283862] hover:text-white transition-all group shadow-xl shadow-slate-100 disabled:opacity-30"
+                >
+                  <IoIosArrowRoundBack size={30} className="group-hover:-translate-x-1 transition-transform" />
+                </button>
+
+                {/* Progress Indicators */}
+                {carouselTestimonials &&
+                  <div className="flex gap-2">
+                    {Array.from({ length: Math.ceil(carouselTestimonials.length / 2) }).map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${testimonialIndex === i ? 'w-8 bg-[#c23535]' : 'w-2 bg-slate-200'
+                          }`}
+                      />
+                    ))}
+                  </div>}
+                {carouselTestimonials &&
+                  <button
+                    onClick={() => setTestimonialIndex(prev => (prev + 1) % (carouselTestimonials.length - 1))}
+                    className="w-14 h-14 rounded-full border border-slate-200 flex items-center justify-center text-[#283862] hover:bg-[#283862] hover:text-white transition-all group shadow-xl shadow-slate-100"
+                  >
+                    <IoIosArrowRoundForward size={30} className="group-hover:translate-x-1 transition-transform" />
+                  </button>
+                }
               </div>
             </div>
-
-            : 'No data found'}
+          ) : (
+            <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest">No reviews found</div>
+          )}
         </div>
 
 

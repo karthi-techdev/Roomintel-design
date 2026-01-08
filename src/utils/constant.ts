@@ -1,0 +1,1 @@
+export const IND_CURRENCY : string = '₹'

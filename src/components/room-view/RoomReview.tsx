@@ -20,7 +20,7 @@ const  RoomReview: React.FunctionComponent<RoomReviewProps> =({item})=> {
                     <div className="bg-green-600 text-white text-[11px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
                         {rating} <span>★</span>
                     </div>
-                    <h3 className="text-sm font-bold text-[#283862]">Worth every penny</h3>
+                    <h3 className="text-sm font-bold text-[#283862]">{userName}</h3>
                 </div>
 
                 {/* The Review Text */}
@@ -37,7 +37,7 @@ const  RoomReview: React.FunctionComponent<RoomReviewProps> =({item})=> {
                 {/* Footer: User Identity & Tags */}
                 <div className="flex flex-wrap items-center justify-between pt-6 border-t border-slate-50 gap-4">
                     <div className="flex items-center gap-3">
-                        <span className="text-[13px] font-bold text-[#283862]">{userName}</span>
+                        {/* <span className="text-[13px] font-bold text-[#283862]">{userName}</span> */}
                         <div className="flex items-center gap-1.5 text-slate-400">
                             <span className="w-4 h-4 bg-slate-200 rounded-full flex items-center justify-center text-[8px]">✓</span>
                             <span className="text-[11px] font-medium">Certified Buyer, {roomName}</span>

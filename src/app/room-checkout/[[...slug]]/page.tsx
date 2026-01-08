@@ -1,24 +1,122 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useMemo, use } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-import { authService } from '../../api/authService';
-import { bookingService } from '../../api/bookingService';
-import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
-import { showAlert } from '../../utils/alertStore';
+import { authService } from '../../../api/authService';
+import { bookingService } from '../../../api/bookingService';
+import countryData from '../../../data/countries-states-cities-database/json/countries+states.json';
+import { showAlert } from '../../../utils/alertStore';
 import { useCartStore } from '@/store/useCartStore';
-import { siteService } from '../../api/siteService';
+import { siteService } from '../../../api/siteService';
 import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
+import RoomCartCard from '@/components/room-view/RoomCardSingle';
+import { Room, useRoomStore } from '@/store/useRoomStore';
+
+interface SingleBookingInfo {
+    room: number;
+    adults: number;
+    children: number;
+    roomTotal: number;
+    serviceTotal: number;
+    tax: number;
+    serviceCharge: number;
+    grandTotal: number;
+}
 
 interface RoomCheckoutProps {
     onBack?: () => void;
     onPlaceOrder?: () => void;
+    params: {
+        slug?: string[];
+    };
+    handleUpdateGuests: () => void;
+    handleUpdateRoom: () => void;
+    handleUpdateChildren: () => void;
+    handleUpdateAdult: () => void;
+    onUpdate: (data: any) => void;
 }
 
-const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => {
+const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpdate }) => {
     const router = useRouter();
+    const params = useParams();
+    // Set User Data
+    const user = authService.getCurrentUser(); 
+
+    // ============Single booking 
+    const { fetchRoomBySlug, selectedRoom } = useRoomStore();
+
+
+    const [selectedRoomByslug, setSelectedRoomByslug] = useState<Room>();
+    const [singleItemInfo, setSingleItemInfo] = useState<SingleBookingInfo>({
+        room: 0,
+        adults: 0,
+        children: 0,
+        roomTotal: 0,
+        serviceTotal: 0,
+        tax: 0,
+        serviceCharge: 0,
+        grandTotal: 0,
+    });
+    const [singleBookingInfo, setSingleBookingInfo] = useState();
+
+    // Slug check
+    const slug = params?.slug as string[] | undefined;
+    const isSlug = slug ? slug?.[0] : null;
+
+    // Fetch room
+    useEffect(() => {
+        if (isSlug) {
+            fetchRoomBySlug(isSlug);
+        };
+        
+    }, [isSlug]);
+
+    useEffect(() => {
+        if (selectedRoom) {
+            setSelectedRoomByslug(selectedRoom);
+            setFormData(prev => {
+                if (prev.email) return prev;
+                return {
+                    ...prev,
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    phone: user?.phone || '',
+                };
+            });
+        }
+    }, [selectedRoom]);
+
+
+    const onUpdateGetData = (data: any) => {
+        setSingleItemInfo((prev) => ({
+            ...prev,
+            room: data?.room,
+            roomTotal: data?.roomTotal,
+            serviceTotal: data?.serviceTotal,
+            tax: data?.tax,
+            serviceCharge: data?.serviceCharge,
+            grandTotal: data?.grandTotal
+        }));
+    }
+    console.log('=======AAAAAAAAAAAA====', user);
+
+    console.log('=======selectedRoom====', selectedRoomByslug);
+
+
+
+
+
+
+
+
+
+
+
+
+    // =====================================
+
 
     // --- STORE ---
     const { cartItems, fetchCart, clearCart } = useCartStore();
@@ -26,7 +124,8 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
     const [isProcessing, setIsProcessing] = useState(false);
-    const [isBooked, setIsBooked] = useState(false);
+    const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
+    const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
 
     // Aggregate calculations for all items (same as cart page)
@@ -172,10 +271,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     checkOut: new Date(cartItem.checkOut).toISOString().split('T')[0]
                 });
             }
-
-            // Set User Data
-            const user = authService.getCurrentUser(); // Still good to check user for fallback
-            // Cart might have contact info if previously saved? Not in current CartItem but typically user data persists
 
             setFormData(prev => {
                 // If form is already filled, don't overwrite with defaults unless empty
@@ -336,14 +431,18 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         setErrors(prev => ({ ...prev, ...dateErrors }));
     };
 
-    const finalizeOrder = async () => {
+    const finalizeOrder = async (bookingData: any) => {
         await clearCart();
-        setIsBooked(true);
+        setConfirmedBookingDetails(bookingData);
+        setIsBookingConfirmed(true);
         setIsProcessing(false);
+        // Scroll to top to see the confirmation
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePlaceOrder = async () => {
-        if (cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
+        
+        if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
         // Validate form
         if (!validateForm()) {
@@ -356,7 +455,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
         const totalAmount = totals.grandTotal;
 
         // Prepare rooms array for backend
-        const bookedRooms = cartItems.map(item => ({
+        const bookedRooms =isSlug ? [{
+            roomId : selectedRoomByslug?._id,
+            roomName: selectedRoomByslug?.title,
+            price: singleItemInfo.grandTotal,
+            // checkIn: item.checkIn || dates.checkIn,
+            // checkOut: item.checkOut || dates.checkOut,
+            guestDetails: {
+                    rooms: singleItemInfo?.room,
+                    adults: singleItemInfo.adults,
+                    children: singleItemInfo.children
+            }
+        }
+        ] 
+        : 
+        cartItems.map(item => ({
             roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
             roomName: item.roomName,
             price: item.financials?.grandTotal || item.price,
@@ -375,7 +488,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             rooms: bookedRooms,
             checkIn: dates.checkIn,
             checkOut: dates.checkOut,
-            totalAmount: totalAmount,
+            totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
             specialRequests: formData.notes,
             billingAddress: {
                 street: formData.address,
@@ -388,14 +501,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
-
+        console.log('============bookingPayload======',bookingPayload)
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
                 await bookingService.createBooking(bookingPayload);
                 const pointsEarned = Math.floor(totalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                await finalizeOrder();
+                await finalizeOrder(bookingPayload);
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
@@ -426,7 +539,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             await bookingService.createBooking(paidPayload);
                             const pointsEarned = Math.floor(totalAmount * 10);
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                            await finalizeOrder();
+                            await finalizeOrder(bookingPayload);
                         } catch (err) {
                             console.error("Failed to save booking after payment", err);
                             showAlert.error("Payment successful but booking failed to save. Please contact support.");
@@ -474,62 +587,78 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
     };
 
 
-    if (isBooked) {
+    if (isBookingConfirmed) {
         return (
-            <div className="min-h-screen bg-gray-50 pt-32 pb-20 px-4">
-                <div className="w-[500px] mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-                    <div className="bg-[#283862] py-10 px-8 text-center text-white relative">
-                        <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                            <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461" alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <div className="relative z-10">
-                            <div className="w-18 h-18 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
-                                <FaCheckCircle className="text-white text-4xl" />
-                            </div>
-                            <h2 className="text-4xl noto-geogia-font font-bold mb-2">Booking Confirmed!</h2>
-                            <p className="text-gray-300 ">Thank you for choosing RoomIntel. Your stay is secured.</p>
-                        </div>
-                    </div>
+            <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
+                <div className="max-w-[600px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                    {/* Top Accent Bar */}
+                    <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
                     <div className="p-8 md:p-12 text-center">
-                        <div className="bg-gray-50 rounded-2xl p-6 mb-8 text-left inline-block w-full">
-                            <h4 className="text-sm font-bold text-[#283862] uppercase tracking-wider mb-4 border-b pb-2">What's Next?</h4>
-                            <ul className="space-y-3">
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span className='text-[10px]'>You will receive a confirmation email with all details shortly.</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span className='text-[10px]'>Please present your ID card at the reception during check-in.</span>
-                                </li>
-                                <li className="flex items-start gap-3 text-sm text-gray-600">
-                                    <div className="w-3 h-3 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
-                                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                    </div>
-                                    <span className='text-[10px]'>Need help? Contact our support via your dashboard or call +91 XXX-XXX-XXXX.</span>
-                                </li>
-                            </ul>
+                        {/* Success Icon */}
+                        <div className="mb-5 relative inline-block">
+                            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
+                                <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                            <div className="absolute -top-1 -right-1 w-8 h-8 bg-[#EDA337] rounded-full flex items-center justify-center text-white border-4 border-white">
+                                <span className="text-lg">✨</span>
+                            </div>
+                        </div>
+
+                        <h2 className="text-3xl md:text-4xl noto-geogia-font font-bold text-[#283862] mb-4">
+                            Booking Confirmed!
+                        </h2>
+                        <p className="text-gray-500 text-[12px] mb-6 max-w-md mx-auto">
+                            Thank you for choosing RoomIntel. Your reservation has been successfully processed and a confirmation email is on its way.
+                        </p>
+
+                        {/* Details Card */}
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-7 text-left">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
+                                    <p className="font-mono text-[#283862] font-semibold">#{confirmedBookingDetails?.id?.slice(-8).toUpperCase() || 'RT-XXXXX'}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
+                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.amount || 0)}</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
+                                    <p className="text-green-600 font-bold">🎉 +{confirmedBookingDetails?.points || 0} Points</p>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Payment Status</label>
+                                    <p className="text-blue-600 font-semibold">{confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
-                                onClick={() => router.push('/')}
-                                className="flex items-center justify-center gap-2 px-2 py-2 bg-[#283862] text-white rounded-xl font-bold hover:bg-[#1c2a4a] transition-all shadow-md active:scale-95"
+                                onClick={() => router.push('/dashboard')}
+                                className="px-8 py-4 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
                             >
-                                <FaHome /> Go to Home
+                                View Dashboard
                             </button>
                             <button
-                                onClick={() => router.push('/dashboard')}
-                                className="flex items-center justify-center gap-2 px-2 py-2 border-2 border-[#283862] text-[#283862] rounded-xl font-bold hover:bg-[#283862] hover:text-white transition-all shadow-sm active:scale-95"
+                                onClick={() => router.push('/')}
+                                className="px-8 py-4 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
                             >
-                                <FaListAlt /> View My Bookings
+                                Back to Home
                             </button>
                         </div>
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="bg-gray-50 px-8 py-4 border-t border-gray-100 flex justify-between items-center text-[11px] text-gray-400 font-medium">
+                        <span>Need help? Contact support</span>
+                        <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                            Secure Booking System
+                        </span>
                     </div>
                 </div>
             </div>
@@ -560,6 +689,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
+                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} availableServices={availableServices} onUpdate={onUpdateGetData} />
                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">
@@ -608,13 +738,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
                                     <input
+                                        disabled={formData.name ? true : false}
                                         type="text"
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('name')}
                                         placeholder="e.g. John Doe"
-                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.name && errors.name
+                                        className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.name ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.name && errors.name
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
                                             }`}
@@ -626,13 +757,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
                                     <input
+                                        disabled={formData.email ? true : false}
                                         type="email"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         onBlur={() => handleBlur('email')}
                                         placeholder="e.g. john@example.com"
-                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.email && errors.email
+                                        className={`w-full  border rounded-sm p-4 text-sm text-[#283862] ${formData.email ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.email && errors.email
                                             ? 'border-red-500 focus:border-red-500'
                                             : 'border-gray-300 focus:border-[#EDA337]'
                                             }`}
@@ -646,13 +778,14 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                             <div className="space-y-2">
                                 <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
                                 <input
+                                    disabled={formData.phone ? true : false}
                                     type="tel"
                                     name="phone"
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     onBlur={() => handleBlur('phone')}
                                     placeholder="+1 234 567 8900"
-                                    className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.phone && errors.phone
+                                    className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.phone ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.phone && errors.phone
                                         ? 'border-red-500 focus:border-red-500'
                                         : 'border-gray-300 focus:border-[#EDA337]'
                                         }`}
@@ -727,48 +860,78 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder }) => 
                     {/* --- RIGHT COLUMN: ORDER SUMMARY --- */}
                     <div className="w-full lg:w-1/3">
                         <div className="sticky top-24">
-                                <h3 className="text-2xl text-[white] rounded-t-[8px] bg-[#283862] p-[15px] noto-geogia-font font-bold pb-4   ">Your Booking</h3>
+                            <h3 className="text-2xl text-[white] rounded-t-[8px] bg-[#283862] p-[15px] noto-geogia-font font-bold pb-4   ">Your Booking</h3>
                             <div className="bg-[white] text-white p-8 rounded-b-[8px] shadow-xl border border-[#00000017]">
-
-                                {cartItems.length > 0 ? (
-                                    <>
-                                        {cartItems.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-start mb-4 text-sm">
+                                {isSlug ? <>
+                                    {selectedRoomByslug &&
+                                        <>
+                                            <div className="flex justify-between items-start mb-4 text-sm">
                                                 <div>
-                                                    <div className="font-bold text-[black]">{item.roomName}</div>
-                                                    <div className="text-xs text-[black] ">x {item.guestDetails?.rooms || 1} Rooms</div>
+                                                    <div className="font-bold text-[black]">{selectedRoomByslug.roomName}</div>
+                                                    <div className="text-xs text-[black] ">x {singleItemInfo?.room} Rooms</div>
                                                 </div>
-                                                <span className="font-bold text-[#c23535]">{fmt(item.financials?.baseTotal || item.price)}</span>
+                                                <span className="font-bold text-[#c23535]">{fmt(singleItemInfo?.roomTotal)}</span>
                                             </div>
-                                        ))}
-
-                                        {totals.extrasTotal > 0 && (
-                                            <div className="flex justify-between items-start mb-2 text-sm text-[black]">
-                                                <span>Extras</span>
-                                                <span>+{fmt(totals.extrasTotal)}</span>
+                                            {singleItemInfo?.serviceTotal > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-[black]">
+                                                    <span>Extras</span>
+                                                    <span>+{fmt(singleItemInfo?.serviceTotal)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
+                                                <span className=' text-[#283862]'>Taxes & Fees</span>
+                                                <span>+{fmt(singleItemInfo?.tax + singleItemInfo?.serviceCharge)}</span>
                                             </div>
-                                        )}
-                                        {totals.discountAmount > 0 && (
-                                            <div className="flex justify-between items-start mb-2 text-sm text-green-400">
-                                                <span>Discount</span>
-                                                <span>-{fmt(totals.discountAmount)}</span>
+                                            <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+
+                                            <div className="flex justify-between items-center mb-8">
+                                                <span className="text-lg text-[black] font-bold">Total</span>
+                                                <span className="text-xl font-bold text-[#c23535]">{fmt(singleItemInfo?.grandTotal)}</span>
                                             </div>
-                                        )}
-                                        <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
-                                            <span className=' text-[#283862]'>Taxes & Fees</span>
-                                            <span>+{fmt(totals.taxes + totals.serviceCharge)}</span>
-                                        </div>
+                                        </>
+                                    }
+                                </> : <>
+                                    {cartItems.length > 0 ? (
+                                        <>
+                                            {cartItems.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-start mb-4 text-sm">
+                                                    <div>
+                                                        <div className="font-bold text-[black]">{item.roomName}</div>
+                                                        <div className="text-xs text-[black] ">x {item.guestDetails?.rooms || 1} Rooms</div>
+                                                    </div>
+                                                    <span className="font-bold text-[#c23535]">{fmt(item.financials?.baseTotal || item.price)}</span>
+                                                </div>
+                                            ))}
 
-                                        <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+                                            {totals.extrasTotal > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-[black]">
+                                                    <span>Extras</span>
+                                                    <span>+{fmt(totals.extrasTotal)}</span>
+                                                </div>
+                                            )}
+                                            {totals.discountAmount > 0 && (
+                                                <div className="flex justify-between items-start mb-2 text-sm text-green-400">
+                                                    <span>Discount</span>
+                                                    <span>-{fmt(totals.discountAmount)}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex font-semibold justify-between items-start mb-2 text-sm text-[#c23535]">
+                                                <span className=' text-[#283862]'>Taxes & Fees</span>
+                                                <span>+{fmt(totals.taxes + totals.serviceCharge)}</span>
+                                            </div>
 
-                                        <div className="flex justify-between items-center mb-8">
-                                            <span className="text-lg text-[black] font-bold">Total</span>
-                                            <span className="text-xl font-bold text-[#c23535]">{fmt(totals.grandTotal)}</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
-                                )}
+                                            <div className="w-full h-[1px] bg-gray-300 mb-6"></div>
+
+                                            <div className="flex justify-between items-center mb-8">
+                                                <span className="text-lg text-[black] font-bold">Total</span>
+                                                <span className="text-xl font-bold text-[#c23535]">{fmt(totals.grandTotal)}</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-gray-400 text-sm mb-6">Your cart is empty.</div>
+                                    )}
+
+                                </>}
 
                                 <h3 className="text-xl noto-geogia-font text-[black] font-bold mb-6">Payment Method</h3>
 
