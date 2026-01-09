@@ -15,10 +15,14 @@ import { bookingService } from '@/api/bookingService';
 import { membershipService } from '@/api/membershipService';
 import { showAlert } from '@/utils/alertStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { FaHeart } from "react-icons/fa6";
+
+import MyWishlist from '@/components/my-wishlist/MyWishlist';
+
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
   const { formatPrice } = useCurrency();
 
   // --- State Management ---
@@ -41,7 +45,7 @@ const Dashboard: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
+  console.log('Rendered Dashboard with bookings:', bookings);
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -70,24 +74,41 @@ const Dashboard: React.FC = () => {
         // 2. Refresh Bookings
         try {
           const bookingsRes = await bookingService.getMyBookings();
+          console.log('Fetched bookings:', bookingsRes);
           if (bookingsRes?.status && Array.isArray(bookingsRes.data)) {
-            const mappedBookings = bookingsRes.data.map((bk: any) => ({
-              id: bk._id,
-              roomName: bk.room?.title || bk.roomName || "Unknown Room",
-              image: bk.room?.images?.[0] || bk.room?.image || "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop",
-              checkIn: new Date(bk.checkIn).toLocaleDateString(),
-              checkOut: new Date(bk.checkOut).toLocaleDateString(),
-              guests: Array.isArray(bk.guestDetails)
-                ? bk.guestDetails.map((g: any) => `${g.value} ${g.key || g.label || 'Guests'}`).join(', ')
+            const mappedBookings = bookingsRes.data.map((bk: any) => {
+              // Extract primary room data
+              const primaryRoom = bk.room || bk.rooms?.[0]?.roomId || bk.rooms?.[0] || {};
+              const roomImage = primaryRoom?.images?.[0] || primaryRoom?.image || bk.rooms?.[0]?.room?.images?.[0];
+
+              // Resolve Image URL
+              const finalImage = roomImage
+                ? (roomImage.startsWith('http') ? roomImage : `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000'}/uploads/rooms/${roomImage}`)
+                : "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop";
+
+              // Resolve Guest Details
+              const gd = bk.guestDetails || bk.rooms?.[0]?.guestDetails || bk.guests;
+              const guestsString = Array.isArray(gd)
+                ? gd.map((g: any) => `${g.value} ${g.key || g.label || 'Guests'}`).join(', ')
                 : [
-                  (bk.guestDetails?.adults || 0) > 0 ? `${bk.guestDetails?.adults} Adult${(bk.guestDetails?.adults || 0) > 1 ? 's' : ''}` : null,
-                  (bk.guestDetails?.children || 0) > 0 ? `${bk.guestDetails?.children} Child${(bk.guestDetails?.children || 0) !== 1 ? 'ren' : ''}` : null
-                ].filter(Boolean).join(', ') || '0 Guests',
-              price: formatPrice(bk.totalAmount),
-              status: bk.bookingStatus || "Upcoming",
-              features: [],
-              originalCheckIn: bk.checkIn
-            }));
+                  (gd?.adults || 0) > 0 ? `${gd?.adults} Adult${(gd?.adults || 0) > 1 ? 's' : ''}` : null,
+                  (gd?.children || 0) > 0 ? `${gd?.children} Child${(gd?.children || 0) !== 1 ? 'ren' : ''}` : null,
+                  (gd?.rooms || 0) > 0 ? `${gd?.rooms} Room${(gd?.rooms || 0) > 1 ? 's' : ''}` : null
+                ].filter(Boolean).join(', ') || '0 Guests';
+
+              return {
+                id: bk._id,
+                roomName: primaryRoom?.title || primaryRoom?.name || bk.roomName || "Unknown Room",
+                image: finalImage,
+                checkIn: new Date(bk.checkIn).toLocaleDateString(),
+                checkOut: new Date(bk.checkOut).toLocaleDateString(),
+                guests: guestsString,
+                price: formatPrice(bk.totalAmount),
+                status: bk.bookingStatus || "Upcoming",
+                features: [],
+                originalCheckIn: bk.checkIn
+              };
+            });
             setBookings(mappedBookings);
           }
         } catch (e) { console.error("Bookings fetch failed", e); }
@@ -226,7 +247,7 @@ const Dashboard: React.FC = () => {
       const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
 
       if (paymentRes.status === false) {
-        showAlert.error(paymentRes.message);
+        showAlert.error(paymentRes.message!); // Forces TS to trust you
         return;
       }
 
@@ -307,7 +328,7 @@ const Dashboard: React.FC = () => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
-
+  console.log("========",activeTab)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }
@@ -376,11 +397,22 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
               <div className="p-2 space-y-1">
                 <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'profile' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <FaUser className={activeTab === 'profile' ? 'text-[#EDA337]' : 'text-gray-400'} /> Account Info
+                  <FaUser className={activeTab === 'profile' ? 'text-[#c23535]' : 'text-gray-400'} /> Account Info
                 </button>
                 <button onClick={() => setActiveTab('bookings')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'bookings' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} /> My Bookings
+                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#c23535]' : 'text-gray-400'} /> My Bookings
                 </button>
+
+
+                <button
+                  onClick={() => setActiveTab('wishlist')}
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50' }`} >
+                  <FaHeart className={activeTab === 'wishlist' ? 'text-[#c23535]' : 'text-gray-400'} />
+                  My Wishlist
+                </button>
+
+
+
                 <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
                 <button
                   onClick={handleLogoutClick}
@@ -397,8 +429,9 @@ const Dashboard: React.FC = () => {
           {/* (No changes needed here — kept identical to your original code) */}
 
           <div className="flex-1">
+            
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-              {activeTab === 'profile' ? (
+              {activeTab === 'profile' &&
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
                   {/* ... Profile section unchanged ... */}
                   <div className="flex justify-between items-center p-8 border-b border-gray-100">
@@ -470,8 +503,8 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
+                </div>}
+  {activeTab === 'bookings' &&
                 <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                   <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                     <div>
@@ -490,7 +523,6 @@ const Dashboard: React.FC = () => {
                         <div className="flex flex-col md:flex-row">
                           <div className="w-full md:w-[280px] h-[200px] md:h-auto relative overflow-hidden shrink-0">
                             <img src={booking.image} alt={booking.roomName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                            <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[#283862] text-[10px] font-bold uppercase px-3 py-1 rounded-sm">{booking.id}</div>
                           </div>
                           <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
                             <div>
@@ -541,9 +573,15 @@ const Dashboard: React.FC = () => {
                       </div>
                     )) : <div className="text-center py-20 text-gray-400 font-bold">No bookings found in this category.</div>}
                   </div>
-                </div>
-              )}
+                </div>}
+                  {activeTab === 'wishlist' &&
+                  <MyWishlist/>
+                  }
+            
+             
+              
             </motion.div>
+            
           </div>
         </div>
       </div>

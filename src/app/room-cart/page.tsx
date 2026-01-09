@@ -27,12 +27,11 @@ export default function RoomCart() {
 
     // --- STORE ---
     const { cartItems, loading, fetchCart, updateCartItem, removeFromCart, addToCart } = useCartStore();
-
+    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
     // --- LOCAL STATE ---
     const [availableServices, setAvailableServices] = useState<any[]>([]);
     const [allRooms, setAllRooms] = useState<any[]>([]);
     const [roomsLoading, setRoomsLoading] = useState(false);
-    const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
 
     // Alert/Promo
     const [promoCode, setPromoCode] = useState('');
@@ -435,47 +434,14 @@ export default function RoomCart() {
 
                                                 <div className="flex flex-col sm:flex-row gap-6 mb-6">
                                                     <div className="w-full sm:w-40 h-32 rounded-lg overflow-hidden shrink-0">
-                                                        <img src={item.image || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400&auto=format&fit=crop"} alt="Room" className="w-full h-full object-cover" />
+                                                        <img
+                                                            src={item.image || (typeof item.roomId === 'object' ? item.roomId.previewImage : "") || (typeof item.roomId === 'object' && item.roomId.images?.[0]) || "https://images.unsplash.com/photo-1590490360182-c33d57733427?q=80&w=400&auto=format&fit=crop"}
+                                                            alt="Room"
+                                                            className="w-full h-full object-cover"
+                                                        />
                                                     </div>
                                                     <div className="flex-1 space-y-4">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                            <div className="space-y-1">
-                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Rooms</label>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button
-                                                                        onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) - 1)}
-                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        disabled={(item.guestDetails?.rooms || 1) <= 1}
-                                                                    >
-                                                                        -
-                                                                    </button>
-                                                                    <span className="font-bold text-[#283862]">
-                                                                        {item.guestDetails?.rooms || 1}
-                                                                    </span>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                            const maxRooms = roomData?.maxRooms || 10;
-                                                                            handleUpdateRooms(index, Math.min(maxRooms, (item.guestDetails?.rooms || 1) + 1));
-                                                                        }}
-                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        disabled={(() => {
-                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                            const maxRooms = roomData?.maxRooms || 10;
-                                                                            return (item.guestDetails?.rooms || 1) >= maxRooms;
-                                                                        })()}
-                                                                    >
-                                                                        +
-                                                                    </button>
-                                                                </div>
-                                                                {(() => {
-                                                                    const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                    const maxRooms = roomData?.maxRooms || 10;
-                                                                    return (item.guestDetails?.rooms || 1) >= maxRooms && (
-                                                                        <div className="text-[9px] text-yellow-500">Max limit reached</div>
-                                                                    );
-                                                                })()}
-                                                            </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">                                                            
                                                             <div className="space-y-1">
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Adults</label>
                                                                 <div className="flex items-center gap-3">

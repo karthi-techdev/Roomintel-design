@@ -360,7 +360,7 @@ const Navbar: React.FC = () => {
                         )}
                     </div>
 
-                    <Link
+                    {/* <Link
                         href="/room-cart"
                         className="relative w-10 h-10 flex items-center justify-center text-[#283862] hover:text-[#c23535] transition-colors"
                     >
@@ -370,12 +370,9 @@ const Navbar: React.FC = () => {
                                 {cartCount}
                             </span>
                         )}
-                    </Link>
+                    </Link> */}
 
-                    {/* Enquiry Button */}
-                    <Link href="/contact-us" className="hidden flex items-center w-max lg:flex bg-[#c23535] hover:bg-[#c23535] text-white font-bold h-[45px] px-6 rounded-[4px] shadow-sm hover:shadow-md transition-all text-[12px] tracking-widest uppercase transform hover:-translate-y-[1px]">
-                        Send an enquiry
-                    </Link>
+                   
 
                     {/* Mobile Toggle */}
                     <button
@@ -614,7 +611,6 @@ const Navbar: React.FC = () => {
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaUserPlus /></div>
                                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Create Account</h2>
-                                        <p className="text-gray-500 text-sm mt-2">Register to get exclusive offers</p>
                                     </div>
 
                                     {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}

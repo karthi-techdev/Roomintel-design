@@ -11,8 +11,9 @@ export interface Room {
     adults: number;
     maxAdults: number;
     maxChildren: number;
-    maxRooms: number;
+   
     baseAdults: number;
+    bookedDates: string[];
     baseChildren: number;
     extraAdultPrice: number;
     extraChildPrice: number;
@@ -44,7 +45,7 @@ export const useRoomStore = create<RoomState>((set) => ({
         set({ loading: true, error: null });
         try {
             const res = await siteService.getRooms();
-            if (res.status === undefined || res.status || res.success) { // Handle varied response structures
+            if (res.status === undefined || res.status || res.success) { 
                 set({ rooms: res.data || [], loading: false });
             } else {
                 set({ error: res.message || 'Failed to fetch rooms', loading: false });
