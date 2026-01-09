@@ -13,7 +13,7 @@ import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
 import RoomCartCard from '@/components/room-view/RoomCardSingle';
 import { Room, useRoomStore } from '@/store/useRoomStore';
-
+import { useSearchParams } from 'next/navigation';
 interface SingleBookingInfo {
     room: number;
     adults: number;
@@ -38,17 +38,19 @@ interface RoomCheckoutProps {
     onUpdate: (data: any) => void;
 }
 
-const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpdate }) => {
+const RoomCheckout: React.FC = () => {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     // Set User Data
-    const user = authService.getCurrentUser(); 
+    const user = authService.getCurrentUser();
 
     // ============Single booking 
     const { fetchRoomBySlug, selectedRoom } = useRoomStore();
 
 
     const [selectedRoomByslug, setSelectedRoomByslug] = useState<Room>();
+
     const [singleItemInfo, setSingleItemInfo] = useState<SingleBookingInfo>({
         room: 0,
         adults: 0,
@@ -70,7 +72,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         if (isSlug) {
             fetchRoomBySlug(isSlug);
         };
-        
+
     }, [isSlug]);
 
     useEffect(() => {
@@ -89,8 +91,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     }, [selectedRoom]);
 
 
-    const onUpdateGetData = (data: any) => {
-        setSingleItemInfo((prev) => ({
+    const onUpdateGetData = React.useCallback((data: any) => {
+    setSingleItemInfo(prev => {
+        // 🔐 prevent unnecessary updates
+        if (
+            prev.room === data?.room &&
+            prev.roomTotal === data?.roomTotal &&
+            prev.serviceTotal === data?.serviceTotal &&
+            prev.tax === data?.tax &&
+            prev.serviceCharge === data?.serviceCharge &&
+            prev.grandTotal === data?.grandTotal
+        ) {
+            return prev;
+        }
+
+        return {
             ...prev,
             room: data?.room,
             roomTotal: data?.roomTotal,
@@ -98,24 +113,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             tax: data?.tax,
             serviceCharge: data?.serviceCharge,
             grandTotal: data?.grandTotal
-        }));
-    }
+        };
+    });
+}, []);
+
     console.log('=======AAAAAAAAAAAA====', user);
 
     console.log('=======selectedRoom====', selectedRoomByslug);
-
-
-
-
-
-
-
-
-
-
-
-
-    // =====================================
 
 
     // --- STORE ---
@@ -127,7 +131,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
-
+    console.log("confirmedBookingDetails:", confirmedBookingDetails);
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
         const base = cartItems.reduce((acc: any, item: any) => {
@@ -233,6 +237,41 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         };
         fetchServices();
     }, []);
+
+    useEffect(() => {
+    if (!isSlug) return;
+
+    const checkIn = searchParams.get('checkIn');
+    const checkOut = searchParams.get('checkOut');
+    const adults = searchParams.get('adults');
+    const children = searchParams.get('children');
+    const rooms = searchParams.get('rooms');
+    const roomTotal = searchParams.get('roomTotal');
+    const tax = searchParams.get('tax');
+    const serviceCharge = searchParams.get('serviceCharge');
+    const grandTotal = searchParams.get('grandTotal');
+
+    if (checkIn && checkOut) {
+        setDates({
+            checkIn,
+            checkOut
+        });
+    }
+
+    if (grandTotal && roomTotal && tax && serviceCharge) {
+        setSingleItemInfo(prev => ({
+            ...prev,
+            room: Number(rooms) || 1,
+            adults: Number(adults) || 2,
+            children: Number(children) || 0,
+            roomTotal: Number(roomTotal) || 0,
+            serviceTotal: 0, // no extras in single booking yet
+            tax: Number(tax) || 0,
+            serviceCharge: Number(serviceCharge) || 0,
+            grandTotal: Number(grandTotal) || 0,
+        }));
+    }
+}, [searchParams, isSlug]);
     // --- FORM VALIDITY CHECK ---
     const isFormValid = useMemo(() => {
         if (cartItems.length === 0) return false;
@@ -264,7 +303,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     // Load Data from Cart & User
     useEffect(() => {
         if (cartItem) {
-            // Set Dates from Cart if available
             if (cartItem.checkIn && cartItem.checkOut) {
                 setDates({
                     checkIn: new Date(cartItem.checkIn).toISOString().split('T')[0],
@@ -431,17 +469,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         setErrors(prev => ({ ...prev, ...dateErrors }));
     };
 
-    const finalizeOrder = async (bookingData: any) => {
-        await clearCart();
-        setConfirmedBookingDetails(bookingData);
-        setIsBookingConfirmed(true);
-        setIsProcessing(false);
-        // Scroll to top to see the confirmation
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    const finalizeOrder = async (data: any) => {
+    await clearCart();
+    setConfirmedBookingDetails({
+        id: data.id,
+        totalAmount: data.totalAmount,
+        points: data.points,
+        paymentMode: data.paymentMode
+    });
+    setIsBookingConfirmed(true);
+    setIsProcessing(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
     const handlePlaceOrder = async () => {
-        
+
         if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
         // Validate form
@@ -453,30 +495,27 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         setIsProcessing(true);
 
         const totalAmount = totals.grandTotal;
-
-        // Prepare rooms array for backend
-        const bookedRooms =isSlug ? [{
-            roomId : selectedRoomByslug?._id,
+        const bookedRooms = isSlug ? [{
+            roomId: selectedRoomByslug?._id,
             roomName: selectedRoomByslug?.title,
             price: singleItemInfo.grandTotal,
             // checkIn: item.checkIn || dates.checkIn,
             // checkOut: item.checkOut || dates.checkOut,
-            guestDetails: {
-                    rooms: singleItemInfo?.room,
-                    adults: singleItemInfo.adults,
-                    children: singleItemInfo.children
+            guestDetails: {                
+                adults: singleItemInfo.adults,
+                children: singleItemInfo.children
             }
         }
-        ] 
-        : 
-        cartItems.map(item => ({
-            roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
-            roomName: item.roomName,
-            price: item.financials?.grandTotal || item.price,
-            checkIn: item.checkIn || dates.checkIn,
-            checkOut: item.checkOut || dates.checkOut,
-            guestDetails: item.guestDetails
-        }));
+        ]
+            :
+            cartItems.map(item => ({
+                roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
+                roomName: item.roomName,
+                price: item.financials?.grandTotal || item.price,
+                checkIn: item.checkIn || dates.checkIn,
+                checkOut: item.checkOut || dates.checkOut,
+                guestDetails: item.guestDetails
+            }));
 
         const primaryRoomId = bookedRooms[0]?.roomId;
 
@@ -501,7 +540,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
-        console.log('============bookingPayload======',bookingPayload)
+        console.log('============bookingPayload======', bookingPayload)
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
@@ -623,7 +662,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
-                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.amount || 0)}</p>
+                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.totalAmount || 0)}</p>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
@@ -689,7 +728,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
-                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} availableServices={availableServices} onUpdate={onUpdateGetData} />
+                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} checkIn={dates.checkIn} checkOut={dates.checkOut} availableServices={availableServices} onUpdate={onUpdateGetData} />
                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">

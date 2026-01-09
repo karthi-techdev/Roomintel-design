@@ -90,23 +90,23 @@ export default function Home() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
 
-  const [bookedDates, setBookedDates] = useState<Date[]>([]);
+  // const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
-  useEffect(() => {
-    const fetchBookedDates = async () => {
-      try {
-        const { default: axiosInstance } = await import('../api/axiosInstance');
-        const res = await axiosInstance.get('/site/bookings/booked-dates');
-        if (res.data.status) {
-          const dates = res.data.data.map((d: string) => new Date(d));
-          setBookedDates(dates);
-        }
-      } catch (err) {
-        console.error("Failed to fetch booked dates", err);
-      }
-    };
-    fetchBookedDates();
-  }, []);
+  // useEffect(() => {
+  //   const fetchBookedDates = async () => {
+  //     try {
+  //       const { default: axiosInstance } = await import('../api/axiosInstance');
+  //       const res = await axiosInstance.get('/site/bookings/booked-dates');
+  //       if (res.data.status) {
+  //         const dates = res.data.data.map((d: string) => new Date(d));
+  //         setBookedDates(dates);
+  //       }
+  //     } catch (err) {
+  //       console.error("Failed to fetch booked dates", err);
+  //     }
+  //   };
+  //   fetchBookedDates();
+  // }, []);
 
   const carouselTestimonials: Reviews[] | undefined = testimonialData;
 
@@ -328,9 +328,9 @@ console.log('rooms',rooms)
                     onChange={(date: Date | null) =>
                       handleInputChange('arrival', date ? date.toISOString().split('T')[0] : '')
                     }
-                    excludeDates={bookedDates}
+                    // excludeDates={bookedDates}
                     placeholderText="Arrival Date"
-                    className="..."
+                    className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
                     dateFormat="yyyy-MM-dd"
                     minDate={new Date()}
                   />
@@ -344,7 +344,7 @@ console.log('rooms',rooms)
                   <DatePicker
                     selected={formData.departure ? new Date(formData.departure) : null}
                     onChange={(date: Date | null) => handleInputChange('departure', date ? date.toISOString().split('T')[0] : '')}
-                    excludeDates={bookedDates}
+                    // excludeDates={bookedDates}
                     placeholderText="Departure Date"
                     className="w-full h-[50px] pl-4 pr-10 bg-white border border-gray-200 rounded-[4px] text-gray-600 placeholder-gray-500 text-[14px] focus:outline-none focus:border-brand-blue transition-colors cursor-pointer"
                     dateFormat="yyyy-MM-dd"
