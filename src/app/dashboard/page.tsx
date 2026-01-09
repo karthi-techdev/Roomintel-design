@@ -18,6 +18,7 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { FaHeart } from "react-icons/fa6";
 
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
+import { dashboardService } from "@/api/dashboardService";
 
 
 const Dashboard: React.FC = () => {
@@ -36,6 +37,7 @@ const Dashboard: React.FC = () => {
 
   // Bookings & Membership
   const [bookings, setBookings] = useState<any[]>([]);
+  const [totalBookings, setTotalBookings] = useState<number>(0);
   const [membership, setMembership] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bookingFilter, setBookingFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');
@@ -126,6 +128,16 @@ const Dashboard: React.FC = () => {
       } finally {
         setLoading(false);
       }
+
+      // 4. Get Total Bookings Count
+      try {
+  const countRes = await dashboardService.getBookingCount();
+  if (countRes?.success) {
+    setTotalBookings(countRes.data.totalBookings);
+  }
+} catch (e) {
+  console.error("Booking count fetch failed", e);
+}
     };
 
     loadDashboardData();
