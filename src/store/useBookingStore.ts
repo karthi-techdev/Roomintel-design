@@ -19,9 +19,8 @@ export const useBookingStore = create<BookingState>((set) => ({
   fetchBookings: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await bookingService.getMyBookings();
+      const response = await bookingService.getMyBookings();     
       
-      // Check if the request was successful and extract the actual bookings array
       if (response.status && Array.isArray(response.data)) {
         set({ bookings: response.data, isLoading: false });
       } else {

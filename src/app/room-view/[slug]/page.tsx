@@ -124,7 +124,14 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const extrasPerRoom = (extraAdultsCount * extraAdultPrice) + (extraChildrenCount * extraChildPrice);
 
     const roomPricePerNight = basePrice + extrasPerRoom;
-    const totalPrice = roomPricePerNight * rooms;
+    const nights = useMemo(() => {
+        if (!selectedRange.checkIn || !selectedRange.checkOut) return 0;
+        return differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
+    }, [selectedRange.checkIn, selectedRange.checkOut]);
+
+    // Updated total price: per night × nights × rooms
+    const totalPriceAllNights = nights > 0 ? roomPricePerNight * nights * rooms : 0;
+
 
     const roomImages = room && room.images ? room.images : [];
 
@@ -268,65 +275,58 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
     };
     const handleBookRoom = async () => {
-        if (!room) return;
+    if (!room || !selectedRange.checkIn || !selectedRange.checkOut) {
+        showAlert.error('Please select check-in and check-out dates');
+        return;
+    }
 
-        // Check if user is logged in
-        if (!isLoggedIn) {
-            showAlert.error('Please login to book a room');
-            openLoginModal();
-            return;
-        }
+    if (!isLoggedIn) {
+        showAlert.error('Please login to book a room');
+        openLoginModal();
+        return;
+    }
 
-        // =======================Note :: Don't remove below comment line =========================================
+    // Calculate nights
+    const nights = differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
+    if (nights <= 0) {
+        showAlert.error('Check-out must be after check-in');
+        return;
+    }
 
-        // const roomsCount = rooms;
-        // const totalBase = roomPricePerNight * roomsCount;
-        // const taxes = totalBase * 0.10;
-        // const serviceCharge = totalBase * 0.05;
-        // const grandTotal = totalBase + taxes + serviceCharge;
+    // Calculate price per night with extras
+    const extraAdults = Math.max(0, adults - (room.baseAdults || 2));
+    const extraChildren = Math.max(0, children - (room.baseChildren || 0));
+    const extrasPerNight = extraAdults * (room.extraAdultPrice || 0) + extraChildren * (room.extraChildPrice || 0);
+    const pricePerNight = (room.price || 0) + extrasPerNight;
 
+    // Total for all nights and rooms
+    const roomTotal = pricePerNight * nights * rooms;
 
-        // Construct Cart Item matching usage in other components or define interface
-        // Assuming update to useCartStore handles this object
-        // const cartItem: any = {
-        //     roomId: room._id,
-        //     roomSlug: slug,
-        //     roomName: room.title || room.name || "Room",
-        //     roomTitle: room.title || room.name,
-        //     image: room.previewImage || room.images?.[0] || "",
-        //     price: basePrice,
-        //     checkIn: checkInDate,
-        //     checkOut: checkOutDate,
-        //     guestDetails: {
-        //         rooms: rooms,
-        //         adults: adults,
-        //         children: children
-        //     },
-        //     rateConfig: {
-        //         baseAdults,
-        //         baseChildren,
-        //         maxAdults,
-        //         maxChildren,
-        //         extraAdultPrice,
-        //         extraChildPrice
-        //     },
-        //     financials: {
-        //         baseTotal: totalBase,
-        //         extrasTotal: 0,
-        //         taxes: taxes,
-        //         serviceCharge: serviceCharge,
-        //         discountAmount: 0,
-        //         grandTotal: grandTotal,
-        //         currency: currencyIcon
-        //     },
-        //     totalAmount: grandTotal
-        // };
+    // Taxes & Service Charge (same as checkout logic)
+    const tax = roomTotal * 0.10;
+    const serviceCharge = roomTotal * 0.05;
+    const grandTotal = roomTotal + tax + serviceCharge;
 
+    // Format dates for URL
+    const checkIn = format(selectedRange.checkIn, 'yyyy-MM-dd');
+    const checkOut = format(selectedRange.checkOut, 'yyyy-MM-dd');
 
-        // await addToCart(cartItem);
-        // router.push('/room-cart');
-        router.push(`/room-checkout/${room.slug}`);
-    };
+    // Build URL with all data
+    const queryParams = new URLSearchParams({
+        checkIn,
+        checkOut,
+        adults: adults.toString(),
+        children: children.toString(),
+        rooms: rooms.toString(),
+        roomTotal: roomTotal.toFixed(2),
+        tax: tax.toFixed(2),
+        serviceCharge: serviceCharge.toFixed(2),
+        grandTotal: grandTotal.toFixed(2),
+    });
+
+    // Navigate with all data
+    router.push(`/room-checkout/${room.slug}?${queryParams.toString()}`);
+};
 
 
     // Show loading state
@@ -625,9 +625,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                                                         <div className="flex flex-col items-center mx-4">
                                                             <div className="text-xs text-gray-400 mb-1">→</div>
-                                                            {selectedRange.checkIn && selectedRange.checkOut && (
+                                                            {selectedRange.checkIn && selectedRange.checkOut && nights > 0 && (
                                                                 <div className="text-xs font-medium text-[#c23535] bg-[#c23535]/5 px-2 py-0.5 rounded">
-                                                                    {differenceInDays(selectedRange.checkOut, selectedRange.checkIn)} night(s)
+                                                                    {nights} night{nights > 1 ? 's' : ''}
                                                                 </div>
                                                             )}
                                                         </div>
@@ -684,28 +684,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
 
                                         {/* Rest of the booking controls remain the same */}
-                                        <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300">
-                                            <span className="text-sm text-black font-medium pl-1">Number of Rooms</span>
-                                            <div className="flex items-center gap-4">
-                                                <button onClick={() => setRooms(Math.max(1, rooms - 1))} className="text-black hover:text-[#EDA337] transition-colors">
-                                                    <FaMinus size={10} />
-                                                </button>
-                                                <span className="text-sm font-bold w-8 text-center text-black">{rooms}</span>
-                                                <button onClick={() => setRooms(Math.min(room?.maxRooms || 10, rooms + 1))} className="text-black hover:text-[#EDA337] transition-colors">
-                                                    <FaPlus size={10} />
-                                                </button>
-                                            </div>
-                                        </div>
+                                        
 
                                         {rooms >= (room?.maxRooms || 10) && (
                                             <div className="text-[10px] text-yellow-400 text-center py-1">
                                                 Maximum booking limit reached
                                             </div>
                                         )}
-
-                                        <div className="text-[10px] text-black text-right uppercase tracking-wider font-bold">
-                                            × {formatPrice(basePrice)} = {formatPrice(basePrice * rooms)}
-                                        </div>
 
                                         {/* Adults */}
                                         <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300">
@@ -748,7 +733,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                                     <div className="border-t border-[#00000029] my-4 pt-4 flex justify-between font-bold text-lg text-[#1e2c4e]">
                                         <span>Total (per night):</span>
-                                        <span className="text-[#c23535]">{formatPrice(totalPrice)}</span>
+                                        <span className="text-[#c23535]">{formatPrice(totalPriceAllNights)}</span>
                                     </div>
 
                                     <button
