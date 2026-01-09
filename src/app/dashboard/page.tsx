@@ -15,10 +15,14 @@ import { bookingService } from '@/api/bookingService';
 import { membershipService } from '@/api/membershipService';
 import { showAlert } from '@/utils/alertStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { FaHeart } from "react-icons/fa6";
+
+import MyWishlist from '@/components/my-wishlist/MyWishlist';
+
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
   const { formatPrice } = useCurrency();
 
   // --- State Management ---
@@ -324,7 +328,7 @@ const Dashboard: React.FC = () => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
-
+  console.log("========",activeTab)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }
@@ -393,11 +397,22 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden">
               <div className="p-2 space-y-1">
                 <button onClick={() => setActiveTab('profile')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'profile' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <FaUser className={activeTab === 'profile' ? 'text-[#EDA337]' : 'text-gray-400'} /> Account Info
+                  <FaUser className={activeTab === 'profile' ? 'text-[#c23535]' : 'text-gray-400'} /> Account Info
                 </button>
                 <button onClick={() => setActiveTab('bookings')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'bookings' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#EDA337]' : 'text-gray-400'} /> My Bookings
+                  <FaSuitcase className={activeTab === 'bookings' ? 'text-[#c23535]' : 'text-gray-400'} /> My Bookings
                 </button>
+
+
+                <button
+                  onClick={() => setActiveTab('wishlist')}
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50' }`} >
+                  <FaHeart className={activeTab === 'wishlist' ? 'text-[#c23535]' : 'text-gray-400'} />
+                  My Wishlist
+                </button>
+
+
+
                 <div className="h-[1px] bg-gray-100 mx-4 my-2"></div>
                 <button
                   onClick={handleLogoutClick}
@@ -414,8 +429,9 @@ const Dashboard: React.FC = () => {
           {/* (No changes needed here — kept identical to your original code) */}
 
           <div className="flex-1">
+            
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-              {activeTab === 'profile' ? (
+              {activeTab === 'profile' &&
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
                   {/* ... Profile section unchanged ... */}
                   <div className="flex justify-between items-center p-8 border-b border-gray-100">
@@ -487,8 +503,8 @@ const Dashboard: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
+                </div>}
+  {activeTab === 'bookings' &&
                 <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                   <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                     <div>
@@ -557,9 +573,15 @@ const Dashboard: React.FC = () => {
                       </div>
                     )) : <div className="text-center py-20 text-gray-400 font-bold">No bookings found in this category.</div>}
                   </div>
-                </div>
-              )}
+                </div>}
+                  {activeTab === 'wishlist' &&
+                  <MyWishlist/>
+                  }
+            
+             
+              
             </motion.div>
+            
           </div>
         </div>
       </div>
