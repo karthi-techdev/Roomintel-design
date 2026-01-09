@@ -629,14 +629,14 @@ const RoomCheckout: React.FC = () => {
     if (isBookingConfirmed) {
         return (
             <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="max-w-[700px] w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                <div className="max-w-[600px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
                     {/* Top Accent Bar */}
                     <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
                     <div className="p-8 md:p-12 text-center">
                         {/* Success Icon */}
-                        <div className="mb-8 relative inline-block">
-                            <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
+                        <div className="mb-5 relative inline-block">
+                            <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
                                 <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
                                 </svg>
@@ -649,12 +649,12 @@ const RoomCheckout: React.FC = () => {
                         <h2 className="text-3xl md:text-4xl noto-geogia-font font-bold text-[#283862] mb-4">
                             Booking Confirmed!
                         </h2>
-                        <p className="text-gray-500 mb-10 max-w-md mx-auto">
+                        <p className="text-gray-500 text-[12px] mb-6 max-w-md mx-auto">
                             Thank you for choosing RoomIntel. Your reservation has been successfully processed and a confirmation email is on its way.
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-10 text-left">
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-7 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
