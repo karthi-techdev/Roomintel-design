@@ -38,11 +38,11 @@ const  RoomReview: React.FunctionComponent<RoomReviewProps> =({item})=> {
                 <div className="flex flex-wrap items-center justify-between pt-6 border-t border-slate-50 gap-4">
                     <div className="flex items-center gap-3">
                         {/* <span className="text-[13px] font-bold text-[#283862]">{userName}</span> */}
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                            <span className="w-4 h-4 bg-slate-200 rounded-full flex items-center justify-center text-[8px]">✓</span>
+                        <div className="flex items-center gap-1.5 text-slate-700">
+                            <span className="w-4 h-4 bg-slate-300 rounded-full flex items-center justify-center text-black text-[8px]">✓</span>
                             <span className="text-[11px] font-medium">Certified Buyer, {roomName}</span>
                         </div>
-                        <span className="text-[11px] text-slate-300 ml-2">{formatDate(createdAt)}</span>
+                        <span className="text-[11px] text-slate-500 ml-2">{formatDate(createdAt)}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
