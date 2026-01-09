@@ -63,6 +63,15 @@ const Navbar: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isTermsOpen, setIsTermsOpen] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+    const openTerms = () => {
+        setIsTermsOpen(true);
+        setIsMobileMenuOpen(false);
+    };
+
+    const closeTerms = () => setIsTermsOpen(false);
 
     const getCurrentView = () => {
         const path = pathname || '/';
@@ -142,6 +151,7 @@ const Navbar: React.FC = () => {
         setFormData({ email: '', password: '', name: '', confirmPassword: '' });
         setErrors({ email: '', password: '', name: '', confirmPassword: '' });
         setServerError('');
+        setAgreedToTerms(false);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,7 +330,7 @@ const Navbar: React.FC = () => {
                         )}
                     </Link> */}
 
-                   
+
 
                     {/* Mobile Toggle */}
                     <button
@@ -434,6 +444,202 @@ const Navbar: React.FC = () => {
                             </div>
                         </motion.div>
                     </>
+                )}
+            </AnimatePresence>
+
+            {/* --- TERMS & PRIVACY MODAL ---
+            <AnimatePresence>
+                {isTermsOpen && (
+                    <div className="fixed inset-0 z-[6000000] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={closeTerms}
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-[768px] max-h-[80vh] overflow-y-auto bg-white rounded-sm shadow-2xl p-6"
+                        >
+                            <button
+                                onClick={closeTerms}
+                                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-[#c23535] hover:text-white transition-colors"
+                            >
+                                <FaTimes />
+                            </button>
+
+                            <div className="mb-4">
+                                <h2 className="text-2xl font-bold text-[#283862]">Terms & Privacy Policy</h2>
+                                <p className="text-sm text-gray-500 mt-1">Please read these terms and conditions carefully before using our service.</p>
+                            </div>
+
+                            <div className="prose prose-sm max-w-none text-gray-700">
+                                <p>
+                                    Welcome to our service. By accessing or using our website, you agree to be bound by these terms. These Terms & Privacy explain the rules and regulations for the use of our website and services.
+                                </p>
+
+                                <h3>1. Use of Service</h3>
+                                <p>
+                                    You agree not to misuse the service. Unauthorized use may give rise to a claim for damages and/or be a criminal offence.
+                                </p>
+
+                                <h3>2. Account Registration</h3>
+                                <p>
+                                    When creating an account you must provide accurate information and keep it up to date. You are responsible for safeguarding your account credentials.
+                                </p>
+
+                                <h3>3. Privacy</h3>
+                                <p>
+                                    We collect and use personal data in accordance with our privacy practices. By using the service you consent to such processing and you warrant that all data provided by you is accurate.
+                                </p>
+
+                                <h3>4. Limitation of Liability</h3>
+                                <p>
+                                    To the extent permitted by law, we will not be liable for any direct, indirect or consequential loss arising from your use of the service.
+                                </p>
+
+                                <h3>5. Changes</h3>
+                                <p>
+                                    We may amend these terms from time to time. Continued use of the service after such changes constitutes your acceptance of the new terms.
+                                </p>
+
+                                <p className="text-xs text-gray-500">If you have questions about these terms, please contact our support team.</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence> */}
+
+
+            {/* --- TERMS & PRIVACY MODAL --- */}
+            <AnimatePresence>
+                {isTermsOpen && (
+                    <div className="fixed inset-0 z-[6000000] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50"
+                            onClick={closeTerms}
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="bg-gradient-to-r from-[#c23535] to-[#c23535] px-6 py-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white">Terms & Privacy</h2>
+                                    </div>
+                                    <button
+                                        onClick={closeTerms}
+                                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <FaTimes className="text-white text-lg" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="max-h-[60vh] overflow-y-auto p-6">
+                                <div className="space-y-6">
+                                    <p className="text-gray-700">
+                                        Welcome to our service. By accessing or using our website, you agree to be bound by these terms.
+                                    </p>
+
+                                    <div className="space-y-5">
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    1
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Use of Service</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                You agree not to misuse the service. Unauthorized use may give rise to a claim for damages.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    2
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Account Registration</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                When creating an account you must provide accurate information and keep it up to date.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    3
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Privacy</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                We collect and use personal data according to our privacy practices.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    4
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Limitation of Liability</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                To the extent permitted by law, we will not be liable for any direct or indirect loss.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    5
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Changes</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                We may amend these terms from time to time. Continued use means acceptance of new terms.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t">
+                                        <p className="text-sm text-gray-500">
+                                            If you have questions about these terms, please contact our support team.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="border-t px-6 py-4 bg-gray-50">
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={() => { setAgreedToTerms(true); closeTerms(); }}
+                                        className="px-6 py-2 bg-[#c23535] text-white font-medium rounded-lg hover:bg-[#3a4a8a] transition-colors"
+                                    >
+                                        I Agree
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
@@ -610,8 +816,13 @@ const Navbar: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]" />
-                                            <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
+                                            <input
+                                                type="checkbox"
+                                                className="accent-[#c23535]"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                            />
+                                            <span>I agree to the <a href="#" onClick={(e) => { e.preventDefault(); openTerms(); }} className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
                                         <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
