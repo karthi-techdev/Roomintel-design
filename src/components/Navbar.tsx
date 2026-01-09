@@ -533,7 +533,6 @@ const Navbar: React.FC = () => {
                                     <div className="text-center mb-8">
                                         <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaUserPlus /></div>
                                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Create Account</h2>
-                                        <p className="text-gray-500 text-sm mt-2">Register to get exclusive offers</p>
                                     </div>
 
                                     {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}

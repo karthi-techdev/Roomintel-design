@@ -10,6 +10,7 @@ import { FaChevronRight, FaFilter, FaStar, FaTh, FaList, FaChevronDown, FaCheck,
 import { PiBed, PiUsers, PiArrowsOutSimple } from 'react-icons/pi';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useRoomStore, Room as StoreRoom } from '@/store/useRoomStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
@@ -19,6 +20,7 @@ import { calculateStatsByRoom } from '@/utils/common';
 import { ArrowRight, BedDouble, Heart, Maximize, Search, ShoppingCart, Star, Users } from 'lucide-react';
 import { IND_CURRENCY } from '@/utils/constant';
 import ShareModal from '@/components/socialMedia/ShareModal';
+import { bookingService } from '@/api/bookingService';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -44,7 +46,7 @@ const bedsOptions = ["2 Beds", "1 Bed", "1 King Bed", "1 Double Bed",];
 const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
 
-export default function RoomsGrid() {
+const RoomsGridContent = () => {
   // --- STATE ---
   const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -65,14 +67,19 @@ export default function RoomsGrid() {
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [roomSlug, setRoomSlug] = useState<string>('');
   const [currentOrigin, setCurrentOrigin] = useState("");
-
+  const searchParams = useSearchParams();
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const arrival = searchParams.get('arrival');
+  const departure = searchParams.get('departure');
+  const adults = searchParams.get('adults');
+  const children = searchParams.get('children');
   //Share social media
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-        setCurrentOrigin(window.location.origin);
+      setCurrentOrigin(window.location.origin);
     }
-}, []);
+  }, []);
 
   // Initial Fetch
   useEffect(() => {
@@ -135,7 +142,40 @@ export default function RoomsGrid() {
       setRooms(mappedRooms);
     }
   }, [rawRooms, rawCategories, storeLoading, bedConfig]);
+  useEffect(() => {
+    const fetchBookedDates = async () => {
+      try {
+        const dates = await bookingService.getBookedDates();
+        setAllBookings(dates);
+        console.log('Booked dates loaded:', dates);
+      } catch (err) {
+        console.error("Failed to fetch booked dates", err);
+      }
+    };
 
+    fetchBookedDates();
+  }, []);
+
+
+  // --- HANDLERS ---
+  const bookedDates = useMemo(() => {
+    const dates = new Set<string>();
+
+    allBookings.forEach((booking: any) => {
+      // Only consider active bookings
+      if (!['Confirmed', 'Paid', 'Upcoming'].includes(booking.bookingStatus)) return;
+
+      const checkIn = new Date(booking.checkIn);
+      const checkOut = new Date(booking.checkOut);
+
+      // Add every date from checkIn (inclusive) to checkOut (exclusive)
+      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        dates.add(d.toISOString().split('T')[0]); // "YYYY-MM-DD"
+      }
+    });
+
+    return Array.from(dates);
+  }, [allBookings]);
   useEffect(() => {
     if (isFilterOpen) {
       document.body.style.overflow = "hidden";
@@ -177,7 +217,6 @@ export default function RoomsGrid() {
     return pastelColors[hash % pastelColors.length];
   };
 
-  // --- HANDLERS ---
 
   const handleCategoryChange = (category: string) => {
     setCurrentPage(1); // Reset to page 1 on filter change
@@ -228,8 +267,32 @@ export default function RoomsGrid() {
   // --- FILTER & SORT LOGIC ---
 
   const filteredAndSortedRooms = useMemo(() => {
+    let result = rooms;
+    if (arrival && departure) {
+    const checkIn = new Date(arrival);
+    const checkOut = new Date(departure);
+
+    // Build set of booked room IDs in the selected range
+    const bookedRoomIds = new Set<string>();
+
+    allBookings.forEach((bookedRoom: any) => {
+      const hasOverlap = bookedRoom.dates.some((date: string) => {
+        const d = new Date(date);
+        return d >= checkIn && d < checkOut;
+      });
+
+      if (hasOverlap) {
+        bookedRoomIds.add(bookedRoom.roomId);
+      }
+    });
+
+    console.log('Selected range:', arrival, '→', departure);
+    console.log('Booked room IDs in range:', Array.from(bookedRoomIds));
+
+    result = result.filter(room => !bookedRoomIds.has(room.id as string));
+  }
     // 1. Filter
-    let result = rooms.filter(room => {
+    result = result.filter(room => {
       // Price Filter
       const matchesPrice = room.price <= priceRange;
 
@@ -277,7 +340,25 @@ export default function RoomsGrid() {
     return result;
   }, [rooms, priceRange, selectedCategories, selectedLocations, selectedSizes, selectedBeds, selectedAdults, sortBy]);
   // --- PAGINATION LOGIC ---
-
+  {
+    (arrival || departure) && (
+      <div className="mb-8 p-6 bg-gradient-to-r from-[#283862]/10 to-[#c23535]/10 rounded-xl border border-[#283862]/20">
+        <p className="text-lg font-bold text-[#283862]">
+          Showing available rooms for:{' '}
+          <span className="text-[#c23535]">
+            {arrival && new Date(arrival).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            {' → '}
+            {departure && new Date(departure).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+        </p>
+        {filteredAndSortedRooms.length === 0 && (
+          <p className="text-red-600 mt-3 font-semibold">
+            No rooms available for selected dates.
+          </p>
+        )}
+      </div>
+    )
+  }
   const totalPages = Math.ceil(filteredAndSortedRooms.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -981,3 +1062,4 @@ export default function RoomsGrid() {
   );
 };
 
+export default RoomsGridContent;
