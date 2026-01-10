@@ -34,7 +34,6 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           setCategories(['All', ...catNames]);
         }
       } catch (err) {
-        console.error("Error fetching gallery data:", err);
         setError("Failed to load gallery items. Please try again later.");
       } finally {
         setLoading(false);

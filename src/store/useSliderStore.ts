@@ -40,7 +40,6 @@ export const useSliderStore = create<SliderState>((set) => ({
                 set({ slides: [], loading: false });
             }
         } catch (error: any) {
-            console.error("Failed to fetch slides", error);
             set({ error: error.message || 'Failed to fetch slides', loading: false });
         }
     },

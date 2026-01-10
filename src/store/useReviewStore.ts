@@ -96,7 +96,6 @@ export const useReviewStore = create<ReviewState>((set) => ({
     fetchReview: async (filter : {}) =>  {
         try {
             const response = await reviewService.getReview(filter);
-            console.log('=========22222222222======',response)
             set({
                 reviews : response.data
             })

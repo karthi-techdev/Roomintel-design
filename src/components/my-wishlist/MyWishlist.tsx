@@ -19,9 +19,7 @@ const MyWishlist = () => {
 
     useEffect(() => {
         if (auth.user && auth.user._id) {
-            console.log('🛒 Fetching wishlist for user:', auth.user._id);
-            console.log('🛒 Current wishlists before fetch:', wishlists);
-            console.log('🛒 fetchMyWishlist() called');
+          
         }
     }, [auth.user]);
 
@@ -50,8 +48,7 @@ const MyWishlist = () => {
                 {isLoading && <div className="text-center text-gray-500 py-6">Loading...</div>}
 
                 {(() => {
-                    console.log('🛒 Rendering wishlist items. Total:', wishlists.length);
-                    console.log('🛒 Wishlist data:', wishlists);
+                   
 
                     const listToRender = wishlists || [];
                     const showNoItems = !isLoading && listToRender.length === 0;

@@ -230,7 +230,6 @@ export default function RoomCart() {
                 });
             }
         } catch (error) {
-            console.error(error);
             setAlertState({
                 type: 'destructive',
                 title: 'Error',

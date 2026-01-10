@@ -117,9 +117,7 @@ const RoomCheckout: React.FC = () => {
     });
 }, []);
 
-    console.log('=======AAAAAAAAAAAA====', user);
 
-    console.log('=======selectedRoom====', selectedRoomByslug);
 
 
     // --- STORE ---
@@ -131,7 +129,6 @@ const RoomCheckout: React.FC = () => {
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
-    console.log("confirmedBookingDetails:", confirmedBookingDetails);
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
         const base = cartItems.reduce((acc: any, item: any) => {
@@ -540,7 +537,6 @@ const RoomCheckout: React.FC = () => {
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
-        console.log('============bookingPayload======', bookingPayload)
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
@@ -565,7 +561,6 @@ const RoomCheckout: React.FC = () => {
                     description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
                     order_id: orderData.razorpayOrderId,
                     handler: async function (response: any) {
-                        console.log("Payment Successful:", response);
 
                         // Update payload with payment success
                         const paidPayload = {
@@ -580,7 +575,6 @@ const RoomCheckout: React.FC = () => {
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                             await finalizeOrder(bookingPayload);
                         } catch (err) {
-                            console.error("Failed to save booking after payment", err);
                             showAlert.error("Payment successful but booking failed to save. Please contact support.");
                             setIsProcessing(false);
                         }
@@ -595,7 +589,6 @@ const RoomCheckout: React.FC = () => {
                     },
                     modal: {
                         ondismiss: function () {
-                            console.log('Payment cancelled by user');
                             setIsProcessing(false);
                             showAlert.info("Payment cancelled");
                         }
@@ -619,7 +612,6 @@ const RoomCheckout: React.FC = () => {
             }
 
         } catch (error: any) {
-            console.error("Order processing error:", error);
             showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
             setIsProcessing(false);
         }

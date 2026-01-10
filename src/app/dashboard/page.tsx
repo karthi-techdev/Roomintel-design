@@ -47,7 +47,6 @@ const Dashboard: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  console.log('Rendered Dashboard with bookings:', bookings);
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -76,7 +75,6 @@ const Dashboard: React.FC = () => {
         // 2. Refresh Bookings
         try {
           const bookingsRes = await bookingService.getMyBookings();
-          console.log('Fetched bookings:', bookingsRes);
           if (bookingsRes?.status && Array.isArray(bookingsRes.data)) {
             const mappedBookings = bookingsRes.data.map((bk: any) => {
               // Extract primary room data
@@ -124,7 +122,6 @@ const Dashboard: React.FC = () => {
         } catch (e) { console.error("Membership fetch failed", e); }
 
       } catch (error) {
-        console.error("Dashboard load error", error);
       } finally {
         setLoading(false);
       }
@@ -221,7 +218,6 @@ const Dashboard: React.FC = () => {
         showAlert.success("Profile updated successfully!");
       }
     } catch (error) {
-      console.error('Failed to update profile:', error);
       showAlert.error('Failed to update profile. Please try again.');
     } finally {
       setIsSaving(false);
@@ -330,7 +326,6 @@ const Dashboard: React.FC = () => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
-  console.log("========",activeTab)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }

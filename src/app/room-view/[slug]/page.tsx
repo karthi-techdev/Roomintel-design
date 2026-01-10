@@ -210,9 +210,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             try {
                 const bookings = await bookingService.getRoomBookings(slug);
                 setRoomBookings(bookings);
-                console.log('All room bookings fetched:', bookings);
             } catch (err) {
-                console.error('Failed to fetch room availability:', err);
                 setRoomBookings([]);
             } finally {
                 setAvailabilityLoading(false);
@@ -223,7 +221,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     }, [slug, room]);
 
 
-    console.log('roomBookings:', roomBookings);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         if (ref.current) {

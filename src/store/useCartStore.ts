@@ -89,7 +89,6 @@ export const useCartStore = create<CartState>((set, get) => ({
                 set({ cartItems: [], total: 0, loading: false });
             }
         } catch (error) {
-            console.error('Fetch cart failed', error);
             set({ loading: false });
         }
     },
@@ -103,7 +102,6 @@ export const useCartStore = create<CartState>((set, get) => ({
                     const items = Array.isArray(parsed) ? parsed : [parsed];
                     set({ cartItems: items, loading: false });
                 } catch (e) {
-                    console.error("Failed to parse cart item", e);
                     set({ loading: false });
                 }
             } else {
@@ -150,7 +148,6 @@ export const useCartStore = create<CartState>((set, get) => ({
                 await cartService.syncCart(newItems);
             }
         } catch (error) {
-            console.error('Add to cart failed', error);
         } finally {
             set({ loading: false });
         }
@@ -216,7 +213,6 @@ export const useCartStore = create<CartState>((set, get) => ({
             }
             set({ cartItems: [], total: 0, loading: false });
         } catch (error) {
-            console.error('Clear cart failed', error);
             set({ loading: false });
         }
     },

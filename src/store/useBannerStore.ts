@@ -52,7 +52,6 @@ export const useBannerStore = create<BannerState>((set) => ({
             const data = await bannerService.getBanners();
             set({ banners: data, loading: false });
         } catch (error: any) {
-            console.error('Failed to fetch banners:', error);
             set({ error: error.message || 'Failed to fetch banners', loading: false });
         }
     },
