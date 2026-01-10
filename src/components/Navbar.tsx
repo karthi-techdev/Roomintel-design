@@ -71,6 +71,7 @@ const Navbar: React.FC = () => {
         if (path === '/rooms') return 'rooms';
         if (path.startsWith('/room-detail')) return 'room-detail';
         if (path === '/room-cart') return 'room-cart';
+        if (path === '/room-view') return 'rooms';
         if (path === '/room-checkout') return 'room-checkout';
         if (path === '/gallery') return 'gallery';
         if (path === '/contact-us') return 'contact-us';

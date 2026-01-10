@@ -229,15 +229,7 @@ useEffect(() => {
 
                         <div className="flex-1 space-y-6">
                             <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rooms</label>
-                                    <div className="flex items-center gap-4 bg-slate-50 w-fit px-3 py-1 rounded-[0.5rem] border border-slate-100">
-                                        <button onClick={() => handleRoom('dec')} className="text-lg font-bold text-slate-400 hover:text-[#c23535]">-</button>
-                                        <span className="font-black text-[#283862]">{room}</span>
-                                        <button onClick={() => handleRoom('inc')} className="text-lg font-bold text-slate-400 hover:text-[#c23535]">+</button>
-                                    </div>
-                                </div>
-
+                               
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adults</label>
                                     <div className="flex items-center gap-4 bg-slate-50 w-fit px-3 py-1 rounded-[0.5rem] border border-slate-100">
