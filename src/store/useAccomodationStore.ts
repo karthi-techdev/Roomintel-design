@@ -25,7 +25,6 @@ export const useAccommodationStore = create<AccommodationState>((set) => ({
         isLoading: false,
         error: err.message || 'Failed to load accommodations',
       });
-      console.error('Accommodation fetch failed:', err);
     }
   },
 }));

@@ -31,7 +31,6 @@ export const useBookingStore = create<BookingState>((set) => ({
         isLoading: false,
         error: err.message || 'Failed to load bookings',
       });
-      console.error('Booking fetch failed:', err);
     }
   },
 }));

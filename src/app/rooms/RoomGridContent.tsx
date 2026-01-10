@@ -147,7 +147,6 @@ const RoomsGridContent = () => {
       try {
         const dates = await bookingService.getBookedDates();
         setAllBookings(dates);
-        console.log('Booked dates loaded:', dates);
       } catch (err) {
         console.error("Failed to fetch booked dates", err);
       }
@@ -286,8 +285,7 @@ const RoomsGridContent = () => {
       }
     });
 
-    console.log('Selected range:', arrival, '→', departure);
-    console.log('Booked room IDs in range:', Array.from(bookedRoomIds));
+
 
     result = result.filter(room => !bookedRoomIds.has(room.id as string));
   }
