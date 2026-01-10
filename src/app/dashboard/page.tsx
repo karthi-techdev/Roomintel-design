@@ -20,6 +20,7 @@ import { FaHeart } from "react-icons/fa6";
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
 
 
+
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
@@ -36,6 +37,7 @@ const Dashboard: React.FC = () => {
 
   // Bookings & Membership
   const [bookings, setBookings] = useState<any[]>([]);
+  const [totalBookings, setTotalBookings] = useState<number>(0);
   const [membership, setMembership] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bookingFilter, setBookingFilter] = useState<'all' | 'upcoming' | 'completed' | 'cancelled'>('all');

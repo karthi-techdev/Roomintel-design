@@ -135,6 +135,12 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
     const roomImages = room && room.images ? room.images : [];
 
+    const getPrimaryImage = () => {
+        if (room && room.previewImage) return room.previewImage;
+        if (room && room.images && room.images.length > 0) return room.images[0];
+        return "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2670&auto=format&fit=crop";
+    };
+
     const relatedRooms: any[] = []; // Placeholder
 
     useEffect(() => {
@@ -377,7 +383,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             {/* --- HEADER --- */}
             <section className="bg-[#283862] pt-32 pb-16 text-white text-center px-4 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-30">
-                    <img src={room && room.previewImage ? room.previewImage : "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2670&auto=format&fit=crop"} className="w-full h-full object-cover" alt="Header" />
+                    <img src={getPrimaryImage()} className="w-full h-full object-cover" alt="Header" />
                 </div>
                 <div className="relative z-10">
                     <h1 className="text-3xl md:text-5xl noto-geogia-font font-bold mb-4 leading-tight">{room ? room.title : "City Double Or Twin Room"}</h1>
@@ -549,7 +555,10 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             })}
                             {/* View All Reviews Button */}
                             {filteredReview && filteredReview.length > 10 &&
-                                <button className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
+                                <button
+                                    onClick={() => router.push(`/room-all-review?slug=${slug}`)}
+                                    className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                                >
                                     All {filteredReview.length} reviews →
                                 </button>
                             }

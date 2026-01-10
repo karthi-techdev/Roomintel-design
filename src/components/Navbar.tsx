@@ -29,6 +29,8 @@ import { useAuthStore } from "../store/useAuthStore";
 import logoImg from "../../public/Navbar-Logo.png";
 import { useCartStore } from "../store/useCartStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { authService } from '../api/authService';
+
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const router = useRouter();
@@ -41,6 +43,7 @@ const Navbar: React.FC = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const cartItems = useCartStore((state) => state.cartItems);
     const fetchCart = useCartStore((state) => state.fetchCart);
@@ -63,6 +66,15 @@ const Navbar: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [serverError, setServerError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [isTermsOpen, setIsTermsOpen] = useState(false);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+    const openTerms = () => {
+        setIsTermsOpen(true);
+        setIsMobileMenuOpen(false);
+    };
+
+    const closeTerms = () => setIsTermsOpen(false);
 
     const getCurrentView = () => {
         const path = pathname || '/';
@@ -111,9 +123,34 @@ const Navbar: React.FC = () => {
     const openLogin = () => {
         setIsLoginOpen(true);
         setIsRegisterOpen(false);
+        setIsForgotPasswordOpen(false);
         setIsMobileMenuOpen(false);
         resetForm();
     };
+
+    const openRegister = () => {
+        setIsRegisterOpen(true);
+        setIsLoginOpen(false);
+        setIsForgotPasswordOpen(false);
+        setIsMobileMenuOpen(false);
+        resetForm();
+    };
+
+    const openForgotPassword = () => {
+        setIsForgotPasswordOpen(true);
+        setIsLoginOpen(false);
+        setIsRegisterOpen(false);
+        resetForm();
+    };
+
+
+    const closeAuth = () => {
+        setIsLoginOpen(false);
+        setIsRegisterOpen(false);
+        setIsForgotPasswordOpen(false);
+        resetForm();
+    };
+
     // Inside Navbar component
     useEffect(() => {
         const handleOpenLogin = () => {
@@ -125,24 +162,13 @@ const Navbar: React.FC = () => {
         return () => {
             window.removeEventListener('open-login-modal', handleOpenLogin);
         };
-    }, [openLogin]);
-    const openRegister = () => {
-        setIsRegisterOpen(true);
-        setIsLoginOpen(false);
-        setIsMobileMenuOpen(false);
-        resetForm();
-    };
-
-    const closeAuth = () => {
-        setIsLoginOpen(false);
-        setIsRegisterOpen(false);
-        resetForm();
-    };
+    }, []); // Removed dependency on openLogin to prevent re-attaching, or verify referencing
 
     const resetForm = () => {
         setFormData({ email: '', password: '', name: '', confirmPassword: '' });
         setErrors({ email: '', password: '', name: '', confirmPassword: '' });
         setServerError('');
+        setAgreedToTerms(false);
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -218,6 +244,42 @@ const Navbar: React.FC = () => {
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Authentication failed';
             setServerError(errorMessage);
+            toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPasswordSubmit = async () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!formData.email.trim()) {
+            setErrors({ ...errors, email: 'Email is required' });
+            return;
+        } else if (!emailRegex.test(formData.email)) {
+            setErrors({ ...errors, email: 'Please enter a valid email address' });
+            return;
+        }
+
+        setLoading(true);
+        setServerError('');
+        // Clear previous field errors
+        setErrors(prev => ({ ...prev, email: '' }));
+
+        try {
+            await authService.forgotPassword(formData.email);
+            toast({ title: "Success", description: "Password reset email sent. Please check your inbox.", variant: "success" });
+            closeAuth();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to send reset email';
+
+            // Check if error is related to email not found and map to field error
+            if (errorMessage.toLowerCase().includes('no account found') || errorMessage.toLowerCase().includes('user not found')) {
+                setErrors(prev => ({ ...prev, email: errorMessage }));
+            } else {
+                setServerError(errorMessage);
+            }
+
             toast({ title: "Error", description: errorMessage, variant: "destructive" });
         } finally {
             setLoading(false);
@@ -321,7 +383,7 @@ const Navbar: React.FC = () => {
                         )}
                     </Link> */}
 
-                   
+
 
                     {/* Mobile Toggle */}
                     <button
@@ -438,9 +500,205 @@ const Navbar: React.FC = () => {
                 )}
             </AnimatePresence>
 
+            {/* --- TERMS & PRIVACY MODAL ---
+            <AnimatePresence>
+                {isTermsOpen && (
+                    <div className="fixed inset-0 z-[6000000] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={closeTerms}
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-[768px] max-h-[80vh] overflow-y-auto bg-white rounded-sm shadow-2xl p-6"
+                        >
+                            <button
+                                onClick={closeTerms}
+                                className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-[#c23535] hover:text-white transition-colors"
+                            >
+                                <FaTimes />
+                            </button>
+
+                            <div className="mb-4">
+                                <h2 className="text-2xl font-bold text-[#283862]">Terms & Privacy Policy</h2>
+                                <p className="text-sm text-gray-500 mt-1">Please read these terms and conditions carefully before using our service.</p>
+                            </div>
+
+                            <div className="prose prose-sm max-w-none text-gray-700">
+                                <p>
+                                    Welcome to our service. By accessing or using our website, you agree to be bound by these terms. These Terms & Privacy explain the rules and regulations for the use of our website and services.
+                                </p>
+
+                                <h3>1. Use of Service</h3>
+                                <p>
+                                    You agree not to misuse the service. Unauthorized use may give rise to a claim for damages and/or be a criminal offence.
+                                </p>
+
+                                <h3>2. Account Registration</h3>
+                                <p>
+                                    When creating an account you must provide accurate information and keep it up to date. You are responsible for safeguarding your account credentials.
+                                </p>
+
+                                <h3>3. Privacy</h3>
+                                <p>
+                                    We collect and use personal data in accordance with our privacy practices. By using the service you consent to such processing and you warrant that all data provided by you is accurate.
+                                </p>
+
+                                <h3>4. Limitation of Liability</h3>
+                                <p>
+                                    To the extent permitted by law, we will not be liable for any direct, indirect or consequential loss arising from your use of the service.
+                                </p>
+
+                                <h3>5. Changes</h3>
+                                <p>
+                                    We may amend these terms from time to time. Continued use of the service after such changes constitutes your acceptance of the new terms.
+                                </p>
+
+                                <p className="text-xs text-gray-500">If you have questions about these terms, please contact our support team.</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence> */}
+
+
+            {/* --- TERMS & PRIVACY MODAL --- */}
+            <AnimatePresence>
+                {isTermsOpen && (
+                    <div className="fixed inset-0 z-[6000000] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/50"
+                            onClick={closeTerms}
+                        />
+
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="relative w-full max-w-2xl bg-white rounded-xl shadow-xl overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="bg-gradient-to-r from-[#c23535] to-[#c23535] px-6 py-4">
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <h2 className="text-xl font-bold text-white">Terms & Privacy</h2>
+                                    </div>
+                                    <button
+                                        onClick={closeTerms}
+                                        className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                                    >
+                                        <FaTimes className="text-white text-lg" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="max-h-[60vh] overflow-y-auto p-6">
+                                <div className="space-y-6">
+                                    <p className="text-gray-700">
+                                        Welcome to our service. By accessing or using our website, you agree to be bound by these terms.
+                                    </p>
+
+                                    <div className="space-y-5">
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    1
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Use of Service</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                You agree not to misuse the service. Unauthorized use may give rise to a claim for damages.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    2
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Account Registration</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                When creating an account you must provide accurate information and keep it up to date.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    3
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Privacy</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                We collect and use personal data according to our privacy practices.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    4
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Limitation of Liability</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                To the extent permitted by law, we will not be liable for any direct or indirect loss.
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center space-x-2 mb-2">
+                                                <div className="w-6 h-6 bg-[#283862] text-white text-sm rounded-full flex items-center justify-center">
+                                                    5
+                                                </div>
+                                                <h3 className="font-semibold text-gray-800">Changes</h3>
+                                            </div>
+                                            <p className="text-gray-600 ml-8">
+                                                We may amend these terms from time to time. Continued use means acceptance of new terms.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-4 border-t">
+                                        <p className="text-sm text-gray-500">
+                                            If you have questions about these terms, please contact our support team.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="border-t px-6 py-4 bg-gray-50">
+                                <div className="flex justify-end">
+                                    <button
+                                        onClick={() => { setAgreedToTerms(true); closeTerms(); }}
+                                        className="px-6 py-2 bg-[#c23535] text-white font-medium rounded-lg hover:bg-[#3a4a8a] transition-colors"
+                                    >
+                                        I Agree
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             {/* --- AUTH POPUPS --- */}
             <AnimatePresence>
-                {(isLoginOpen || isRegisterOpen) && (
+                {(isLoginOpen || isRegisterOpen || isForgotPasswordOpen) && (
                     <div className="fixed inset-0 z-[5000000] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -517,7 +775,7 @@ const Navbar: React.FC = () => {
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input type="checkbox" className="accent-[#c23535]" /> Remember me
                                             </label>
-                                            <a href="#" className="hover:text-[#c23535]">Forgot Password?</a>
+                                            <button type="button" onClick={openForgotPassword} className="hover:text-[#c23535]">Forgot Password?</button>
                                         </div>
 
                                         <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
@@ -527,6 +785,32 @@ const Navbar: React.FC = () => {
 
                                     <div className="mt-8 text-center text-sm text-gray-500">
                                         Don't have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
+                                    </div>
+                                </div>
+                            ) : isForgotPasswordOpen ? (
+                                <div className="p-8 md:p-10">
+                                    <div className="text-center mb-8">
+                                        <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaLock /></div>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Forgot Password</h2>
+                                        <p className="text-gray-500 text-sm mt-2">Enter your email to reset your password</p>
+                                    </div>
+
+                                    {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}
+
+                                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleForgotPasswordSubmit(); }}>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><FaEnvelope /></div>
+                                            <input type="email" name="email" placeholder="Email Address" className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`} value={formData.email} onChange={handleInputChange} />
+                                            {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
+                                        </div>
+
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Sending...' : 'Send Reset Link'}
+                                        </button>
+                                    </form>
+
+                                    <div className="mt-8 text-center text-sm text-gray-500">
+                                        Remember your password? <button onClick={openLogin} className="text-[#c23535] font-bold hover:underline">Back to Login</button>
                                     </div>
                                 </div>
                             ) : (
@@ -611,8 +895,13 @@ const Navbar: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <input type="checkbox" className="accent-[#c23535]" />
-                                            <span>I agree to the <a href="#" className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
+                                            <input
+                                                type="checkbox"
+                                                className="accent-[#c23535]"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                            />
+                                            <span>I agree to the <a href="#" onClick={(e) => { e.preventDefault(); openTerms(); }} className="hover:text-[#c23535]">Terms & Privacy Policy</a></span>
                                         </div>
 
                                         <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
