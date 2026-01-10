@@ -560,7 +560,7 @@ const Dashboard: React.FC = () => {
                               </div>
                             )}
                             <div className="flex gap-2 pt-4 border-t border-gray-100">
-                              <button onClick={() => handleDownloadReceipt(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition-colors flex items-center justify-center gap-1"><FaReceipt /> Receipt</button>
+                              {/* <button onClick={() => handleDownloadReceipt(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition-colors flex items-center justify-center gap-1"><FaReceipt /> Receipt</button>i,  / l/,///. */}
                               <button onClick={() => handleSupportClick(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-1"><FaConciergeBell /> Support</button>
                               {['Upcoming', 'Confirmed', 'Pending'].includes(booking.status) && (
                                 <>
