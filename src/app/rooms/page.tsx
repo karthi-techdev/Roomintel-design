@@ -342,7 +342,7 @@ export default function RoomsGrid() {
   }, [wishlists]);
 
 
-  export default function RoomsPage() {
+  // export default function RoomsPage() {
     return (
       <div className="w-full pb-20  ">
         <Suspense fallback={<div>Loading rooms...</div>}>
