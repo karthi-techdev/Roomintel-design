@@ -12,9 +12,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { membershipService } from '@/api/membershipService';
 import { showAlert } from '@/utils/alertStore';
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePayment } from '@/hooks/usePayment';
+import { getImageUrl as getBaseImageUrl } from '@/utils/getImage';
 import { FaHeart } from "react-icons/fa6";
 
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
@@ -25,6 +28,7 @@ const Dashboard: React.FC = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
   const { formatPrice } = useCurrency();
+  const { settings } = useSettingsStore();
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
@@ -238,49 +242,28 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Payment Hook
+  const { processPayment } = usePayment();
+
   const handlePayNow = async (booking: any) => {
-    try {
-      const amountStr = booking.price.replace(/[^0-9.]/g, '');
-      const amount = parseFloat(amountStr);
-      const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
+    const amountStr = booking.price.replace(/[^0-9.]/g, '');
+    const amount = parseFloat(amountStr);
 
-      if (paymentRes.status === false) {
-        showAlert.error(paymentRes.message!); // Forces TS to trust you
-        return;
+    await processPayment({
+      amount,
+      currency: settings?.defaultCurrency || 'INR',
+      name: user?.name,
+      email: user?.email,
+      phone: user?.phone,
+      description: `Payment for ${booking.roomName}`,
+      onSuccess: (response) => {
+        showAlert.success(`Payment Successful! ID: ${response.razorpay_payment_id}`);
+        window.location.reload();
+      },
+      onFailure: (error) => {
+        console.error("Payment failed", error);
       }
-
-      const orderData = paymentRes.data;
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "RoomIntel Booking",
-        description: `Payment for ${booking.roomName}`,
-        order_id: orderData.razorpayOrderId,
-        handler: function (response: any) {
-          showAlert.success(`Payment Successful! ID: ${response.razorpay_payment_id}`);
-          window.location.reload();
-        },
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-        },
-        theme: { color: "#EDA337" },
-      };
-
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
-          showAlert.error("Payment Failed: " + response.error.description);
-        });
-        rzp.open();
-      } else {
-        showAlert.error("Razorpay SDK not loaded.");
-      }
-    } catch (error: any) {
-      showAlert.error("Payment failed: " + (error.message || "Unknown error"));
-    }
+    });
   };
 
   const handleCancelBooking = async (bookingId: string) => {
@@ -314,9 +297,9 @@ const Dashboard: React.FC = () => {
 
   const getImageUrl = (filename: string | undefined, fallback: string) => {
     if (!filename) return fallback;
-    if (filename.startsWith('http')) return filename;
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000';
-    return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
+    // Handle legacy customer images that might just be a filename
+    const path = filename.includes('uploads/') ? filename : `customers/${filename}`;
+    return `${getBaseImageUrl(path)}?v=${profileVersion}`;
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -403,7 +386,7 @@ const Dashboard: React.FC = () => {
 
                 <button
                   onClick={() => setActiveTab('wishlist')}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50' }`} >
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`} >
                   <FaHeart className={activeTab === 'wishlist' ? 'text-[#c23535]' : 'text-gray-400'} />
                   My Wishlist
                 </button>
@@ -426,7 +409,7 @@ const Dashboard: React.FC = () => {
           {/* (No changes needed here — kept identical to your original code) */}
 
           <div className="flex-1">
-            
+
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
               {activeTab === 'profile' &&
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
@@ -501,7 +484,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                 </div>}
-  {activeTab === 'bookings' &&
+              {activeTab === 'bookings' &&
                 <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                   <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                     <div>
@@ -571,14 +554,14 @@ const Dashboard: React.FC = () => {
                     )) : <div className="text-center py-20 text-gray-400 font-bold">No bookings found in this category.</div>}
                   </div>
                 </div>}
-                  {activeTab === 'wishlist' &&
-                  <MyWishlist/>
-                  }
-            
-             
-              
+              {activeTab === 'wishlist' &&
+                <MyWishlist />
+              }
+
+
+
             </motion.div>
-            
+
           </div>
         </div>
       </div>

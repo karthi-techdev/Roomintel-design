@@ -11,6 +11,8 @@ import { useCartStore } from '@/store/useCartStore';
 import { siteService } from '../../../api/siteService';
 import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { usePayment } from '@/hooks/usePayment';
 import RoomCartCard from '@/components/room-view/RoomCardSingle';
 import { Room, useRoomStore } from '@/store/useRoomStore';
 import { useSearchParams } from 'next/navigation';
@@ -92,36 +94,40 @@ const RoomCheckout: React.FC = () => {
 
 
     const onUpdateGetData = React.useCallback((data: any) => {
-    setSingleItemInfo(prev => {
-        // 🔐 prevent unnecessary updates
-        if (
-            prev.room === data?.room &&
-            prev.roomTotal === data?.roomTotal &&
-            prev.serviceTotal === data?.serviceTotal &&
-            prev.tax === data?.tax &&
-            prev.serviceCharge === data?.serviceCharge &&
-            prev.grandTotal === data?.grandTotal
-        ) {
-            return prev;
-        }
+        setSingleItemInfo(prev => {
+            // 🔐 prevent unnecessary updates
+            if (
+                prev.room === data?.room &&
+                prev.roomTotal === data?.roomTotal &&
+                prev.serviceTotal === data?.serviceTotal &&
+                prev.tax === data?.tax &&
+                prev.serviceCharge === data?.serviceCharge &&
+                prev.grandTotal === data?.grandTotal
+            ) {
+                return prev;
+            }
 
-        return {
-            ...prev,
-            room: data?.room,
-            roomTotal: data?.roomTotal,
-            serviceTotal: data?.serviceTotal,
-            tax: data?.tax,
-            serviceCharge: data?.serviceCharge,
-            grandTotal: data?.grandTotal
-        };
-    });
-}, []);
+            return {
+                ...prev,
+                room: data?.room,
+                roomTotal: data?.roomTotal,
+                serviceTotal: data?.serviceTotal,
+                tax: data?.tax,
+                serviceCharge: data?.serviceCharge,
+                grandTotal: data?.grandTotal
+            };
+        });
+    }, []);
 
 
 
 
     // --- STORE ---
     const { cartItems, fetchCart, clearCart } = useCartStore();
+    const { settings } = useSettingsStore();
+
+    // Payment Hook
+    const { processPayment } = usePayment();
 
     // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -236,39 +242,39 @@ const RoomCheckout: React.FC = () => {
     }, []);
 
     useEffect(() => {
-    if (!isSlug) return;
+        if (!isSlug) return;
 
-    const checkIn = searchParams.get('checkIn');
-    const checkOut = searchParams.get('checkOut');
-    const adults = searchParams.get('adults');
-    const children = searchParams.get('children');
-    const rooms = searchParams.get('rooms');
-    const roomTotal = searchParams.get('roomTotal');
-    const tax = searchParams.get('tax');
-    const serviceCharge = searchParams.get('serviceCharge');
-    const grandTotal = searchParams.get('grandTotal');
+        const checkIn = searchParams.get('checkIn');
+        const checkOut = searchParams.get('checkOut');
+        const adults = searchParams.get('adults');
+        const children = searchParams.get('children');
+        const rooms = searchParams.get('rooms');
+        const roomTotal = searchParams.get('roomTotal');
+        const tax = searchParams.get('tax');
+        const serviceCharge = searchParams.get('serviceCharge');
+        const grandTotal = searchParams.get('grandTotal');
 
-    if (checkIn && checkOut) {
-        setDates({
-            checkIn,
-            checkOut
-        });
-    }
+        if (checkIn && checkOut) {
+            setDates({
+                checkIn,
+                checkOut
+            });
+        }
 
-    if (grandTotal && roomTotal && tax && serviceCharge) {
-        setSingleItemInfo(prev => ({
-            ...prev,
-            room: Number(rooms) || 1,
-            adults: Number(adults) || 2,
-            children: Number(children) || 0,
-            roomTotal: Number(roomTotal) || 0,
-            serviceTotal: 0, // no extras in single booking yet
-            tax: Number(tax) || 0,
-            serviceCharge: Number(serviceCharge) || 0,
-            grandTotal: Number(grandTotal) || 0,
-        }));
-    }
-}, [searchParams, isSlug]);
+        if (grandTotal && roomTotal && tax && serviceCharge) {
+            setSingleItemInfo(prev => ({
+                ...prev,
+                room: Number(rooms) || 1,
+                adults: Number(adults) || 2,
+                children: Number(children) || 0,
+                roomTotal: Number(roomTotal) || 0,
+                serviceTotal: 0, // no extras in single booking yet
+                tax: Number(tax) || 0,
+                serviceCharge: Number(serviceCharge) || 0,
+                grandTotal: Number(grandTotal) || 0,
+            }));
+        }
+    }, [searchParams, isSlug]);
     // --- FORM VALIDITY CHECK ---
     const isFormValid = useMemo(() => {
         if (cartItems.length === 0) return false;
@@ -467,17 +473,17 @@ const RoomCheckout: React.FC = () => {
     };
 
     const finalizeOrder = async (data: any) => {
-    await clearCart();
-    setConfirmedBookingDetails({
-        id: data.id,
-        totalAmount: data.totalAmount,
-        points: data.points,
-        paymentMode: data.paymentMode
-    });
-    setIsBookingConfirmed(true);
-    setIsProcessing(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
+        await clearCart();
+        setConfirmedBookingDetails({
+            id: data.id,
+            totalAmount: data.totalAmount,
+            points: data.points,
+            paymentMode: data.paymentMode
+        });
+        setIsBookingConfirmed(true);
+        setIsProcessing(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const handlePlaceOrder = async () => {
 
@@ -491,14 +497,16 @@ const RoomCheckout: React.FC = () => {
 
         setIsProcessing(true);
 
-        const totalAmount = totals.grandTotal;
+        // Correctly determine the total amount based on booking type
+        const finalTotalAmount = isSlug ? (singleItemInfo?.grandTotal || 0) : totals.grandTotal;
+
         const bookedRooms = isSlug ? [{
             roomId: selectedRoomByslug?._id,
             roomName: selectedRoomByslug?.title,
             price: singleItemInfo.grandTotal,
             // checkIn: item.checkIn || dates.checkIn,
             // checkOut: item.checkOut || dates.checkOut,
-            guestDetails: {                
+            guestDetails: {
                 adults: singleItemInfo.adults,
                 children: singleItemInfo.children
             }
@@ -524,7 +532,7 @@ const RoomCheckout: React.FC = () => {
             rooms: bookedRooms,
             checkIn: dates.checkIn,
             checkOut: dates.checkOut,
-            totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
+            totalAmount: finalTotalAmount,
             specialRequests: formData.notes,
             billingAddress: {
                 street: formData.address,
@@ -541,27 +549,20 @@ const RoomCheckout: React.FC = () => {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
                 await bookingService.createBooking(bookingPayload);
-                const pointsEarned = Math.floor(totalAmount * 10);
+                const pointsEarned = Math.floor(finalTotalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                 await finalizeOrder(bookingPayload);
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
-                const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
-
-                if (paymentRes.status === false) throw new Error(paymentRes.message);
-
-                const orderData = paymentRes.data;
-
-                const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                    amount: orderData.amount,
-                    currency: orderData.currency,
-                    name: "RoomIntel Booking",
-                    description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
-                    order_id: orderData.razorpayOrderId,
-                    handler: async function (response: any) {
-
+                await processPayment({
+                    amount: finalTotalAmount,
+                    currency: settings?.defaultCurrency || 'INR',
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    description: `Booking for ${formData.name}`,
+                    onSuccess: async (response) => {
                         // Update payload with payment success
                         const paidPayload = {
                             ...bookingPayload,
@@ -571,7 +572,7 @@ const RoomCheckout: React.FC = () => {
 
                         try {
                             await bookingService.createBooking(paidPayload);
-                            const pointsEarned = Math.floor(totalAmount * 10);
+                            const pointsEarned = Math.floor(finalTotalAmount * 10);
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                             await finalizeOrder(bookingPayload);
                         } catch (err) {
@@ -579,33 +580,11 @@ const RoomCheckout: React.FC = () => {
                             setIsProcessing(false);
                         }
                     },
-                    prefill: {
-                        name: formData.name,
-                        email: formData.email,
-                        contact: formData.phone,
-                    },
-                    theme: {
-                        color: "#EDA337",
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            setIsProcessing(false);
-                            showAlert.info("Payment cancelled");
-                        }
-                    }
-                };
-
-                if (typeof window !== "undefined" && (window as any).Razorpay) {
-                    const rzp = new (window as any).Razorpay(options);
-                    rzp.on('payment.failed', function (response: any) {
-                        showAlert.error("Payment Failed: " + response.error.description);
+                    onFailure: (error) => {
+                        console.error("Payment failed", error);
                         setIsProcessing(false);
-                    });
-                    rzp.open();
-                } else {
-                    showAlert.error("Razorpay SDK not loaded. Check connection.");
-                    setIsProcessing(false);
-                }
+                    }
+                });
             } else {
                 showAlert.warning("Selected payment method not supported yet.");
                 setIsProcessing(false);

@@ -30,11 +30,15 @@ import logoImg from "../../public/Navbar-Logo.png";
 import { useCartStore } from "../store/useCartStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { authService } from '../api/authService';
+import { getImageUrl } from '../utils/getImage';
 
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const router = useRouter();
     const { toast } = useToast();
+
+    // Get settings from store
+    const { settings } = useSettingsStore();
 
     // Zustand auth state
     const { user, isLoggedIn, login, register, logout, loadFromStorage } = useAuthStore();
@@ -314,14 +318,11 @@ const Navbar: React.FC = () => {
 
                 {/* --- LOGO --- */}
                 <Link href="/" className="flex items-center gap-2 cursor-pointer z-50">
-                    <div className="relative">
-                        <Image
-                            src={logoImg}
-                            alt="Room Intel Logo"
-                            width={scrolled ? 120 : 150}
-                            height={scrolled ? 200 : 200}
+                    <div className="relative h-12 md:h-20 w-auto">
+                        <img
+                            src={getImageUrl(settings?.siteLogo, logoImg.src)}
+                            alt={settings?.siteName || "Room Intel Logo"}
                             className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '}`}
-                            priority
                         />
                     </div>
                 </Link>
