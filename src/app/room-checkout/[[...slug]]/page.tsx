@@ -192,8 +192,13 @@ const RoomCheckout: React.FC = () => {
 
 
     const handleCancelAddressForm = () => {
-        resetAddressForm();       // clear only phone, address, city, state, postcode, country, notes
-        setShowAddressForm(false); // hide the form/modal
+        // If we have a selected address, revert formData to it
+        if (selectedAddressId) {
+            handleSelectAddress(selectedAddressId);
+        } else {
+            resetAddressForm();
+        }
+        setShowAddressForm(false);
     };
 
 
@@ -234,11 +239,22 @@ const RoomCheckout: React.FC = () => {
                 );
             }
 
+            // Refresh addresses
             await fetchBillingAddressByCustomerId(userId);
 
             showAlert.success("Address saved successfully");
 
-            resetAddressForm();
+            // After saving, we want to select the newly added/updated address (which is set as default)
+            const updatedAddresses = useBillingAddressStore.getState().billingAddress?.addresses || [];
+            // Find the one we just added (it is Default, or we can fallback to the last one)
+            const newDefault = updatedAddresses.find(a => a.isDefault) || updatedAddresses[updatedAddresses.length - 1];
+
+            if (newDefault) {
+                handleSelectAddress(newDefault._id);
+            } else {
+                resetAddressForm();
+            }
+
             setShowAddressForm(false);
 
         } catch (err) {
