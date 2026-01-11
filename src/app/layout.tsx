@@ -6,6 +6,7 @@ import Script from "next/script";
 import { ToastProvider } from "@/components/ui/Toast";
 import { AlertContainer } from "@/components/ui/AlertContainer";
 import RouteLoader from "@/components/RouteLoader";
+import DynamicFavicon from "@/components/DynamicFavicon";
 import '@fontsource-variable/outfit';
 
 export const metadata: Metadata = {
@@ -24,6 +25,7 @@ export default function RootLayout({
         <ToastProvider>
           <RouteLoader />
           <AlertContainer />
+          <DynamicFavicon />
           <Navbar />
           {children}
           <Footer />
