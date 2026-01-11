@@ -18,16 +18,20 @@ interface RoomCartCardProps {
         serviceCharge: number;
         grandTotal: number;
     }) => void;
-    checkIn?: string;     // ← NEW: from checkout page
-    checkOut?: string;    // ← NEW: from checkout page
+    checkIn?: string;
+    checkOut?: string;
+    initialAdults?: number;
+    initialChildren?: number;
 }
 
-const RoomCartCard: React.FC<RoomCartCardProps> = ({ 
-    selectedRoomByslug, 
-    availableServices, 
+const RoomCartCard: React.FC<RoomCartCardProps> = ({
+    selectedRoomByslug,
+    availableServices,
     onUpdate,
     checkIn,
-    checkOut 
+    checkOut,
+    initialAdults,
+    initialChildren
 }) => {
     const [adults, setAdults] = useState<number>(2);
     const [children, setChildren] = useState<number>(0);
@@ -54,14 +58,18 @@ const RoomCartCard: React.FC<RoomCartCardProps> = ({
 
     useEffect(() => {
         if (selectedRoomByslug && !isInitialized.current) {
-            const initialChildren = Number(selectedRoomByslug.baseChildren) || 0;
-            setChildren(initialChildren);
-            setAdults(Number(selectedRoomByslug.baseAdults) || 2);
+            const defaultChildren = Number(selectedRoomByslug.baseChildren) || 0;
+            const defaultAdults = Number(selectedRoomByslug.baseAdults) || 2;
+
+            // Use props if available, otherwise default to room settings
+            setChildren(initialChildren !== undefined ? initialChildren : defaultChildren);
+            setAdults(initialAdults !== undefined ? initialAdults : defaultAdults);
+
             setRoom(1);
             setBaseRoomPrice(Number(selectedRoomByslug.price) || 0);
             isInitialized.current = true;
         }
-    }, [selectedRoomByslug]);
+    }, [selectedRoomByslug, initialAdults, initialChildren]);
 
     // Main price calculation
     const calculations = useMemo(() => {
@@ -114,42 +122,42 @@ const RoomCartCard: React.FC<RoomCartCardProps> = ({
         nights,
         selectedServices
     ]);
-const roomTotal = calculations?.roomTotal ?? 0;
-const serviceTotal = calculations?.serviceTotal ?? 0;
-const tax = calculations?.tax ?? 0;
-const serviceCharge = calculations?.serviceCharge ?? 0;
-const grandTotal = calculations?.grandTotal ?? 0;
-const displayPrice = calculations?.displayPrice ?? 0;
+    const roomTotal = calculations?.roomTotal ?? 0;
+    const serviceTotal = calculations?.serviceTotal ?? 0;
+    const tax = calculations?.tax ?? 0;
+    const serviceCharge = calculations?.serviceCharge ?? 0;
+    const grandTotal = calculations?.grandTotal ?? 0;
+    const displayPrice = calculations?.displayPrice ?? 0;
 
-useEffect(() => {
-    if (!onUpdate || !selectedRoomByslug) return;
+    useEffect(() => {
+        if (!onUpdate || !selectedRoomByslug) return;
 
-    onUpdate({
+        onUpdate({
+            room,
+            adults,
+            children,
+            services: selectedServices,
+            totalPrice: displayPrice,
+            roomTotal,
+            serviceTotal,
+            tax,
+            serviceCharge,
+            grandTotal
+        });
+    }, [
         room,
         adults,
         children,
-        services: selectedServices,
-        totalPrice: displayPrice,
+        selectedServices,
+        displayPrice,
         roomTotal,
         serviceTotal,
         tax,
         serviceCharge,
-        grandTotal
-    });
-}, [
-    room,
-    adults,
-    children,
-    selectedServices,
-    displayPrice,
-    roomTotal,
-    serviceTotal,
-    tax,
-    serviceCharge,
-    grandTotal,
-    onUpdate,
-    selectedRoomByslug
-]);
+        grandTotal,
+        onUpdate,
+        selectedRoomByslug
+    ]);
 
 
 
@@ -193,7 +201,7 @@ useEffect(() => {
         });
     };
 
-    
+
 
     return (
         <div className="max-w-4xl mx-auto mb-6">
@@ -229,7 +237,7 @@ useEffect(() => {
 
                         <div className="flex-1 space-y-6">
                             <div className="grid grid-cols-3 gap-4">
-                               
+
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adults</label>
                                     <div className="flex items-center gap-4 bg-slate-50 w-fit px-3 py-1 rounded-[0.5rem] border border-slate-100">
