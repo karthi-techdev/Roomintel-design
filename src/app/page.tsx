@@ -594,7 +594,7 @@ export default function Home() {
             <div className="w-full max-w-[1200px] px-6 lg:px-0 mt-8">
               <AnimatePresence mode='wait'>
                 <motion.div
-                  key={activeRoom.id}
+                  key={activeRoom?.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -604,10 +604,10 @@ export default function Home() {
                   {/* Left: Price & Title */}
                   <div className="w-full md:w-1/3 flex flex-col">
                     <div className="flex items-end gap-2 mb-2">
-                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from {formatPrice(activeRoom.price)} Night</span>
+                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from {formatPrice(activeRoom?.price)} Night</span>
                     </div>
                     <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
-                      {activeRoom.name}
+                      {activeRoom?.name}
                     </h3>
                   </div>
 
@@ -617,21 +617,21 @@ export default function Home() {
                     <div className="flex flex-row items-center gap-1 md:gap-8 border-b border-gray-100 pb-6">
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiBed className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.beds} beds</span>
+                        <span className="text-sm">{activeRoom?.amenities?.beds} beds</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiBathtub className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.baths} Bathroom</span>
+                        <span className="text-sm">{activeRoom?.amenities?.baths} Bathroom</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiArrowsOutSimple className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.area} m2</span>
+                        <span className="text-sm">{activeRoom?.amenities?.area} m2</span>
                       </div>
                     </div>
 
                     {/* Description */}
                     <p className="text-gray-500 text-[15px] leading-relaxed">
-                      {activeRoom.description}
+                      {activeRoom?.description}
                     </p>
                   </div>
                 </motion.div>

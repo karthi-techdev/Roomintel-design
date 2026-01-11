@@ -544,6 +544,7 @@ const RoomCheckout: React.FC = () => {
                 const pointsEarned = Math.floor(totalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                 await finalizeOrder(bookingPayload);
+                
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
