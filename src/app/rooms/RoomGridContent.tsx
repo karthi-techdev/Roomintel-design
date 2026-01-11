@@ -648,10 +648,6 @@ export default function RoomsGridContent() {
                     </div>
                   </div>
                   <span className='bg-[#00000033] flex h-[2px]'></span>
-
-
-
-
                   <div className="bg-white ">
                     <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
                       Size
