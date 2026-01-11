@@ -11,6 +11,7 @@ import { showAlert } from "@/utils/alertStore";
 
 export default function ReviewContent() {
   const router = useRouter();
+  const navigate = (path: string) => router.push(path);
   const { addReview, verifyReview, verifyResponse, alreadyExistErrMsg } = useReviewStore();
   const searchParams = useSearchParams();
   const token: string | null = searchParams.get("token");
@@ -118,7 +119,7 @@ export default function ReviewContent() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => router.push("/")} // Navigate to home
+              onClick={() => navigate("/")}
               className="mt-6 px-6 py-3 bg-green-500 text-white font-medium rounded-xl shadow-md hover:bg-green-600 transition"
             >
               Go to Home
@@ -162,6 +163,7 @@ export default function ReviewContent() {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/")}
               className="w-full rounded-xl bg-green-500 py-3 text-white font-medium shadow-md hover:bg-green-600 transition"
             >
               Go to Home
@@ -170,6 +172,7 @@ export default function ReviewContent() {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
+              onClick={() => navigate("/contact-us")}
               className="w-full rounded-xl border border-gray-300 py-3 text-gray-700 font-medium hover:bg-gray-100 transition"
             >
               Contact Support

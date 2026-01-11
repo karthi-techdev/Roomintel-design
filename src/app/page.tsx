@@ -484,7 +484,7 @@ export default function Home() {
                 <div className="flex items-center gap-1">
                   <span className="w-12 h-[2px] bg-[#c23535]"></span>
                   <span className="text-end text-[#c23535] text-xs lg:text-sm font-bold tracking-[0.15em] uppercase">
-                   Welcome to Greenview Resort
+                    Welcome to Greenview Resort
                   </span>
                 </div>
 
@@ -502,8 +502,8 @@ export default function Home() {
                 {/* Description Text */}
                 <div className="text-gray-500 text-[15px] leading-relaxed space-y-6 font-light">
                   <p>
-                    At Greenview Resort, our goal is to create a memorable experience where comfort, nature, and heartfelt hospitality come together. We believe in welcoming every guest not just as a visitor, but as part of our extended family—sharing warmth, care, and unforgettable moments.  
-                  </p>    
+                    At Greenview Resort, our goal is to create a memorable experience where comfort, nature, and heartfelt hospitality come together. We believe in welcoming every guest not just as a visitor, but as part of our extended family—sharing warmth, care, and unforgettable moments.
+                  </p>
                   <p>
                     Whether you’re here for a quiet getaway, a family vacation, or a special occasion, Greenview Resort is your perfect retreat to unwind and create lasting memories.                  </p>
                 </div>
@@ -817,28 +817,28 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
+      {testimonialData && testimonialData.length > 0 && (
+        <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
 
-        {/* ================= Testimonials ================= */}
-        <div className="max-w-[1200px] mx-auto">
-          <div className="mb-8 max-w-4xl ml-5 md:ml-0">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-[2px] bg-[#c23535]" />
-              <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
-                Testimonials
-              </span>
+          {/* ================= Testimonials ================= */}
+          <div className="max-w-[1200px] mx-auto">
+            <div className="mb-8 max-w-4xl ml-5 md:ml-0">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-[2px] bg-[#c23535]" />
+                <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
+                  Testimonials
+                </span>
+              </div>
+
+              <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
+                What Our Guest Says
+              </h2>
+
+              <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
+                Our objective at Greenview is to bring together our visitor's societies and spirits with our own.
+              </p>
             </div>
 
-            <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
-              What Our Guest Says
-            </h2>
-
-            <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-              Our objective at Greenview is to bring together our visitor's societies and spirits with our own.
-            </p>
-          </div>
-
-          {testimonialData && testimonialData.length > 0 ? (
             <div className="max-w-[1400px] mx-auto px-0 pt-10">
 
               {/* CAROUSEL WINDOW: This clips the side cards perfectly */}
@@ -945,13 +945,9 @@ export default function Home() {
                 }
               </div>
             </div>
-          ) : (
-            <div className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest">No reviews found</div>
-          )}
-        </div>
-
-
-      </section>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
