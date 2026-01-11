@@ -4,6 +4,8 @@ import { FaCheck } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useBannerStore } from '@/store/useBannerStore';
+import { getImageUrl } from '@/utils/getImage';
+import { API_BASE_URL } from '@/utils/urls';
 import hotelLocationService from '@/api/hotelLocationService';
 
 const AboutUs: React.FC = () => {
@@ -14,20 +16,8 @@ const AboutUs: React.FC = () => {
     const [hotelName, setHotelName] = React.useState<string | null>(null);
     const { banners, fetchBanners, loading: bannerLoading } = useBannerStore();
 
-    const getImageUrl = (path: string | undefined, fallback: string) => {
-        if (!path) return fallback;
-        if (path.startsWith('http')) return path;
-        const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000';
-        // Remove 'uploads/' from path if it's already there since baseUrl/uploads might be the pattern
-        // The backend seems to store the full relative path including 'uploads' or just the filename.
-        // Based on bannerController: current[part] = files[field][0].path;
-        // which usually includes 'uploads\' or similar.
-        const normalizedPath = path.replace(/\\/g, '/');
-        if (normalizedPath.startsWith('uploads/')) {
-            return `${baseUrl}/${normalizedPath}`;
-        }
-        return `${baseUrl}/uploads/${normalizedPath}`;
-    };
+    // Use centralized getImageUrl from utils, no local definition needed
+
 
     const DEFAULT_ABOUT_SECTIONS = [
         { type: "bannerone", sortOrder: 1, status: "active" },
@@ -39,7 +29,8 @@ const AboutUs: React.FC = () => {
         const fetchSections = async () => {
             try {
                 // Fetch layout sections
-                const response = await fetch('http://localhost:8000/api/v1/layout-builder?page=about');
+                // Fetch layout sections
+                const response = await fetch(`${API_BASE_URL}/layout-builder?page=about`);
                 if (!response.ok) {
                     setPageSections(DEFAULT_ABOUT_SECTIONS);
                 } else {

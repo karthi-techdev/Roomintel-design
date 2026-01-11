@@ -12,10 +12,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { membershipService } from '@/api/membershipService';
 // At the top of Dashboard.tsx
 import { useToast } from '@/components/ui/Toast';   // adjust path if needed
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePayment } from '@/hooks/usePayment';
+import { getImageUrl as getBaseImageUrl } from '@/utils/getImage';
 import { FaHeart } from "react-icons/fa6";
 
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
@@ -29,6 +32,7 @@ const Dashboard: React.FC = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
   const { formatPrice } = useCurrency();
+  const { settings } = useSettingsStore();
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
@@ -271,79 +275,37 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Payment Hook
+  const { processPayment } = usePayment();
+
   const handlePayNow = async (booking: any) => {
-    const { toast } = useToast(); // Make sure this is at the top of your component
+    const amountStr = booking.price.replace(/[^0-9.]/g, '');
+    const amount = parseFloat(amountStr);
 
-    try {
-      const amountStr = booking.price.replace(/[^0-9.]/g, '');
-      const amount = parseFloat(amountStr);
-
-      const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
-
-      if (paymentRes.status === false) {
+    await processPayment({
+      amount,
+      currency: settings?.defaultCurrency || 'INR',
+      name: user?.name,
+      email: user?.email,
+      phone: user?.phone,
+      description: `Payment for ${booking.roomName}`,
+      onSuccess: (response: any) => {
         toast({
-          title: "Payment Initiation Failed",
-          description: paymentRes.message || "Unable to start payment process",
-          variant: "destructive",
+          title: "Payment Successful",
+          description: `Payment ID: ${response?.razorpay_payment_id || 'Success'}`,
+          variant: "success",
         });
-        return;
-      }
-
-      const orderData = paymentRes.data;
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "RoomIntel Booking",
-        description: `Payment for ${booking.roomName}`,
-        order_id: orderData.razorpayOrderId,
-
-        handler: function (response: any) {
-          toast({
-            title: "Payment Successful",
-            description: `Payment ID: ${response.razorpay_payment_id}`,
-            variant: "success",
-          });
-          window.location.reload();
-        },
-
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-        },
-
-        theme: { color: "#EDA337" },
-      };
-
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-
-        // Payment failure handler
-        rzp.on('payment.failed', function (response: any) {
-          toast({
-            title: "Payment Failed",
-            description: response.error?.description || "Payment could not be processed",
-            variant: "destructive",
-          });
-        });
-
-        rzp.open();
-      } else {
+        window.location.reload();
+      },
+      onFailure: (error: any) => {
+        console.error("Payment failed", error);
         toast({
-          title: "Payment Error",
-          description: "Razorpay SDK not loaded. Please try again later.",
+          title: "Payment Failed",
+          description: error?.description || "Payment could not be processed",
           variant: "destructive",
         });
       }
-    } catch (error: any) {
-      toast({
-        title: "Payment Error",
-        description: error.message || "An unexpected error occurred during payment",
-        variant: "destructive",
-      });
-    }
+    });
   };
 
   const handleCancelBooking = (bookingId: string) => {
@@ -369,9 +331,9 @@ const Dashboard: React.FC = () => {
 
   const getImageUrl = (filename: string | undefined, fallback: string) => {
     if (!filename) return fallback;
-    if (filename.startsWith('http')) return filename;
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000';
-    return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
+    // Handle legacy customer images that might just be a filename
+    const path = filename.includes('uploads/') ? filename : `customers/${filename}`;
+    return `${getBaseImageUrl(path)}?v=${profileVersion}`;
   };
 
   const handleRemove = async (id: string) => {

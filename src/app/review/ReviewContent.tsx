@@ -7,6 +7,8 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+import { showAlert } from "@/utils/alertStore";
+
 export default function ReviewContent() {
   const router = useRouter();
   const { addReview, verifyReview, verifyResponse, alreadyExistErrMsg } = useReviewStore();
@@ -27,9 +29,8 @@ export default function ReviewContent() {
       isSetReviewExist(true);
     }
   }, [alreadyExistErrMsg]);
-
   const handleSubmit = () => {
-    if (rating === 0) return alert("Please select rating ⭐");
+    if (rating === 0) return showAlert.warning("Please select a rating ⭐");
     if (verifyResponse?.bookingId && verifyResponse?.userId && rating && token) {
       const formData: ReviewDetails = {
         token: token,
