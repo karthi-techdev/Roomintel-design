@@ -383,32 +383,36 @@ const RoomsGridContent = () => {
         shareUrl={`${currentOrigin}/rooms/${roomSlug}`}
       />
       {/* --- Page Header --- */}
-      <div className="relative h-[300px] w-full bg-brand-navy flex flex-col text-white overflow-hidden">
+      <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
+  
+  {/* Background Image */}
+  <div className="absolute inset-0 opacity-40">
+    <img
+      src={Roombg.src}
+      alt="Rooms Background"
+      className="w-full h-full object-cover"
+    />
+  </div>
 
-        {/* Background Image Wrapper */}
-        <div className="absolute inset-0 opacity-40 flex items-end">
-          <div className="relative w-full h-[220px]">
-            <img
-              src={Roombg.src}
-              alt="Header Background"
-              className="w-full h-full object-cover [mask-image:linear-gradient(to_top,transparent,black_35%)] [-webkit-mask-image:linear-gradient(to_top,transparent,black_35%)]"
-            />
-          </div>
-        </div>
-      </div>
+  {/* Center Content */}
+  <div className="relative z-10 flex flex-col items-center justify-center">
+    <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
+      Rooms Grid
+    </h1>
 
-      <div className="h-[150px] sm:h-[150px] md:h-[260px] lg:h-[300px] flex justify-start items-center px-4 sm:px-6 md:px-10 lg:px-10">
-        <div className="z-10">
-          <h1 className="noto-geogia-font font-bold underline text-[#ffffffba] text-2xl sm:text-3xl md:text-4xl lg:text-5xl mb-4 sm:mb-5 md:mb-6 lg:mb-[30px]">
-            Rooms Grid
-          </h1>
-          <div className="flex gap-2 sm:gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-[#ffffffba]">
-            <Link href="/"><span className="hover:text-brand-red cursor-pointer transition-colors">Home</span></Link>
-            <span>/</span>
-            <span>Rooms Grid</span>
-          </div>
-        </div>
-      </div>
+    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
+      <Link href="/">
+        <span className="hover:text-brand-red cursor-pointer transition-colors">
+          Home
+        </span>
+      </Link>
+      <span>/</span>
+      <span className="text-white">Rooms</span>
+    </div>
+  </div>
+
+</div>
+
 
 
       {/* --- Main Content --- */}
