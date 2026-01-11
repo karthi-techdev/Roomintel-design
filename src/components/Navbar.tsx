@@ -30,6 +30,8 @@ import logoImg from "../../public/Navbar-Logo.png";
 import { useCartStore } from "../store/useCartStore";
 import { useSettingsStore } from "../store/useSettingsStore";
 import { authService } from '../api/authService';
+import hotelLocationService from "@/api/hotelLocationService";
+
 
 const Navbar: React.FC = () => {
     const pathname = usePathname();
@@ -46,6 +48,8 @@ const Navbar: React.FC = () => {
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const cartItems = useCartStore((state) => state.cartItems);
+    const [hotelName, setHotelName] = useState<string>("AvensStay");
+
     const fetchCart = useCartStore((state) => state.fetchCart);
     const fetchSettings = useSettingsStore((state) => state.fetchSettings);
     const cartCount = cartItems.length;
@@ -228,6 +232,27 @@ const Navbar: React.FC = () => {
         setErrors(newErrors);
         return valid;
     };
+
+    useEffect(() => {
+        const loadHotelName = async () => {
+            try {
+                const json = await hotelLocationService.getActiveLocations();
+
+                if (!json || json.status === false) return;
+
+                const arr = Array.isArray(json.data) ? json.data : [];
+                if (!arr.length) return;
+
+                const item = arr.find((h: any) => h?.hotelName) || arr[0];
+                if (item?.hotelName) setHotelName(item.hotelName);
+            } catch (err) {
+                // silent
+            }
+        };
+
+        loadHotelName();
+    }, []);
+
 
     const handleAuthSubmit = async () => {
         if (!validateForm()) return;
@@ -436,7 +461,7 @@ const Navbar: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">
-                                        Bluebell
+                                        {hotelName}
                                     </span>
                                     <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
                                         Resort

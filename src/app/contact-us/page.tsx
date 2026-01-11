@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { FaPhoneAlt } from 'react-icons/fa';
 import { Playfair_Display } from 'next/font/google';
 import { useContactUsStore } from "@/store/useContactUsStore";
+import hotelLocationService from '@/api/hotelLocationService';
 
 const playfair = Playfair_Display({ subsets: ['latin'], weight: ['400', '700'], display: 'swap' });
 
@@ -38,6 +39,55 @@ const ContactUs: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
 
   const addressLines = contact?.address?.split(",") || [];
+
+  // dynamic hotel location + map
+  const [hotelName, setHotelName] = useState<string | null>(null);
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapLoading, setMapLoading] = useState(false);
+  const [mapError, setMapError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setMapLoading(true);
+        setMapError(null);
+        const json = await hotelLocationService.getActiveLocations();
+        if (!json) {
+          setMapError('no response');
+          return;
+        }
+        if (json.status === false) {
+          setMapError(json.message || 'error');
+          return;
+        }
+
+        const arr = Array.isArray(json.data) ? json.data : [];
+        if (!arr || arr.length === 0) {
+          setMapError('no locations');
+          return;
+        }
+
+        const item = arr.find((h: any) => Array.isArray(h.locations) && h.locations.length > 0) || arr[0];
+        if (item?.hotelName) setHotelName(item.hotelName);
+        if (Array.isArray(item.locations) && item.locations.length > 0) {
+          const loc = item.locations[0];
+          const lat = Number(loc.latitude);
+          const lng = Number(loc.longitude);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setMapCoords({ lat, lng });
+            return;
+          }
+        }
+        setMapError('no valid coords');
+      } catch (err: any) {
+        setMapError(err?.message || String(err));
+      } finally {
+        setMapLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   useEffect(() => {
     fetchSettings();
@@ -144,7 +194,7 @@ const ContactUs: React.FC = () => {
             </h2>
 
             <p className="text-gray-500 text-sm md:text-base lg:text-[17px] mb-8 md:mb-10 leading-relaxed max-w-2xl">
-              Our objective at Greenview is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
+              Our objective at {hotelName || 'AvensStay'} is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
             </p>
 
             {/* Success Message */}
@@ -251,7 +301,7 @@ const ContactUs: React.FC = () => {
           <div className="w-full lg:w-1/3 space-y-6 md:space-y-8 lg:pt-8">
             <div>
               <h3 className="text-xl md:text-2xl noto-geogia-font font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
-                Greenview Resort <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
+                {hotelName || 'AvensStay'} <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
               </h3>
               <div className="text-black text-sm md:text-base lg:text-[17px] space-y-2 font-light leading-relaxed pl-1">
                 {addressLines.map((part, idx) => (
@@ -261,7 +311,7 @@ const ContactUs: React.FC = () => {
                   </React.Fragment>
                 ))}
                 <p className="hover:text-[#c23535] transition-colors cursor-pointer mt-4">
-                  {contact?.contactEmail || "contact@bluebellresort.com"}
+                  {contact?.contactEmail || `contact@${(hotelName || 'AvensStay').replace(/\s+/g, '').toLowerCase()}.com`}
                 </p>
               </div>
             </div>
@@ -285,16 +335,27 @@ const ContactUs: React.FC = () => {
 
       {/* Map */}
       <div className="mx-4 sm:mx-5 h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] my-4 sm:my-5 rounded-xl overflow-hidden shadow-lg">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3067.653494796331!2d-104.8016466846244!3d39.74737607944855!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x876c7c5936c4b375%3A0x6e7f8e3f2214373a!2sAurora%2C%20CO%2080014%2C%20USA!5e0!3m2!1sen!2s!4v1641888800000!5m2!1sen!2s"
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          allowFullScreen
-          loading="lazy"
-          title="Bluebell Resort Location"
-        ></iframe>
+        {mapLoading ? (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-600">Loading map...</div>
+        ) : (
+          <iframe
+            src={
+              mapCoords
+                ? `https://www.google.com/maps?q=${mapCoords.lat},${mapCoords.lng}&z=15&output=embed`
+                : "https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3888.757354486909!2d80.19481189999999!3d12.9233109!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTLCsDU1JzIzLjkiTiA4MMKwMTEnNDEuMyJF!5e0!3m2!1sen!2sin!4v1768079044926!5m2!1sen!2sin"
+            }
+            width="100%"
+            height="100%"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            title={`${hotelName || 'AvensStay'} Resort Location`}
+          ></iframe>
+        )}
       </div>
+      {mapError && (
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-16 text-sm text-red-600 mt-2">Map error: {mapError}</div>
+      )}
     </div>
   );
 };

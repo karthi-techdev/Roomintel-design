@@ -8,11 +8,12 @@ import {
   FaChevronRight,
   // FaTwitter,
 } from 'react-icons/fa';
+import hotelLocationService from '@/api/hotelLocationService';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
 import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import {  getImageUrl } from '../utils/getImage';
+import { getImageUrl } from '../utils/getImage';
 import { RiDoubleQuotesR } from "react-icons/ri";
 import { IoIosArrowRoundBack, IoIosArrowRoundForward, IoLogoLinkedin } from 'react-icons/io';
 import { FaStar } from "react-icons/fa6";
@@ -75,6 +76,24 @@ export default function Home() {
     fetchAccommodations();
   }, [fetchActiveSlides, fetchAccommodations]);
 
+  // load hotel name for dynamic texts
+  const [hotelName, setHotelName] = useState<string | null>(null);
+  useEffect(() => {
+    const loadName = async () => {
+      try {
+        const json = await hotelLocationService.getActiveLocations();
+        if (json && json.status !== false) {
+          const arr = Array.isArray(json.data) ? json.data : [];
+          const item = arr.find((h: any) => Array.isArray(h.locations) && h.locations.length > 0) || arr[0];
+          if (item?.hotelName) setHotelName(item.hotelName);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    loadName();
+  }, []);
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
     arrival: '',
@@ -107,7 +126,7 @@ export default function Home() {
       }
     }, 4000); // 4 sec
     return () => clearInterval(interval);
-    }, [testimonialData]);
+  }, [testimonialData]);
 
   if (loading || slides.length === 0) {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
@@ -124,9 +143,9 @@ export default function Home() {
       area: 45 // Default area as it's not in the backend model yet
     },
     image: getImageUrl(
-    acc.image,
-    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
-  ),
+      acc.image,
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
+    ),
   }));
 
 

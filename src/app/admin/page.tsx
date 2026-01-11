@@ -10,6 +10,7 @@ import {
   FaCreditCard, FaPaypal, FaMoneyBill, FaLink, FaMapMarkerAlt, FaPhoneAlt
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import hotelLocationService from '@/api/hotelLocationService';
 
 // --- TYPES & INTERFACES ---
 
@@ -164,8 +165,9 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [cmsSection, setCmsSection] = useState('hero');
   const [heroSlides, setHeroSlides] = useState<HeroSlide[]>(initialHeroSlides);
   const [footerLinks, setFooterLinks] = useState<FooterLink[]>(initialFooterLinks);
-  const [siteSettings, setSiteSettings] = useState({ title: 'Bluebell Resort', email: 'contact@bluebell.com', phone: '+1 234 567 890', address: '2624 Sampson Street, Aurora, CO', maintenanceMode: false, logo: '', metaTitle: 'Bluebell Resort | Luxury Stay', metaDesc: 'Experience luxury...', keywords: 'resort, hotel, luxury' });
-  const [aboutContent, setAboutContent] = useState("Our objective at Bluebell is to bring together our visitor's societies and spirits...");
+  const [siteSettings, setSiteSettings] = useState({ title: 'AvensStay Resort', email: 'contact@avensstay.com', phone: '+1 234 567 890', address: '2624 Sampson Street, Aurora, CO', maintenanceMode: false, logo: '', metaTitle: 'AvensStay Resort | Luxury Stay', metaDesc: 'Experience luxury...', keywords: 'resort, hotel, luxury' });
+  const [aboutContent, setAboutContent] = useState("Our objective at AvensStay is to bring together our visitor's societies and spirits...");
+  const [hotelName, setHotelName] = useState<string | null>(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -174,6 +176,30 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   // Filter State
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const fetchHotelName = async () => {
+      try {
+        const json = await hotelLocationService.getActiveLocations();
+        const items = Array.isArray(json?.data) ? json.data : json;
+        const item = Array.isArray(items) ? items[0] : items;
+        const name = item?.hotelName;
+        if (name) {
+          setHotelName(name);
+          setSiteSettings(prev => ({
+            ...prev,
+            title: `${name} Resort`,
+            email: `contact@${name.replace(/\s+/g, '').toLowerCase()}.com`,
+            metaTitle: `${name} Resort | Luxury Stay`
+          }));
+          setAboutContent(prev => prev && prev.includes('AvensStay') ? prev.replace(/AvensStay/g, name) : prev);
+        }
+      } catch (err) {
+        // ignore and keep defaults
+      }
+    };
+    fetchHotelName();
+  }, []);
 
   // --- ACTIONS ---
 
@@ -361,11 +387,11 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             )}
 
             {cmsSection === 'about' && (
-               <div className="space-y-6">
-                  <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Main Heading</label><input type="text" defaultValue="Welcome to Bluebell Resort" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none" /></div>
-                  <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">About Content</label><textarea className="w-full h-48 p-4 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none resize-none" value={aboutContent} onChange={(e) => setAboutContent(e.target.value)}></textarea></div>
-                  <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Signature Name</label><input type="text" defaultValue="Kathy A. Xemn" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none noto-geogia-font" /></div>
-               </div>
+              <div className="space-y-6">
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Main Heading</label><input type="text" defaultValue={`Welcome to ${hotelName || 'AvensStay'} Resort`} className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none" /></div>
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">About Content</label><textarea className="w-full h-48 p-4 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none resize-none" value={aboutContent} onChange={(e) => setAboutContent(e.target.value)}></textarea></div>
+                <div><label className="block text-xs font-bold text-gray-500 uppercase mb-2">Signature Name</label><input type="text" defaultValue="Kathy A. Xemn" className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:border-[#283862] outline-none noto-geogia-font" /></div>
+              </div>
             )}
 
             {cmsSection === 'contact' && (
@@ -430,10 +456,10 @@ const AdminDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       {/* SIDEBAR */}
       <motion.aside className={`fixed lg:sticky top-0 left-0 z-50 w-[280px] h-screen bg-white border-r border-gray-200 shadow-2xl lg:shadow-none transform transition-transform duration-300 ease-in-out flex flex-col ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className="h-24 flex items-center justify-center border-b border-gray-100 bg-white">
-           <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="w-10 h-10 bg-[#283862] text-white rounded-lg flex items-center justify-center text-xl noto-geogia-font font-bold">B</div>
-              <div><h1 className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">Bluebell</h1><span className="text-[10px] uppercase tracking-[0.2em] text-[#c23535] font-bold">Admin Panel</span></div>
-           </div>
+              <div><h1 className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">{hotelName || 'AvensStay'}</h1><span className="text-[10px] uppercase tracking-[0.2em] text-[#c23535] font-bold">Admin Panel</span></div>
+            </div>
         </div>
         <div className="flex-1 overflow-y-auto py-6 space-y-1 custom-scrollbar">
            <p className="px-6 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 mt-2">Overview</p>
