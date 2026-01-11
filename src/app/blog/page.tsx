@@ -24,7 +24,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
       date: "December 11, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     {
       id: 2,
@@ -33,7 +33,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
       date: "December 11, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     {
       id: 3,
@@ -42,7 +42,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
       date: "December 11, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     {
       id: 4,
@@ -51,16 +51,16 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
       date: "December 30, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     {
       id: 5,
-      title: "Know the secret of Bluebell Resort",
+      title: "Know the secret of AvensStay Resort",
       image: "/blog-images/blog-image-5.avif",
       date: "December 30, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     {
       id: 6,
@@ -69,7 +69,7 @@ const Blog: React.FC<BlogProps> = ({ onBack, onReadMore }) => {
       date: "December 30, 2021",
       author: "admin",
       comments: "by Charles",
-      excerpt: "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
+      excerpt: "Our objective at AvensStay is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Nor again is there anyone ..."
     },
     // Page 2 Posts - Add more images here
     {

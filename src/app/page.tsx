@@ -8,11 +8,12 @@ import {
   FaChevronRight,
   // FaTwitter,
 } from 'react-icons/fa';
+import hotelLocationService from '@/api/hotelLocationService';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
 import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import {  getImageUrl } from '../utils/getImage';
+import { getImageUrl } from '../utils/getImage';
 import { RiDoubleQuotesR } from "react-icons/ri";
 import { IoIosArrowRoundBack, IoIosArrowRoundForward, IoLogoLinkedin } from 'react-icons/io';
 import { FaStar } from "react-icons/fa6";
@@ -75,6 +76,24 @@ export default function Home() {
     fetchAccommodations();
   }, [fetchActiveSlides, fetchAccommodations]);
 
+  // load hotel name for dynamic texts
+  const [hotelName, setHotelName] = useState<string | null>(null);
+  useEffect(() => {
+    const loadName = async () => {
+      try {
+        const json = await hotelLocationService.getActiveLocations();
+        if (json && json.status !== false) {
+          const arr = Array.isArray(json.data) ? json.data : [];
+          const item = arr.find((h: any) => Array.isArray(h.locations) && h.locations.length > 0) || arr[0];
+          if (item?.hotelName) setHotelName(item.hotelName);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    loadName();
+  }, []);
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
     arrival: '',
@@ -107,7 +126,7 @@ export default function Home() {
       }
     }, 4000); // 4 sec
     return () => clearInterval(interval);
-    }, [testimonialData]);
+  }, [testimonialData]);
 
   if (loading || slides.length === 0) {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
@@ -124,9 +143,9 @@ export default function Home() {
       area: 45 // Default area as it's not in the backend model yet
     },
     image: getImageUrl(
-    acc.image,
-    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
-  ),
+      acc.image,
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
+    ),
   }));
 
 
@@ -465,7 +484,7 @@ export default function Home() {
                 <div className="flex items-center gap-1">
                   <span className="w-12 h-[2px] bg-[#c23535]"></span>
                   <span className="text-end text-[#c23535] text-xs lg:text-sm font-bold tracking-[0.15em] uppercase">
-                    Welcome to Bluebell
+                    {`Welcome to ${hotelName || 'AvensStay'}`}
                   </span>
                 </div>
 
@@ -483,8 +502,9 @@ export default function Home() {
                 {/* Description Text */}
                 <div className="text-gray-500 text-[15px] leading-relaxed space-y-6 font-light">
                   <p>
-                    Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality. Delightful herbs and flavors consolidate surfaces to pacify wide based palates.
+                    Our objective at {hotelName || "AvensStay"} is to bring together our visitors' societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, and Mediterranean inspired cuisine infused with a New York mindset. Delightful herbs and rich flavors combine perfectly to satisfy a wide range of palates.
                   </p>
+
                   <p>
                     Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality.
                   </p>
@@ -816,7 +836,7 @@ export default function Home() {
             </h2>
 
             <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-              Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
+              Our objective at {hotelName || 'AvensStay'} is to bring together our visitor's societies and spirits with our own.
             </p>
           </div>
 
