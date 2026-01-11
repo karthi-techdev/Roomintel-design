@@ -65,173 +65,174 @@ const RoomCheckout: React.FC = () => {
         serviceCharge: 0,
         grandTotal: 0,
     });
+    const [bookingId, setBookingId] = useState<string>('')
 
-const { createBillingAddress, billingAddress,isLoading ,fetchBillingAddressByCustomerId,setDefaultBillingAddress,updateBillingAddress} = useBillingAddressStore();
-const [isAddressSaved, setIsAddressSaved] = useState(false);
-const addresses = billingAddress?.addresses || [];
-//-----
-const [showAddressForm, setShowAddressForm] = useState(false);
-const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
+    const { createBillingAddress, billingAddress, isLoading, fetchBillingAddressByCustomerId, setDefaultBillingAddress, updateBillingAddress } = useBillingAddressStore();
+    const [isAddressSaved, setIsAddressSaved] = useState(false);
+    const addresses = billingAddress?.addresses || [];
+    //-----
+    const [showAddressForm, setShowAddressForm] = useState(false);
+    const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
 
-useEffect(() => {
-  if (addresses.length > 0 && !selectedAddressId) {
-    const def = addresses.find(a => a.isDefault);
-    setSelectedAddressId(def?._id || addresses[0]._id);
-  }
-}, [addresses]);
+    useEffect(() => {
+        if (addresses.length > 0 && !selectedAddressId) {
+            const def = addresses.find(a => a.isDefault);
+            setSelectedAddressId(def?._id || addresses[0]._id);
+        }
+    }, [addresses]);
 
-// Type-safe function to handle selecting an address
-const handleSelectAddress = async (addressId: string | undefined) => {
-  if (!addressId) return; // safety check
+    // Type-safe function to handle selecting an address
+    const handleSelectAddress = async (addressId: string | undefined) => {
+        if (!addressId) return; // safety check
 
-  setSelectedAddressId(addressId);
+        setSelectedAddressId(addressId);
 
-  try {
-    // Update default billing address in the store
-    await useBillingAddressStore.getState().setDefaultBillingAddress(userId, addressId);
+        try {
+            // Update default billing address in the store
+            await useBillingAddressStore.getState().setDefaultBillingAddress(userId, addressId);
 
-    // Refresh addresses for the user
-    await fetchBillingAddressByCustomerId(userId);
-  } catch (err) {
-    showAlert.error("Failed to update default address");
-  }
-};
-
-
-
-
-// assume user already exists (customer id)
-const userId = user?._id; // or user.id based on your auth
-
-const validateAddressForm = () => {
-  const newErrors: Record<string, string> = {};
-
-  if (!formData.name.trim()) newErrors.name = "Name is required";
-  if (!formData.email.trim()) newErrors.email = "Email is required";
-  else if (!/^\S+@\S+\.\S+$/.test(formData.email))
-    newErrors.email = "Invalid email";
-
-  if (!formData.phone.trim()) newErrors.phone = "Phone is required";
-  if (!formData.address.trim()) newErrors.address = "Address is required";
-  if (!formData.country) newErrors.country = "Country is required";
-  if (!formData.state) newErrors.state = "State is required";
-  if (!formData.city) newErrors.city = "City is required";
-  if (!formData.postcode.trim()) newErrors.postcode = "Postcode is required";
-
-  setErrors(newErrors);
-
-  // 🔥 THIS IS THE KEY PART
-  setTouched({
-    name: true,
-    email: true,
-    phone: true,
-    address: true,
-    country: true,
-    state: true,
-    city: true,
-    postcode: true,
-  });
-
-  return Object.keys(newErrors).length === 0;
-};
-
-
-const resetAddressForm = () => {
-  setFormData(prev => ({
-    ...prev,          // keep name, email, company
-    phone: "",
-    address: "",
-    city: "",
-    state: "",
-    postcode: "",
-    country: "",
-    notes: "",
-  }));
-
-  setErrors({});       // optional: clear validation errors
-  setTouched({});      // optional: clear touched fields
-};
-
-
-const handleCancelAddressForm = () => {
-  resetAddressForm();       // clear only phone, address, city, state, postcode, country, notes
-  setShowAddressForm(false); // hide the form/modal
-};
-
-
-const handleSaveAddress = async () => {
-  const isValid = validateAddressForm();
-
-  // ❌ IF ERROR → STOP EVERYTHING
-  if (!isValid) {
-    return;
-  }
-
-  try {
-    const storeState = useBillingAddressStore.getState();
-    const billingAddress = storeState.billingAddress;
-
-    const addressPayload = {
-      fullName: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      country: formData.country,
-      state: formData.state,
-      city: formData.city,
-      zipCode: formData.postcode,
-      streetAddress: [formData.address],
-      isDefault: true,
+            // Refresh addresses for the user
+            await fetchBillingAddressByCustomerId(userId);
+        } catch (err) {
+            showAlert.error("Failed to update default address");
+        }
     };
 
-    if (!billingAddress?._id) {
-      await createBillingAddress({
-        customerId: userId,
-        addresses: [addressPayload],
-      });
-    } else {
-      await updateBillingAddress(
-        billingAddress._id,
-        "new",
-        addressPayload
-      );
-    }
-
-    await fetchBillingAddressByCustomerId(userId);
-
-    showAlert.success("Address saved successfully");
-
-    resetAddressForm();
-    setShowAddressForm(false);
-
-  } catch (err) {
-    console.error(err);
-    showAlert.error("Failed to save address");
-  }
-};
 
 
 
+    // assume user already exists (customer id)
+    const userId = user?._id; // or user.id based on your auth
+
+    const validateAddressForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!formData.name.trim()) newErrors.name = "Name is required";
+        if (!formData.email.trim()) newErrors.email = "Email is required";
+        else if (!/^\S+@\S+\.\S+$/.test(formData.email))
+            newErrors.email = "Invalid email";
+
+        if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+        if (!formData.address.trim()) newErrors.address = "Address is required";
+        if (!formData.country) newErrors.country = "Country is required";
+        if (!formData.state) newErrors.state = "State is required";
+        if (!formData.city) newErrors.city = "City is required";
+        if (!formData.postcode.trim()) newErrors.postcode = "Postcode is required";
+
+        setErrors(newErrors);
+
+        // 🔥 THIS IS THE KEY PART
+        setTouched({
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            country: true,
+            state: true,
+            city: true,
+            postcode: true,
+        });
+
+        return Object.keys(newErrors).length === 0;
+    };
+
+
+    const resetAddressForm = () => {
+        setFormData(prev => ({
+            ...prev,          // keep name, email, company
+            phone: "",
+            address: "",
+            city: "",
+            state: "",
+            postcode: "",
+            country: "",
+            notes: "",
+        }));
+
+        setErrors({});       // optional: clear validation errors
+        setTouched({});      // optional: clear touched fields
+    };
+
+
+    const handleCancelAddressForm = () => {
+        resetAddressForm();       // clear only phone, address, city, state, postcode, country, notes
+        setShowAddressForm(false); // hide the form/modal
+    };
+
+
+    const handleSaveAddress = async () => {
+        const isValid = validateAddressForm();
+
+        // ❌ IF ERROR → STOP EVERYTHING
+        if (!isValid) {
+            return;
+        }
+
+        try {
+            const storeState = useBillingAddressStore.getState();
+            const billingAddress = storeState.billingAddress;
+
+            const addressPayload = {
+                fullName: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                country: formData.country,
+                state: formData.state,
+                city: formData.city,
+                zipCode: formData.postcode,
+                streetAddress: [formData.address],
+                isDefault: true,
+            };
+
+            if (!billingAddress?._id) {
+                await createBillingAddress({
+                    customerId: userId,
+                    addresses: [addressPayload],
+                });
+            } else {
+                await updateBillingAddress(
+                    billingAddress._id,
+                    "new",
+                    addressPayload
+                );
+            }
+
+            await fetchBillingAddressByCustomerId(userId);
+
+            showAlert.success("Address saved successfully");
+
+            resetAddressForm();
+            setShowAddressForm(false);
+
+        } catch (err) {
+            console.error(err);
+            showAlert.error("Failed to save address");
+        }
+    };
 
 
 
-useEffect(() => {
-  if (user?._id) {
-    fetchBillingAddressByCustomerId(user._id);
-  }
-}, [user?._id]);
-useEffect(() => {
-  if (user?.billingAddress) {
-    setIsAddressSaved(true);
-    setFormData(prev => ({
-      ...prev,
-      address: user.billingAddress.streetAddress?.[0] || "",
-      city: user.billingAddress.city || "",
-      state: user.billingAddress.state || "",
-      country: user.billingAddress.country || "",
-      postcode: user.billingAddress.zipCode || "",
-    }));
-  }
-}, [user]);
+
+
+
+    useEffect(() => {
+        if (user?._id) {
+            fetchBillingAddressByCustomerId(user._id);
+        }
+    }, [user?._id]);
+    useEffect(() => {
+        if (user?.billingAddress) {
+            setIsAddressSaved(true);
+            setFormData(prev => ({
+                ...prev,
+                address: user.billingAddress.streetAddress?.[0] || "",
+                city: user.billingAddress.city || "",
+                state: user.billingAddress.state || "",
+                country: user.billingAddress.country || "",
+                postcode: user.billingAddress.zipCode || "",
+            }));
+        }
+    }, [user]);
 
 
 
@@ -497,27 +498,27 @@ useEffect(() => {
 
 
     // --- VALIDATION ---
- const validateField = (name: string, value: string) => {
+    const validateField = (name: string, value: string) => {
   switch(name) {
-    case "phone":
-      if (!value.trim()) return "Phone is required";
-      if (!/^[0-9+()\s-]+$/.test(value)) return "Invalid phone number";
-      break;
-    case "postcode":
-      if (!value.trim()) return "Postcode is required";
-      break;
-    case "name":
-      if (!value.trim()) return "Name is required";
-      break;
-    case "email":
-      if (!value.trim()) return "Email is required";
-      if (!/^\S+@\S+\.\S+$/.test(value)) return "Invalid email";
-      break;
-    default:
-      return "";
-  }
-  return "";
-};
+            case "phone":
+                if (!value.trim()) return "Phone is required";
+                if (!/^[0-9+()\s-]+$/.test(value)) return "Invalid phone number";
+                break;
+            case "postcode":
+                if (!value.trim()) return "Postcode is required";
+                break;
+            case "name":
+                if (!value.trim()) return "Name is required";
+                break;
+            case "email":
+                if (!value.trim()) return "Email is required";
+                if (!/^\S+@\S+\.\S+$/.test(value)) return "Invalid email";
+                break;
+            default:
+                return "";
+        }
+        return "";
+    };
 
 
     const validateDates = (): { checkIn: string; checkOut: string } => {
@@ -646,7 +647,7 @@ useEffect(() => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-const handlePlaceOrder = async () => {
+    const handlePlaceOrder = async () => {
 
         if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
@@ -689,6 +690,7 @@ const handlePlaceOrder = async () => {
             guestName: formData.name,
             guestEmail: formData.email,
             guestPhone: formData.phone,
+            user: user?._id,
             room: primaryRoomId,
             rooms: bookedRooms,
             checkIn: dates.checkIn,
@@ -703,11 +705,12 @@ const handlePlaceOrder = async () => {
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
-                await bookingService.createBooking(bookingPayload);
+                const bookingData = await bookingService.createBooking(bookingPayload);
+                setBookingId(bookingData._id);
                 const pointsEarned = Math.floor(finalTotalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                 await finalizeOrder(bookingPayload);
-                
+
 
             } else if (paymentMethod === 'card') {
                 // RAZORPAY / ONLINE FLOW
@@ -719,7 +722,7 @@ const handlePlaceOrder = async () => {
                     phone: formData.phone,
                     description: `Booking for ${formData.name}`,
                     onSuccess: async (response) => {
-                        // Update payload with payment success
+                        // Update payload with p    ayment success
                         const paidPayload = {
                             ...bookingPayload,
                             paymentStatus: 'Paid',
@@ -778,27 +781,41 @@ const handlePlaceOrder = async () => {
                             Booking Confirmed!
                         </h2>
                         <p className="text-gray-500 text-[12px] mb-6 max-w-md mx-auto">
-                            Thank you for choosing RoomIntel. Your reservation has been successfully processed and a confirmation email is on its way.
+                            Thank you for choosing AvensStay. Your reservation has been successfully processed and a confirmation email is on its way.
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-8 mb-6 text-left">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
-                                    <p className="font-mono text-[#283862] font-semibold">#{confirmedBookingDetails?.id?.slice(-8).toUpperCase() || 'RT-XXXXX'}</p>
+                        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 md:p-4 mb-8 text-left shadow-sm">
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-4">
+
+                                <div className="col-span-2 border-b border-gray-100 pb-6">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Booking ID
+                                    </label>
+                                    <p className="text-[14px] font-black text-[#283862] tracking-tight uppercase">
+                                        #{bookingId || "RT-LOADING"}
+                                    </p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
-                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.totalAmount || 0)}</p>
+
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Total Amount
+                                    </label>
+                                    <p className="text-[14px] font-black text-[#c23535]">
+                                        {fmt(confirmedBookingDetails?.totalAmount || 0)}
+                                    </p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
-                                    <p className="text-green-600 font-bold">🎉 +{confirmedBookingDetails?.points || 0} Points</p>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Payment Status</label>
-                                    <p className="text-blue-600 font-semibold">{confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}</p>
+
+                                <div className="col-span-1 border-l border-gray-100 pl-6">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Payment Status
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${confirmedBookingDetails?.paymentMode === 'Cash' ? 'bg-orange-500' : 'bg-green-500'}`} />
+                                        <p className="text-[14px] font-black text-[#283862] uppercase tracking-tighter">
+                                            {confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -900,193 +917,193 @@ const handlePlaceOrder = async () => {
                                     )}
                                 </div>
                             </div>
-{!showAddressForm && addresses.length > 0 ? (
-  /* ---------------- RADIO LIST ---------------- */
-  <div className="space-y-4">
-    <h3 className="text-xl font-bold text-[#283862]">
-      Select Billing Address
-    </h3>
+                            {!showAddressForm && addresses.length > 0 ? (
+                                /* ---------------- RADIO LIST ---------------- */
+                                <div className="space-y-4">
+                                    <h3 className="text-xl font-bold text-[#283862]">
+                                        Select Billing Address
+                                    </h3>
 
-    {addresses.map(addr => (
-      <label
-        key={addr._id}
-        className={`flex gap-4 p-4 border rounded-lg cursor-pointer
+                                    {addresses.map(addr => (
+                                        <label
+                                            key={addr._id}
+                                            className={`flex gap-4 p-4 border rounded-lg cursor-pointer
           ${selectedAddressId === addr._id
-            ? "border-[#EDA337] bg-[#fff8ec]"
-            : "border-gray-200"
-          }`}
-      >
-        <input
-          type="radio"
-          checked={selectedAddressId === addr._id}
-          onChange={() => handleSelectAddress(addr._id)}
-        />
+                                                    ? "border-[#EDA337] bg-[#fff8ec]"
+                                                    : "border-gray-200"
+                                                }`}
+                                        >
+                                            <input
+                                                type="radio"
+                                                checked={selectedAddressId === addr._id}
+                                                onChange={() => handleSelectAddress(addr._id)}
+                                            />
 
-        <div>
-          <div className="font-bold flex gap-2">
-            {addr.fullName}
-            {addr.isDefault && (
-              <span className="text-[10px] bg-green-100 px-2 rounded">
-                DEFAULT
-              </span>
-            )}
-          </div>
+                                            <div>
+                                                <div className="font-bold flex gap-2">
+                                                    {addr.fullName}
+                                                    {addr.isDefault && (
+                                                        <span className="text-[10px] bg-green-100 px-2 rounded">
+                                                            DEFAULT
+                                                        </span>
+                                                    )}
+                                                </div>
 
-          <p>{addr.streetAddress.join(", ")}</p>
-          <p>{addr.city}, {addr.state} {addr.zipCode}</p>
-          <p>{addr.country}</p>
-          <p className="font-semibold">📞 {addr.phone}</p>
-        </div>
-      </label>
-    ))}
+                                                <p>{addr.streetAddress.join(", ")}</p>
+                                                <p>{addr.city}, {addr.state} {addr.zipCode}</p>
+                                                <p>{addr.country}</p>
+                                                <p className="font-semibold">📞 {addr.phone}</p>
+                                            </div>
+                                        </label>
+                                    ))}
 
-    <button
-      type="button"
-      onClick={() => setShowAddressForm(true)}
-      className="text-xs font-bold text-[#EDA337] underline"
-    >
-      + Add New Address
-    </button>
-  </div>
-
-) : (
-  /* ---------------- ADDRESS FORM ---------------- */
-  <>
-   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
-                                    <input
-                                        disabled={formData.name ? true : false}
-                                        type="text"
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleInputChange}
-                                        onBlur={() => handleBlur('name')}
-                                        placeholder="e.g. John Doe"
-                                        className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.name ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.name && errors.name
-                                            ? 'border-red-500 focus:border-red-500'
-                                            : 'border-gray-300 focus:border-[#EDA337]'
-                                            }`}
-                                    />
-                                    {touched.name && errors.name && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddressForm(true)}
+                                        className="text-xs font-bold text-[#EDA337] underline"
+                                    >
+                                        + Add New Address
+                                    </button>
                                 </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
-                                    <input
-                                        disabled={formData.email ? true : false}
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleInputChange}
-                                        onBlur={() => handleBlur('email')}
-                                        placeholder="e.g. john@example.com"
-                                        className={`w-full  border rounded-sm p-4 text-sm text-[#283862] ${formData.email ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.email && errors.email
-                                            ? 'border-red-500 focus:border-red-500'
-                                            : 'border-gray-300 focus:border-[#EDA337]'
-                                            }`}
-                                    />
-                                    {touched.email && errors.email && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-                                    )}
-                                </div>
-                            </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
-                                <input
-                                    disabled={formData.phone ? true : false}
-                                    type="tel"
-                                    name="phone"
-                                    value={formData.phone}
-                                    onChange={handleInputChange}
-                                    onBlur={() => handleBlur('phone')}
-                                    placeholder="+1 234 567 8900"
-                                    className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.phone ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.phone && errors.phone
-                                        ? 'border-red-500 focus:border-red-500'
-                                        : 'border-gray-300 focus:border-[#EDA337]'
-                                        }`}
-                                />
-                                {touched.phone && errors.phone && (
-                                    <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-                                )}
-                            </div>
+                            ) : (
+                                /* ---------------- ADDRESS FORM ---------------- */
+                                <>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
+                                            <input
+                                                disabled={formData.name ? true : false}
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                onBlur={() => handleBlur('name')}
+                                                placeholder="e.g. John Doe"
+                                                className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.name ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.name && errors.name
+                                                    ? 'border-red-500 focus:border-red-500'
+                                                    : 'border-gray-300 focus:border-[#EDA337]'
+                                                    }`}
+                                            />
+                                            {touched.name && errors.name && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                                            )}
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email Address *</label>
+                                            <input
+                                                disabled={formData.email ? true : false}
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                onBlur={() => handleBlur('email')}
+                                                placeholder="e.g. john@example.com"
+                                                className={`w-full  border rounded-sm p-4 text-sm text-[#283862] ${formData.email ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.email && errors.email
+                                                    ? 'border-red-500 focus:border-red-500'
+                                                    : 'border-gray-300 focus:border-[#EDA337]'
+                                                    }`}
+                                            />
+                                            {touched.email && errors.email && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                                            )}
+                                        </div>
+                                    </div>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</label>
-                                <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Street address" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
-                            </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Phone *</label>
+                                        <input
+                                            disabled={formData.phone ? true : false}
+                                            type="tel"
+                                            name="phone"
+                                            value={formData.phone}
+                                            onChange={handleInputChange}
+                                            onBlur={() => handleBlur('phone')}
+                                            placeholder="+1 234 567 8900"
+                                            className={`w-full border rounded-sm p-4 text-sm text-[#283862] ${formData.phone ? 'bg-[#efefef]' : 'bg-white'} focus:outline-none shadow-sm ${touched.phone && errors.phone
+                                                ? 'border-red-500 focus:border-red-500'
+                                                : 'border-gray-300 focus:border-[#EDA337]'
+                                                }`}
+                                        />
+                                        {touched.phone && errors.phone && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                                        )}
+                                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Country</label>
-                                    <select name="country" value={formData.country} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
-                                        <option value="">Select your country</option>
-                                        {countryData.map((c: any, i: number) => (
-                                            <option key={i} value={c.name}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">State</label>
-                                    {availableStates.length > 0 ? (
-                                        <select name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
-                                            <option value="">Select State</option>
-                                            {availableStates.map((s: any, i: number) => (
-                                                <option key={i} value={s}>{s}</option>
-                                            ))}
-                                        </select>
-                                    ) : (
-                                        <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. NY" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
-                                    )}
-                                </div>
-                            </div>
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</label>
+                                        <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Street address" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                    </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
-                                    <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. New York" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
-                                    <input
-                                        type="text"
-                                        name="postcode"
-                                        value={formData.postcode}
-                                        onChange={handleInputChange}
-                                        onBlur={() => handleBlur('postcode')}
-                                        placeholder="e.g. 10001"
-                                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.postcode && errors.postcode
-                                            ? 'border-red-500 focus:border-red-500'
-                                            : 'border-gray-300 focus:border-[#EDA337]'
-                                            }`}
-                                    />
-                                    {touched.postcode && errors.postcode && (
-                                        <p className="text-xs text-red-500 mt-1">{errors.postcode}</p>
-                                    )}
-                                </div>
-                            </div>
-    {/* ADD Cancel button at bottom */}
-    <div className="flex gap-4 pt-4">
-      <button
-        type="button"
-        onClick={handleSaveAddress}
-        className="bg-[#EDA337] text-white font-bold px-6 py-3 text-xs"
-      >
-        Save Address
-      </button>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Country</label>
+                                            <select name="country" value={formData.country} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                                <option value="">Select your country</option>
+                                                {countryData.map((c: any, i: number) => (
+                                                    <option key={i} value={c.name}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">State</label>
+                                            {availableStates.length > 0 ? (
+                                                <select name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                                    <option value="">Select State</option>
+                                                    {availableStates.map((s: any, i: number) => (
+                                                        <option key={i} value={s}>{s}</option>
+                                                    ))}
+                                                </select>
+                                            ) : (
+                                                <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. NY" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                            )}
+                                        </div>
+                                    </div>
 
-      <button
-        type="button"
-        onClick={handleCancelAddressForm}
-        className="border px-6 py-3 text-xs font-bold"
-      >
-        Cancel
-      </button>
-    </div>
-  </>
-)}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
+                                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. New York" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
+                                            <input
+                                                type="text"
+                                                name="postcode"
+                                                value={formData.postcode}
+                                                onChange={handleInputChange}
+                                                onBlur={() => handleBlur('postcode')}
+                                                placeholder="e.g. 10001"
+                                                className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.postcode && errors.postcode
+                                                    ? 'border-red-500 focus:border-red-500'
+                                                    : 'border-gray-300 focus:border-[#EDA337]'
+                                                    }`}
+                                            />
+                                            {touched.postcode && errors.postcode && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.postcode}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    {/* ADD Cancel button at bottom */}
+                                    <div className="flex gap-4 pt-4">
+                                        <button
+                                            type="button"
+                                            onClick={handleSaveAddress}
+                                            className="bg-[#EDA337] text-white font-bold px-6 py-3 text-xs"
+                                        >
+                                            Save Address
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelAddressForm}
+                                            className="border px-6 py-3 text-xs font-bold"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </>
+                            )}
 
                         </form>
                     </div>

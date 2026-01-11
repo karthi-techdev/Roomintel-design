@@ -8,6 +8,7 @@ export interface ApiResponse<T> {
 }
 
 export interface Booking {
+  _id: string;
   id: string;
   roomName: string;
   image: string;
@@ -35,7 +36,7 @@ export const bookingService = {
 
   createBooking: async (bookingData: any): Promise<Booking> => {
     const response = await axiosInstance.post('/site/bookings', bookingData);
-    return response.data;
+    return response.data.data;
   },
 
   initiatePayment: async (
