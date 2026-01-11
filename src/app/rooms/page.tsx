@@ -1,10 +1,11 @@
-import { Suspense } from 'react';
+import React, { Suspense } from 'react';
 import RoomsGridContent from './RoomGridContent';
 
-export default function RoomsPage() {
+function RoomsPage() {
   return (
     <Suspense fallback={<div>Loading rooms...</div>}>
-      <RoomsGridContent />
-    </Suspense>
+          <RoomsGridContent />
+        </Suspense>
   );
 }
+export default RoomsPage;

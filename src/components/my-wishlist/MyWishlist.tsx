@@ -4,118 +4,150 @@ import { useEffect } from "react";
 import { FaTimes, FaStar } from "react-icons/fa";
 import { TbShare2 } from "react-icons/tb";
 import { PiHeartBold } from "react-icons/pi";
-import useMyWishListStore from '@/store/useMyWishListstore';
-import { useAuthStore } from '@/store/useAuthStore';
-
-const MyWishlist = () => {
-    const { wishlists, removeWishlist, isLoading, error } = useMyWishListStore();
-    const auth = useAuthStore();
-
-    // Load auth once on mount, then fetch wishlist when user becomes available
-    useEffect(() => {
-        auth.loadFromStorage?.();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (auth.user && auth.user._id) {
-            console.log('🛒 Fetching wishlist for user:', auth.user._id);
-            console.log('🛒 Current wishlists before fetch:', wishlists);
-            console.log('🛒 fetchMyWishlist() called');
-        }
-    }, [auth.user]);
-
-    const handleRemove = async (id: string) => {
-        await removeWishlist(id);
-    };
+import useMyWishListStore, { WishlistItem } from '@/store/useMyWishListstore';
+import { BsArrowRight } from "react-icons/bs";
+import { HiChevronDoubleRight } from "react-icons/hi2";
+import Link from "next/link";
+import { Maximize, Users } from "lucide-react";
+import { IND_CURRENCY } from "@/utils/constant";
+interface MyWishlistProps {
+    data: WishlistItem[],
+    handleRemove: (id: string) => void;
+}
+const MyWishlist: React.FC<MyWishlistProps> = ({ data, handleRemove }) => {
 
     return (
         <div className="bg-white rounded-lg shadow border border-gray-100 p-6">
             <div className="mb-10">
                 <div className="flex items-center gap-[15px] ">
                     <h2 className="text-3xl font-bold text-[#283862] ">My Wishlist</h2>
-                    <span className="text-[27px] text-[#283862]"><PiHeartBold/></span>
+                    <span className="text-[27px] text-[#283862]"><PiHeartBold /></span>
                 </div>
                 <span className="text-[15px] text-[#0000007d] mb-10">Save your favorite resorts and rooms here. Compare, plan, and book them anytime.</span>
             </div>
+            {data && data.length > 0 ?
+                <>
+                    <div className="grid grid-cols-12 gap-4 items-center px-2 py-4 mb-2 bg-slate-50/50 rounded-xl border-b border-slate-200">
+                        {/* Rooms Header - Left Aligned with the content */}
+                        <div className="col-span-6">
+                            <span className="text-[11px] font-black text-[#283862] uppercase tracking-[0.2em] ml-12">
+                                Room Details
+                            </span>
+                        </div>
 
-            <div className="grid grid-cols-12 gap-4 text-xs font-bold text-gray-400 uppercase border-b border-black/20 pb-4 mb-4">
-                <div className="col-span-6 text-center">Rooms</div>
-                <div className="col-span-2 text-center">Price</div>
-                <div className="col-span-2 text-center">Status</div>
-                <div className="col-span-2 text-right"></div>
-            </div>
+                        {/* Price Header - Center Aligned */}
+                        <div className="col-span-3 text-center">
+                            <span className="text-[11px] font-black text-[#283862] uppercase tracking-[0.2em]">
+                                Base Price
+                            </span>
+                        </div>
 
-            <div className="space-y-6">
-                {isLoading && <div className="text-center text-gray-500 py-6">Loading...</div>}
+                        {/* View Header - Right Aligned to match the button */}
+                        <div className="col-span-3 text-right pr-6">
+                            <span className="text-[11px] font-black text-[#283862] uppercase tracking-[0.2em]">
+                                Action
+                            </span>
+                        </div>
+                    </div>
 
-                {(() => {
-                    console.log('🛒 Rendering wishlist items. Total:', wishlists.length);
-                    console.log('🛒 Wishlist data:', wishlists);
+                    <div className="space-y-6">
+                        {data && data.map((item) => {
+                            return (
+                                <div key={item._id} className="grid grid-cols-12 gap-4 items-center border-b border-slate-200/60 py-6 last:border-0 hover:bg-slate-50/50 transition-colors px-2">
 
-                    const listToRender = wishlists || [];
-                    const showNoItems = !isLoading && listToRender.length === 0;
+                                    {/* --- PRODUCT INFO (6 COLS) --- */}
+                                    <div className="col-span-6 flex items-center gap-6">
+                                        {/* Remove Button */}
+                                        <button
+                                            onClick={() => handleRemove(item._id)}
+                                            className="p-2 text-slate-300 hover:text-[#c23535] hover:bg-red-50 rounded-full transition-all duration-300"
+                                            title="Remove from wishlist"
+                                        >
+                                            <FaTimes size={14} />
+                                        </button>
 
-                    if (showNoItems) {
-                        return <div className="text-center text-gray-500 py-6">No items in your wishlist.</div>;
-                    }
+                                        {/* Image with aspect ratio control */}
+                                        <div className="relative shrink-0">
+                                            <img
+                                                src={item.roomId.previewImage}
+                                                alt={item.roomId.name}
+                                                className="w-32 h-20 rounded-xl object-cover shadow-sm border border-slate-100"
+                                            />
+                                        </div>
 
-                    return listToRender.map((item: any) => {
-                        const room = item.room || item.roomId || {};
-                        const image = room.previewImage || (room.images && room.images[0]) || '/image/gallery/image-2.jpg';
-                        const name = room.name || room.title || 'Room';
-                        const location = `${room.size || ''} ${room.beds || ''} ${room.adults ? `${room.adults} Adults` : ''}`.trim();
-                        const price = room.price ? `₹${room.price}` : '-';
-                        const status = room.status === 'active' ? 'Available' : 'Unavailable';
+                                        {/* Text Details */}
+                                        <div className="flex flex-col gap-1.5">
+                                            <h3 className="font-black text-[#283862] text-[16px] uppercase tracking-tight leading-none">
+                                                {item.roomId.name}
+                                            </h3>
 
-                        // wishlistId is the id of the wishlist entry (used for delete). Fall back to item._id or room._id
-                        const wishlistId = item._id && (item._id.$oid || item._id) || null;
-                        const keyId = wishlistId || (room && (room._id?.$oid || room._id)) || Math.random().toString(36).slice(2);
+                                            <div className="flex items-center gap-4 mt-1">
+                                                <div className="flex items-center gap-1.5 text-slate-500 group/icon">
+                                                    <Maximize size={14} className="text-[#c23535]" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-tight">
+                                                        {item?.roomId?.size} m²
+                                                    </span>
+                                                </div>
 
-                        return (
-                            <div key={keyId} className="grid grid-cols-12 gap-4 items-center border-b border-black/20 pb-6">
-                                <div className="col-span-6 flex items-center gap-4">
-                                    <button
-                                        onClick={() => wishlistId ? handleRemove(wishlistId) : undefined}
-                                        disabled={!wishlistId}
-                                        className="text-gray-400 text-[11px] hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <FaTimes />
-                                    </button>
+                                                <div className="h-3 w-[1px] bg-slate-200" /> {/* Divider */}
 
-                                    <img src={image} alt={name} className="w-28 h-20 rounded-md object-cover" />
-
-                                    <div>
-                                        <h3 className="font-bold text-[#283862] text-lg text-[15px]">{name}</h3>
-                                        <p className="text-[10px] text-gray-500 flex items-center gap-1">{location}</p>
-                                        <div className="flex items-center gap-1 text-[12px] text-[#ffae1a] font-bold mt-1">
-                                            <FaStar /> {room.rating || '-'}
+                                                <div className="flex items-center gap-1.5 text-slate-500 group/icon">
+                                                    <Users size={14} className="text-[#c23535]" />
+                                                    <span className="text-[11px] font-bold uppercase tracking-tight">
+                                                        {item?.roomId?.adults} Guests
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* --- PRICE (3 COLS) --- */}
+                                    <div className="col-span-3 text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Price</span>
+                                            <span className="font-black text-[#283862] text-[18px] tracking-tighter">
+                                                {IND_CURRENCY}{item.roomId.price}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* --- ACTION (3 COLS) --- */}
+                                    <div className="col-span-3 flex justify-end">
+                                        <Link href={`/room-view/${item?.roomId?.slug}`}>
+                                            <button className="group bg-[#283862] text-white px-6 py-3 text-[10px] font-black rounded-xl hover:bg-[#c23535] transition-all duration-300 flex items-center gap-2 uppercase tracking-[0.15em] shadow-md hover:shadow-[#c23535]/20">
+                                                View Details
+                                                <HiChevronDoubleRight className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+                                            </button>
+                                        </Link>
+                                    </div>
                                 </div>
+                            )
+                        })}
+                    </div>
+                </>
+                :
+                <div className="text-center text-gray-500 py-10">
+                    <p className="text-lg font-medium">Your wishlist is empty ❤️</p>
+                    <p className="text-sm mt-1">Add rooms to see them here</p>
+                </div>
+            }
 
-                                <div className="col-span-2 text-center font-bold text-[#283862] text-[15px]">{price}</div>
-
-                                <div className="col-span-2 text-center text-sm font-bold text-green-600">{status}</div>
-
-                                <div className="col-span-2 text-right">
-                                    <button className="bg-[#283862] text-[10px] text-white px-5 py-2 text-xs font-bold rounded hover:bg-[#c23535] transition">ADD TO CART</button>
-                                </div>
-                            </div>
-                        );
-                    });
-                })()}
-            </div>
-
-            <div className="flex justify-between items-center mt-8">
-                <button className=" flex items-center gap-[5px] text-[12px] text-gray-500 hover:underline">
-                    <TbShare2/>
+            {data.length > 1 && <div className="flex justify-end items-center pt-8 border-t border-slate-200/60 ">
+                {/* <button className=" flex items-center gap-[5px] text-[12px] text-gray-500 hover:underline">
+                    <TbShare2 />
                     Share this wishlist
-                </button>
+                </button> */}
 
-                <button className="bg-[#283862] text-white px-6 py-3 text-xs font-bold uppercase hover:bg-gray-800">View All Resorts</button>
-            </div>
+                <Link href="/rooms">
+                    <button className="group bg-[#283862] text-white px-6 py-3 text-[10px] font-black rounded-xl hover:bg-[#c23535] transition-all duration-300 flex items-center gap-2 uppercase tracking-[0.15em] shadow-md hover:shadow-[#c23535]/20">
+                        View All Rooms
+                        <HiChevronDoubleRight className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+                    </button>
+                </Link>
+            </div>}
+
         </div>
+
     );
 };
 

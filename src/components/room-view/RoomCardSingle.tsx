@@ -229,15 +229,7 @@ useEffect(() => {
 
                         <div className="flex-1 space-y-6">
                             <div className="grid grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rooms</label>
-                                    <div className="flex items-center gap-4 bg-slate-50 w-fit px-3 py-1 rounded-[0.5rem] border border-slate-100">
-                                        <button onClick={() => handleRoom('dec')} className="text-lg font-bold text-slate-400 hover:text-[#c23535]">-</button>
-                                        <span className="font-black text-[#283862]">{room}</span>
-                                        <button onClick={() => handleRoom('inc')} className="text-lg font-bold text-slate-400 hover:text-[#c23535]">+</button>
-                                    </div>
-                                </div>
-
+                               
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Adults</label>
                                     <div className="flex items-center gap-4 bg-slate-50 w-fit px-3 py-1 rounded-[0.5rem] border border-slate-100">
@@ -280,10 +272,10 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    <div className="border-t border-dashed border-slate-200 pt-6 flex flex-col sm:flex-row justify-between items-end gap-4">
-                        <div className="text-slate-400 text-xs font-medium italic">
+                    <div className="border-t border-dashed border-slate-200 pt-6 flex flex-col sm:flex-row justify-end items-end gap-4">
+                        {/* <div className="text-slate-400 text-xs font-medium italic">
                             ({IND_CURRENCY}{baseRoomPrice.toFixed(2)} Base + extras) × {nights} night{nights > 1 ? 's' : ''} × {room} Room{room > 1 ? 's' : ''}
-                        </div>
+                        </div> */}
                         <div className="text-right">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total for this room</p>
                             <div className="text-3xl font-black text-[#283862] tracking-tighter">

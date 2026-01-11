@@ -29,10 +29,18 @@ import { useAuthStore } from "../store/useAuthStore";
 import logoImg from "../../public/Navbar-Logo.png";
 import { useCartStore } from "../store/useCartStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { authService } from '../api/authService';
+import { getImageUrl } from '../utils/getImage';
+import hotelLocationService from "@/api/hotelLocationService";
+
+
 const Navbar: React.FC = () => {
     const pathname = usePathname();
     const router = useRouter();
     const { toast } = useToast();
+
+    // Get settings from store
+    const { settings } = useSettingsStore();
 
     // Zustand auth state
     const { user, isLoggedIn, login, register, logout, loadFromStorage } = useAuthStore();
@@ -41,8 +49,11 @@ const Navbar: React.FC = () => {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+    const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const cartItems = useCartStore((state) => state.cartItems);
+    const [hotelName, setHotelName] = useState<string>("AvensStay");
+
     const fetchCart = useCartStore((state) => state.fetchCart);
     const fetchSettings = useSettingsStore((state) => state.fetchSettings);
     const cartCount = cartItems.length;
@@ -75,17 +86,28 @@ const Navbar: React.FC = () => {
 
     const getCurrentView = () => {
         const path = pathname || '/';
+
         if (path === '/') return 'home';
         if (path === '/about-us') return 'about-us';
-        if (path === '/rooms') return 'rooms';
-        if (path.startsWith('/room-detail')) return 'room-detail';
-        if (path === '/room-cart') return 'room-cart';
-        if (path === '/room-checkout') return 'room-checkout';
+
+
+        
+        if (
+            path.startsWith('/rooms') ||
+            path.startsWith('/room-view') ||
+            path.startsWith('/room-checkout') ||
+            path.startsWith('/room-cart')
+        ) {
+            return 'rooms';
+        }
+
         if (path === '/gallery') return 'gallery';
         if (path === '/contact-us') return 'contact-us';
         if (path === '/dashboard') return 'dashboard';
+
         return 'home';
     };
+
 
     const currentView = getCurrentView();
 
@@ -119,9 +141,34 @@ const Navbar: React.FC = () => {
     const openLogin = () => {
         setIsLoginOpen(true);
         setIsRegisterOpen(false);
+        setIsForgotPasswordOpen(false);
         setIsMobileMenuOpen(false);
         resetForm();
     };
+
+    const openRegister = () => {
+        setIsRegisterOpen(true);
+        setIsLoginOpen(false);
+        setIsForgotPasswordOpen(false);
+        setIsMobileMenuOpen(false);
+        resetForm();
+    };
+
+    const openForgotPassword = () => {
+        setIsForgotPasswordOpen(true);
+        setIsLoginOpen(false);
+        setIsRegisterOpen(false);
+        resetForm();
+    };
+
+
+    const closeAuth = () => {
+        setIsLoginOpen(false);
+        setIsRegisterOpen(false);
+        setIsForgotPasswordOpen(false);
+        resetForm();
+    };
+
     // Inside Navbar component
     useEffect(() => {
         const handleOpenLogin = () => {
@@ -133,19 +180,7 @@ const Navbar: React.FC = () => {
         return () => {
             window.removeEventListener('open-login-modal', handleOpenLogin);
         };
-    }, [openLogin]);
-    const openRegister = () => {
-        setIsRegisterOpen(true);
-        setIsLoginOpen(false);
-        setIsMobileMenuOpen(false);
-        resetForm();
-    };
-
-    const closeAuth = () => {
-        setIsLoginOpen(false);
-        setIsRegisterOpen(false);
-        resetForm();
-    };
+    }, []); // Removed dependency on openLogin to prevent re-attaching, or verify referencing
 
     const resetForm = () => {
         setFormData({ email: '', password: '', name: '', confirmPassword: '' });
@@ -202,6 +237,27 @@ const Navbar: React.FC = () => {
         return valid;
     };
 
+    useEffect(() => {
+        const loadHotelName = async () => {
+            try {
+                const json = await hotelLocationService.getActiveLocations();
+
+                if (!json || json.status === false) return;
+
+                const arr = Array.isArray(json.data) ? json.data : [];
+                if (!arr.length) return;
+
+                const item = arr.find((h: any) => h?.hotelName) || arr[0];
+                if (item?.hotelName) setHotelName(item.hotelName);
+            } catch (err) {
+                // silent
+            }
+        };
+
+        loadHotelName();
+    }, []);
+
+
     const handleAuthSubmit = async () => {
         if (!validateForm()) return;
 
@@ -227,6 +283,42 @@ const Navbar: React.FC = () => {
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Authentication failed';
             setServerError(errorMessage);
+            toast({ title: "Error", description: errorMessage, variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleForgotPasswordSubmit = async () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!formData.email.trim()) {
+            setErrors({ ...errors, email: 'Email is required' });
+            return;
+        } else if (!emailRegex.test(formData.email)) {
+            setErrors({ ...errors, email: 'Please enter a valid email address' });
+            return;
+        }
+
+        setLoading(true);
+        setServerError('');
+        // Clear previous field errors
+        setErrors(prev => ({ ...prev, email: '' }));
+
+        try {
+            await authService.forgotPassword(formData.email);
+            toast({ title: "Success", description: "Password reset email sent. Please check your inbox.", variant: "success" });
+            closeAuth();
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to send reset email';
+
+            // Check if error is related to email not found and map to field error
+            if (errorMessage.toLowerCase().includes('no account found') || errorMessage.toLowerCase().includes('user not found')) {
+                setErrors(prev => ({ ...prev, email: errorMessage }));
+            } else {
+                setServerError(errorMessage);
+            }
+
             toast({ title: "Error", description: errorMessage, variant: "destructive" });
         } finally {
             setLoading(false);
@@ -261,14 +353,11 @@ const Navbar: React.FC = () => {
 
                 {/* --- LOGO --- */}
                 <Link href="/" className="flex items-center gap-2 cursor-pointer z-50">
-                    <div className="relative">
-                        <Image
-                            src={logoImg}
-                            alt="Room Intel Logo"
-                            width={scrolled ? 120 : 150}
-                            height={scrolled ? 200 : 200}
+                    <div className="relative h-12 md:h-20 w-auto">
+                        <img
+                            src={getImageUrl(settings?.siteLogo, logoImg.src)}
+                            alt={settings?.siteName || "Room Intel Logo"}
                             className={`object-contain transition-all rounded-4xl duration-300 ${scrolled ? 'h-18' : 'h-12 md:h-20 '}`}
-                            priority
                         />
                     </div>
                 </Link>
@@ -373,7 +462,7 @@ const Navbar: React.FC = () => {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xl noto-geogia-font font-bold text-[#283862] leading-none">
-                                        Bluebell
+                                        {hotelName}
                                     </span>
                                     <span className="text-xs font-light tracking-[0.1em] text-[#c23535] uppercase">
                                         Resort
@@ -645,7 +734,7 @@ const Navbar: React.FC = () => {
 
             {/* --- AUTH POPUPS --- */}
             <AnimatePresence>
-                {(isLoginOpen || isRegisterOpen) && (
+                {(isLoginOpen || isRegisterOpen || isForgotPasswordOpen) && (
                     <div className="fixed inset-0 z-[5000000] flex items-center justify-center p-4">
                         <motion.div
                             initial={{ opacity: 0 }}
@@ -722,7 +811,7 @@ const Navbar: React.FC = () => {
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input type="checkbox" className="accent-[#c23535]" /> Remember me
                                             </label>
-                                            <a href="#" className="hover:text-[#c23535]">Forgot Password?</a>
+                                            <button type="button" onClick={openForgotPassword} className="hover:text-[#c23535]">Forgot Password?</button>
                                         </div>
 
                                         <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
@@ -732,6 +821,32 @@ const Navbar: React.FC = () => {
 
                                     <div className="mt-8 text-center text-sm text-gray-500">
                                         Don't have an account? <button onClick={openRegister} className="text-[#c23535] font-bold hover:underline">Register Now</button>
+                                    </div>
+                                </div>
+                            ) : isForgotPasswordOpen ? (
+                                <div className="p-8 md:p-10">
+                                    <div className="text-center mb-8">
+                                        <div className="text-[#c23535] text-4xl mb-4 flex justify-center"><FaLock /></div>
+                                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">Forgot Password</h2>
+                                        <p className="text-gray-500 text-sm mt-2">Enter your email to reset your password</p>
+                                    </div>
+
+                                    {serverError && <div className="text-red-500 text-sm text-center mb-4">{serverError}</div>}
+
+                                    <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); handleForgotPasswordSubmit(); }}>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400"><FaEnvelope /></div>
+                                            <input type="email" name="email" placeholder="Email Address" className={`w-full h-12 pl-10 pr-4 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-gray-200'} rounded-sm focus:outline-none focus:border-[#c23535] focus:bg-white transition-colors text-sm`} value={formData.email} onChange={handleInputChange} />
+                                            {errors.email && <p className="text-red-500 text-xs mt-1 pl-2">{errors.email}</p>}
+                                        </div>
+
+                                        <button disabled={loading} className="w-full h-12 bg-[#c23535] hover:bg-[#a12b2b] text-white font-bold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-md disabled:opacity-70">
+                                            {loading ? 'Sending...' : 'Send Reset Link'}
+                                        </button>
+                                    </form>
+
+                                    <div className="mt-8 text-center text-sm text-gray-500">
+                                        Remember your password? <button onClick={openLogin} className="text-[#c23535] font-bold hover:underline">Back to Login</button>
                                     </div>
                                 </div>
                             ) : (

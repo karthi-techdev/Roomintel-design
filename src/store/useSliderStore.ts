@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import axiosInstance from '../api/axiosInstance';
+import { getImageUrl } from '../utils/getImage';
 
 interface SlideData {
     image: string;
@@ -16,8 +17,6 @@ interface SliderState {
     fetchActiveSlides: () => Promise<void>;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
 export const useSliderStore = create<SliderState>((set) => ({
     slides: [],
     loading: false,
@@ -29,7 +28,7 @@ export const useSliderStore = create<SliderState>((set) => ({
             const res = await axiosInstance.get('/site/slider?status=active');
             if (res.data && res.data.data && Array.isArray(res.data.data.data)) {
                 const fetchedSlides = res.data.data.data.map((s: any) => ({
-                    image: s.image ? (s.image.startsWith('http') ? s.image : `${API_BASE_URL}/${s.image}`) : '',
+                    image: getImageUrl(s.image, ''),
                     title: s.title,
                     subtitle: s.description,
                     buttonName: s.buttonName || "View Rooms",
@@ -40,7 +39,6 @@ export const useSliderStore = create<SliderState>((set) => ({
                 set({ slides: [], loading: false });
             }
         } catch (error: any) {
-            console.error("Failed to fetch slides", error);
             set({ error: error.message || 'Failed to fetch slides', loading: false });
         }
     },

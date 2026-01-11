@@ -11,6 +11,8 @@ import { useCartStore } from '@/store/useCartStore';
 import { siteService } from '../../../api/siteService';
 import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
+import { useSettingsStore } from '@/store/useSettingsStore';
+import { usePayment } from '@/hooks/usePayment';
 import RoomCartCard from '@/components/room-view/RoomCardSingle';
 import { Room, useRoomStore } from '@/store/useRoomStore';
 import { useSearchParams } from 'next/navigation';
@@ -262,38 +264,40 @@ useEffect(() => {
 
 
     const onUpdateGetData = React.useCallback((data: any) => {
-    setSingleItemInfo(prev => {
-        // 🔐 prevent unnecessary updates
-        if (
-            prev.room === data?.room &&
-            prev.roomTotal === data?.roomTotal &&
-            prev.serviceTotal === data?.serviceTotal &&
-            prev.tax === data?.tax &&
-            prev.serviceCharge === data?.serviceCharge &&
-            prev.grandTotal === data?.grandTotal
-        ) {
-            return prev;
-        }
+        setSingleItemInfo(prev => {
+            // 🔐 prevent unnecessary updates
+            if (
+                prev.room === data?.room &&
+                prev.roomTotal === data?.roomTotal &&
+                prev.serviceTotal === data?.serviceTotal &&
+                prev.tax === data?.tax &&
+                prev.serviceCharge === data?.serviceCharge &&
+                prev.grandTotal === data?.grandTotal
+            ) {
+                return prev;
+            }
 
-        return {
-            ...prev,
-            room: data?.room,
-            roomTotal: data?.roomTotal,
-            serviceTotal: data?.serviceTotal,
-            tax: data?.tax,
-            serviceCharge: data?.serviceCharge,
-            grandTotal: data?.grandTotal
-        };
-    });
-}, []);
+            return {
+                ...prev,
+                room: data?.room,
+                roomTotal: data?.roomTotal,
+                serviceTotal: data?.serviceTotal,
+                tax: data?.tax,
+                serviceCharge: data?.serviceCharge,
+                grandTotal: data?.grandTotal
+            };
+        });
+    }, []);
 
-    console.log('=======AAAAAAAAAAAA====', user);
 
-    console.log('=======selectedRoom====', selectedRoomByslug);
 
 
     // --- STORE ---
     const { cartItems, fetchCart, clearCart } = useCartStore();
+    const { settings } = useSettingsStore();
+
+    // Payment Hook
+    const { processPayment } = usePayment();
 
     // --- STATE ---
     const [paymentMethod, setPaymentMethod] = useState('cash');
@@ -301,7 +305,6 @@ useEffect(() => {
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
-    console.log("confirmedBookingDetails:", confirmedBookingDetails);
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
         const base = cartItems.reduce((acc: any, item: any) => {
@@ -407,39 +410,39 @@ useEffect(() => {
     }, []);
 
     useEffect(() => {
-    if (!isSlug) return;
+        if (!isSlug) return;
 
-    const checkIn = searchParams.get('checkIn');
-    const checkOut = searchParams.get('checkOut');
-    const adults = searchParams.get('adults');
-    const children = searchParams.get('children');
-    const rooms = searchParams.get('rooms');
-    const roomTotal = searchParams.get('roomTotal');
-    const tax = searchParams.get('tax');
-    const serviceCharge = searchParams.get('serviceCharge');
-    const grandTotal = searchParams.get('grandTotal');
+        const checkIn = searchParams.get('checkIn');
+        const checkOut = searchParams.get('checkOut');
+        const adults = searchParams.get('adults');
+        const children = searchParams.get('children');
+        const rooms = searchParams.get('rooms');
+        const roomTotal = searchParams.get('roomTotal');
+        const tax = searchParams.get('tax');
+        const serviceCharge = searchParams.get('serviceCharge');
+        const grandTotal = searchParams.get('grandTotal');
 
-    if (checkIn && checkOut) {
-        setDates({
-            checkIn,
-            checkOut
-        });
-    }
+        if (checkIn && checkOut) {
+            setDates({
+                checkIn,
+                checkOut
+            });
+        }
 
-    if (grandTotal && roomTotal && tax && serviceCharge) {
-        setSingleItemInfo(prev => ({
-            ...prev,
-            room: Number(rooms) || 1,
-            adults: Number(adults) || 2,
-            children: Number(children) || 0,
-            roomTotal: Number(roomTotal) || 0,
-            serviceTotal: 0, // no extras in single booking yet
-            tax: Number(tax) || 0,
-            serviceCharge: Number(serviceCharge) || 0,
-            grandTotal: Number(grandTotal) || 0,
-        }));
-    }
-}, [searchParams, isSlug]);
+        if (grandTotal && roomTotal && tax && serviceCharge) {
+            setSingleItemInfo(prev => ({
+                ...prev,
+                room: Number(rooms) || 1,
+                adults: Number(adults) || 2,
+                children: Number(children) || 0,
+                roomTotal: Number(roomTotal) || 0,
+                serviceTotal: 0, // no extras in single booking yet
+                tax: Number(tax) || 0,
+                serviceCharge: Number(serviceCharge) || 0,
+                grandTotal: Number(grandTotal) || 0,
+            }));
+        }
+    }, [searchParams, isSlug]);
     // --- FORM VALIDITY CHECK ---
     const isFormValid = useMemo(() => {
         if (cartItems.length === 0) return false;
@@ -631,167 +634,134 @@ useEffect(() => {
     };
 
     const finalizeOrder = async (data: any) => {
-    await clearCart();
-    setConfirmedBookingDetails({
-        id: data.id,
-        totalAmount: data.totalAmount,
-        points: data.points,
-        paymentMode: data.paymentMode
-    });
-    setIsBookingConfirmed(true);
-    setIsProcessing(false);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-};
-
-  const handlePlaceOrder = async () => {
-  if (!isSlug && cartItems.length === 0) {
-    return showAlert.error("Your cart is empty and valid booking details are missing.");
-  }
-
-  // Validate form
-  if (!validateForm()) {
-    showAlert.error("Please fix the errors in the form before proceeding.");
-    return;
-  }
-
-  if (!selectedAddressId) {
-    return showAlert.error("Please select a billing address");
-  }
-
-  setIsProcessing(true);
-
-  const totalAmount = totals.grandTotal;
-  const bookedRooms = isSlug
-    ? [{
-        roomId: selectedRoomByslug?._id,
-        roomName: selectedRoomByslug?.title,
-        price: singleItemInfo.grandTotal,
-        guestDetails: {                
-            adults: singleItemInfo.adults,
-            children: singleItemInfo.children
-        }
-      }]
-    : cartItems.map(item => ({
-        roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
-        roomName: item.roomName,
-        price: item.financials?.grandTotal || item.price,
-        checkIn: item.checkIn || dates.checkIn,
-        checkOut: item.checkOut || dates.checkOut,
-        guestDetails: item.guestDetails
-    }));
-
-  const primaryRoomId = bookedRooms[0]?.roomId;
-
-  const bookingPayload = {
-    guestName: formData.name,
-    guestEmail: formData.email,
-    guestPhone: formData.phone,
-    room: primaryRoomId,
-    rooms: bookedRooms,
-    checkIn: dates.checkIn,
-    checkOut: dates.checkOut,
-    totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
-    specialRequests: formData.notes,
-    billingAddressId: selectedAddressId, // ✅ send selected address _id
-    paymentStatus: 'Pending',
-    paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
-    bookingStatus: 'Pending'
-  };
-
-  console.log('============bookingPayload======', bookingPayload);
-
-  try {
-    if (paymentMethod === 'cash') {
-      // CASH FLOW
-      await bookingService.createBooking(bookingPayload);
-      const pointsEarned = Math.floor(totalAmount * 10);
-      showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-      await finalizeOrder(bookingPayload);
-
-    } else if (paymentMethod === 'card') {
-      // RAZORPAY / ONLINE FLOW
-      const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
-
-      if (paymentRes.status === false) throw new Error(paymentRes.message);
-
-      const orderData = paymentRes.data;
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "RoomIntel Booking",
-        description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
-        order_id: orderData.razorpayOrderId,
-        handler: async function (response: any) {
-          console.log("Payment Successful:", response);
-
-          const paidPayload = {
-            ...bookingPayload,
-            paymentStatus: 'Paid',
-            paymentMode: 'Card',
-          };
-
-          try {
-            await bookingService.createBooking(paidPayload);
-            const pointsEarned = Math.floor(totalAmount * 10);
-            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-            await finalizeOrder(paidPayload);
-          } catch (err) {
-            console.error("Failed to save booking after payment", err);
-            showAlert.error("Payment successful but booking failed to save. Please contact support.");
-            setIsProcessing(false);
-          }
-        },
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.phone,
-        },
-        theme: {
-          color: "#EDA337",
-        },
-        modal: {
-          ondismiss: function () {
-            console.log('Payment cancelled by user');
-            setIsProcessing(false);
-            showAlert.info("Payment cancelled");
-          }
-        }
-      };
-
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
-          showAlert.error("Payment Failed: " + response.error.description);
-          setIsProcessing(false);
+        await clearCart();
+        setConfirmedBookingDetails({
+            id: data.id,
+            totalAmount: data.totalAmount,
+            points: data.points,
+            paymentMode: data.paymentMode
         });
-        rzp.open();
-      } else {
-        showAlert.error("Razorpay SDK not loaded. Check connection.");
+        setIsBookingConfirmed(true);
         setIsProcessing(false);
-      }
-    } else {
-      showAlert.warning("Selected payment method not supported yet.");
-      setIsProcessing(false);
-    }
-  } catch (error: any) {
-    console.error("Order processing error:", error);
-    showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
-    setIsProcessing(false);
-  }
-};
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+const handlePlaceOrder = async () => {
+
+        if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
+
+        // Validate form
+        if (!validateForm()) {
+            showAlert.error("Please fix the errors in the form before proceeding.");
+            return;
+        }
+
+        setIsProcessing(true);
+
+        // Correctly determine the total amount based on booking type
+        const finalTotalAmount = isSlug ? (singleItemInfo?.grandTotal || 0) : totals.grandTotal;
+
+        const bookedRooms = isSlug ? [{
+            roomId: selectedRoomByslug?._id,
+            roomName: selectedRoomByslug?.title,
+            price: singleItemInfo.grandTotal,
+            // checkIn: item.checkIn || dates.checkIn,
+            // checkOut: item.checkOut || dates.checkOut,
+            guestDetails: {
+                adults: singleItemInfo.adults,
+                children: singleItemInfo.children
+            }
+        }
+        ]
+            :
+            cartItems.map(item => ({
+                roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
+                roomName: item.roomName,
+                price: item.financials?.grandTotal || item.price,
+                checkIn: item.checkIn || dates.checkIn,
+                checkOut: item.checkOut || dates.checkOut,
+                guestDetails: item.guestDetails
+            }));
+
+        const primaryRoomId = bookedRooms[0]?.roomId;
+
+        const bookingPayload = {
+            guestName: formData.name,
+            guestEmail: formData.email,
+            guestPhone: formData.phone,
+            room: primaryRoomId,
+            rooms: bookedRooms,
+            checkIn: dates.checkIn,
+            checkOut: dates.checkOut,
+            totalAmount: finalTotalAmount,
+            specialRequests: formData.notes,
+            billingAddressId: selectedAddressId,
+            paymentStatus: 'Pending',
+            paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
+            bookingStatus: 'Pending'
+        };
+        try {
+            if (paymentMethod === 'cash') {
+                // CASH FLOW
+                await bookingService.createBooking(bookingPayload);
+                const pointsEarned = Math.floor(finalTotalAmount * 10);
+                showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                await finalizeOrder(bookingPayload);
+                
+
+            } else if (paymentMethod === 'card') {
+                // RAZORPAY / ONLINE FLOW
+                await processPayment({
+                    amount: finalTotalAmount,
+                    currency: settings?.defaultCurrency || 'INR',
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                    description: `Booking for ${formData.name}`,
+                    onSuccess: async (response) => {
+                        // Update payload with payment success
+                        const paidPayload = {
+                            ...bookingPayload,
+                            paymentStatus: 'Paid',
+                            paymentMode: 'Card',
+                        };
+
+                        try {
+                            await bookingService.createBooking(paidPayload);
+                            const pointsEarned = Math.floor(finalTotalAmount * 10);
+                            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+                            await finalizeOrder(bookingPayload);
+                        } catch (err) {
+                            showAlert.error("Payment successful but booking failed to save. Please contact support.");
+                            setIsProcessing(false);
+                        }
+                    },
+                    onFailure: (error) => {
+                        console.error("Payment failed", error);
+                        setIsProcessing(false);
+                    }
+                });
+            } else {
+                showAlert.warning("Selected payment method not supported yet.");
+                setIsProcessing(false);
+            }
+
+        } catch (error: any) {
+            showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
+            setIsProcessing(false);
+        }
+    };
 
 
 
     if (isBookingConfirmed) {
         return (
             <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="max-w-[600px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                <div className="max-w-[500px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
                     {/* Top Accent Bar */}
                     <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
-                    <div className="p-8 md:p-12 text-center">
+                    <div className="p-6 text-center">
                         {/* Success Icon */}
                         <div className="mb-5 relative inline-block">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
@@ -812,7 +782,7 @@ useEffect(() => {
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-7 text-left">
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-8 mb-6 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
@@ -836,13 +806,13 @@ useEffect(() => {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="px-8 py-4 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
+                                className="px-3 py-2 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
                             >
                                 View Dashboard
                             </button>
                             <button
                                 onClick={() => router.push('/')}
-                                className="px-8 py-4 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
+                                className="px-3 py-2 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
                             >
                                 Back to Home
                             </button>
@@ -892,7 +862,7 @@ useEffect(() => {
                         <form className="space-y-6">
 
                             {/* DATES SECTION */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
                                     <input
@@ -1220,7 +1190,7 @@ useEffect(() => {
                                 <button
                                     onClick={handlePlaceOrder}
                                     // disabled={!cartItem || isProcessing || !isFormValid}
-                                    className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
+                                    className={`w-full bg-[#283862] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
                                         `}
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}

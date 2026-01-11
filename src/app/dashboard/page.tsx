@@ -6,20 +6,23 @@ import { useRouter } from 'next/navigation';
 import {
   FaUser, FaSuitcase, FaSignOutAlt, FaCamera, FaPhoneAlt, FaEnvelope,
   FaMapMarkerAlt, FaCalendarAlt, FaPen, FaConciergeBell, FaStar,
-  FaReceipt, FaClock, FaSave, FaTimes,FaAddressCard 
+  FaReceipt, FaClock, FaSave, FaTimes, FaAddressCard
 } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
+import { useSettingsStore } from '@/store/useSettingsStore';
 import { membershipService } from '@/api/membershipService';
-import { showAlert } from '@/utils/alertStore';
+// At the top of Dashboard.tsx
+import { useToast } from '@/components/ui/Toast';   // adjust path if needed
 import { useCurrency } from '@/hooks/useCurrency';
+import { usePayment } from '@/hooks/usePayment';
+import { getImageUrl as getBaseImageUrl } from '@/utils/getImage';
 import { FaHeart } from "react-icons/fa6";
 import countryData from '../../data/countries-states-cities-database/json/countries+states.json';
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
 import { useBillingAddressStore } from "@/store/useBillingAddressStore";
-import { useSearchParams } from "next/navigation";
 interface AddressFormData {
   name: string;
   email: string;
@@ -30,23 +33,29 @@ interface AddressFormData {
   postcode: string;
   country: string;
 }
+import useMyWishListStore from "@/store/useMyWishListstore";
+import { CustomAlert } from "@/components/alert/CustomAlert";
+
 
 
 const Dashboard: React.FC = () => {
-  
+
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookings'| 'manage-address'| 'wishlist'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'manage-address' | 'wishlist'>('profile');
+  const { toast } = useToast();
   const { formatPrice } = useCurrency();
+  const { settings } = useSettingsStore();
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
+  const userId = authService.getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', email: '' });
   const [files, setFiles] = useState<{ avatar?: File; cover?: File }>({});
   const [previews, setPreviews] = useState<{ avatar?: string; cover?: string }>({});
   const [profileVersion, setProfileVersion] = useState(0);
-console.log("CurrentUser",user);
+  console.log("CurrentUser", user);
 
   // Bookings & Membership
   const [bookings, setBookings] = useState<any[]>([]);
@@ -58,138 +67,61 @@ console.log("CurrentUser",user);
   // UI States
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   console.log('Rendered Dashboard with bookings:', bookings);
   const customerId = user?._id; // get from auth / context
-const userEmail = user?.email; // from authService / user context
-const searchParams = useSearchParams();
-const tab = searchParams.get("tab");
-// const openAddress = searchParams.get("openAddress");
-     const countryCodeMap: any = {
-        "India": "+91",
-        "United States": "+1",
-        "United Kingdom": "+44",
-        "Australia": "+61",
-        "Afghanistan": "+93",
-        "Albania": "+355",
-        "Canada": "+1"
-    };
-useEffect(() => {
-  if (tab === "manage-address") {
-    setActiveTab("manage-address");
-  }
+  const userEmail = user?.email; // from authService / user context
+  // const openAddress = searchParams.get("openAddress");
+  const countryCodeMap: any = {
+    "India": "+91",
+    "United States": "+1",
+    "United Kingdom": "+44",
+    "Australia": "+61",
+    "Afghanistan": "+93",
+    "Albania": "+355",
+    "Canada": "+1"
+  };
+  // Read `tab` query param on client-side safely to avoid Next.js prerender bailout
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'manage-address') setActiveTab('manage-address');
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
-  // if (openAddress === "true") {
-  //   setShowAddressForm(true);
+
+  const { billingAddress,
+    isLoading,
+    fetchBillingAddressByCustomerId, deleteBillingAddressPermanently,
+    createBillingAddress,
+    updateBillingAddress, setDefaultBillingAddress,
+  } = useBillingAddressStore();
+
+  const addressId = billingAddress?.addresses[0]?._id;
+  console.log("addressId", addressId);
+
+
+  // if (!addressId) {
+  //   console.error("Address ID not found!");
+  //   return;
   // }
-}, [tab]);
+
+  // Now you can send it to your API
 
 
-const {billingAddress,
-  isLoading,
-  fetchBillingAddressByCustomerId,deleteBillingAddressPermanently,
-  createBillingAddress,
-  updateBillingAddress,setDefaultBillingAddress,
-} = useBillingAddressStore();
-
-const addressId = billingAddress?.addresses[0]?._id;
-console.log("addressId",addressId);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<any | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
 
-// if (!addressId) {
-//   console.error("Address ID not found!");
-//   return;
-// }
-
-// Now you can send it to your API
-
-
-const [showAddressForm, setShowAddressForm] = useState(false);
-const [editingAddress, setEditingAddress] = useState<any | null>(null);
-    const [errors, setErrors] = useState<Record<string, string>>({});
-
-
-const [addressFormData, setAddressFormData] = useState<AddressFormData>({
-  name: "",
-  email: "",
-  phone: "",
-  address: "",
-  city: "",
-  state: "",
-  postcode: "",
-  country: "",
-});
-
-useEffect(() => {
-  if (editingAddress) {
-    setAddressFormData({
-      name: editingAddress.fullName || "",
-      email: user?.email || "", // ✅ FORCE login email
-      phone: editingAddress.phone || "",
-      address: editingAddress.streetAddress?.[0] || "",
-      country: editingAddress.country || "",
-      city: editingAddress.city || "",
-      state: editingAddress.state || "",
-      postcode: editingAddress.zipCode || "",
-    });
-  }
-}, [editingAddress, user]);
-
-
-    const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-    const availableStates = addressFormData.country
-        ? countryData.find((c: any) => c.name === addressFormData.country)?.states || []
-        : [];
-const handleInputChanges = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-) => {
-  const { name, value } = e.target;
-
-  if (name === "country") {
-    setAddressFormData(prev => {
-      const newCode = countryCodeMap[value] || "";
-      const oldCode = countryCodeMap[prev.country] || "";
-      let newPhone = prev.phone;
-
-      if (!newPhone) newPhone = newCode;
-      else if (oldCode && newPhone.startsWith(oldCode))
-        newPhone = newCode + newPhone.slice(oldCode.length);
-      else if (!oldCode && newCode && !newPhone.startsWith("+"))
-        newPhone = newCode + " " + newPhone;
-
-      return {
-        ...prev,
-        country: value,
-        state: "",
-        phone: newPhone,
-      };
-    });
-  } else {
-    setAddressFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  }
-
-  if (errors[name]) {
-    setErrors(prev => ({ ...prev, [name]: "" }));
-  }
-};
-
-
-const handleCancelAddress = () => {
-  // Close modal
-  setShowAddressForm(false);
-  setEditingAddress(null);
-
-  // 🔥 CLEAR VALIDATION
-  setErrors({});
-  setTouched({});
-
-  // Reset address form values
-  setAddressFormData({
+  const [addressFormData, setAddressFormData] = useState<AddressFormData>({
     name: "",
     email: "",
     phone: "",
@@ -199,131 +131,226 @@ const handleCancelAddress = () => {
     postcode: "",
     country: "",
   });
-};
 
-
-const handleSubmitAddress = async () => {
-  if (!customerId || !billingAddress?._id) return;
-const addressPayload = {
-  fullName: addressFormData.name,
-  phone: addressFormData.phone,
-  streetAddress: [addressFormData.address],
-  city: addressFormData.city,
-  state: addressFormData.state,
-  zipCode: addressFormData.postcode,
-  country: addressFormData.country,
-};
-
-
-  try {
+  useEffect(() => {
     if (editingAddress) {
-      // ✅ UPDATE ADDRESS - use the addressId from editingAddress
-      await updateBillingAddress(
-        billingAddress._id,  // billingId
-        editingAddress._id,  // addressId
-        addressPayload
-      );
+      setAddressFormData({
+        name: editingAddress.fullName || "",
+        email: user?.email || "", // ✅ FORCE login email
+        phone: editingAddress.phone || "",
+        address: editingAddress.streetAddress?.[0] || "",
+        country: editingAddress.country || "",
+        city: editingAddress.city || "",
+        state: editingAddress.state || "",
+        postcode: editingAddress.zipCode || "",
+      });
+    }
+  }, [editingAddress, user]);
+
+
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const availableStates = addressFormData.country
+    ? countryData.find((c: any) => c.name === addressFormData.country)?.states || []
+    : [];
+  const handleInputChanges = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+
+    if (name === "country") {
+      setAddressFormData(prev => {
+        const newCode = countryCodeMap[value] || "";
+        const oldCode = countryCodeMap[prev.country] || "";
+        let newPhone = prev.phone;
+
+        if (!newPhone) newPhone = newCode;
+        else if (oldCode && newPhone.startsWith(oldCode))
+          newPhone = newCode + newPhone.slice(oldCode.length);
+        else if (!oldCode && newCode && !newPhone.startsWith("+"))
+          newPhone = newCode + " " + newPhone;
+
+        return {
+          ...prev,
+          country: value,
+          state: "",
+          phone: newPhone,
+        };
+      });
     } else {
-      // ✅ CREATE ADDRESS
-      await updateBillingAddress(
-       billingAddress._id,  // billingId
-        "new",  // addressId
-        addressPayload
-      );
+      setAddressFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
     }
 
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: "" }));
+    }
+  };
+
+
+  const handleCancelAddress = () => {
+    // Close modal
     setShowAddressForm(false);
     setEditingAddress(null);
-    fetchBillingAddressByCustomerId(customerId);
-  } catch (error) {
-    console.error("Address save failed", error);
-  }
-};
+
+    // 🔥 CLEAR VALIDATION
+    setErrors({});
+    setTouched({});
+
+    // Reset address form values
+    setAddressFormData({
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+    });
+  };
 
 
-
-
-
-
- const validateField = (name: string, value: string): string => {
-        switch (name) {
-            case 'name':
-                if (!value.trim()) return 'Name is required';
-                if (value.trim().length < 2) return 'Name must be at least 2 characters';
-                if (value.trim().length > 50) return 'Name must not exceed 50 characters';
-                // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
-                return '';
-
-            case 'phone':
-                if (!value.trim()) return 'Phone number is required';
-                const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
-                if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number (10-15 digits)';
-                return '';
-
-            case 'postcode':
-                if (value && !/^[a-zA-Z0-9\s\-]{3,10}$/.test(value)) return 'Please enter a valid postcode';
-                return '';
-
-            default:
-                return '';
-        }
+  const handleSubmitAddress = async () => {
+    if (!customerId || !billingAddress?._id) return;
+    const addressPayload = {
+      fullName: addressFormData.name,
+      phone: addressFormData.phone,
+      streetAddress: [addressFormData.address],
+      city: addressFormData.city,
+      state: addressFormData.state,
+      zipCode: addressFormData.postcode,
+      country: addressFormData.country,
     };
-const handleBlur = (fieldName: keyof AddressFormData) => {
-  setTouched(prev => ({ ...prev, [fieldName]: true }));
-
-  const error = validateField(
-    fieldName,
-    addressFormData[fieldName]
-  );
-
-  setErrors(prev => ({ ...prev, [fieldName]: error }));
-};
-
-useEffect(() => {
-  if (showAddressForm && user?.email) {
-    setAddressFormData(prev => ({
-      ...prev,
-      email: user.email, // ✅ always login email
-    }));
-  }
-}, [showAddressForm, user]);
 
 
+    try {
+      if (editingAddress) {
+        // ✅ UPDATE ADDRESS - use the addressId from editingAddress
+        await updateBillingAddress(
+          billingAddress._id,  // billingId
+          editingAddress._id,  // addressId
+          addressPayload
+        );
+      } else {
+        // ✅ CREATE ADDRESS
+        await updateBillingAddress(
+          billingAddress._id,  // billingId
+          "new",  // addressId
+          addressPayload
+        );
+      }
+
+      setShowAddressForm(false);
+      setEditingAddress(null);
+      fetchBillingAddressByCustomerId(customerId);
+    } catch (error) {
+      console.error("Address save failed", error);
+    }
+  };
 
 
-//   const addresses = [
-//   {
-//     id: "1",
-//     fullName: "kishore",
-//     phone: "123456789",
-//     streetAddress: ["01 Bharathiyar"],
-//     city: "Tirukkoilur",
-//     state: "Tamil Nadu",
-//     zipCode: "605757",
-//     country: "India",
-//     isDefault: true,
-//   },
-//   {
-//     id: "1",
-//     fullName: "kishore",
-//     phone: "123456789",
-//     streetAddress: ["12 Street"],
-//     city: "chennai",
-//     state: "Tamil Nadu",
-//     zipCode: "605757",
-//     country: "India",
-//     isDefault: false,
-//   },
-// ];
-useEffect(() => {
-  if (activeTab === "manage-address" && customerId) {
-    fetchBillingAddressByCustomerId(customerId);
-  }
-}, [activeTab, customerId]);
 
-const addresses = useMemo(() => {
-  return billingAddress?.addresses || [];
-}, [billingAddress]);
+
+
+
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        if (value.trim().length < 2) return 'Name must be at least 2 characters';
+        if (value.trim().length > 50) return 'Name must not exceed 50 characters';
+        // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
+        return '';
+
+      case 'phone':
+        if (!value.trim()) return 'Phone number is required';
+        const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
+        if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number (10-15 digits)';
+        return '';
+
+      case 'postcode':
+        if (value && !/^[a-zA-Z0-9\s\-]{3,10}$/.test(value)) return 'Please enter a valid postcode';
+        return '';
+
+      default:
+        return '';
+    }
+  };
+  const handleBlur = (fieldName: keyof AddressFormData) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+
+    const error = validateField(
+      fieldName,
+      addressFormData[fieldName]
+    );
+
+    setErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
+
+  useEffect(() => {
+    if (showAddressForm && user?.email) {
+      setAddressFormData(prev => ({
+        ...prev,
+        email: user.email, // ✅ always login email
+      }));
+    }
+  }, [showAddressForm, user]);
+
+
+
+
+  //   const addresses = [
+  //   {
+  //     id: "1",
+  //     fullName: "kishore",
+  //     phone: "123456789",
+  //     streetAddress: ["01 Bharathiyar"],
+  //     city: "Tirukkoilur",
+  //     state: "Tamil Nadu",
+  //     zipCode: "605757",
+  //     country: "India",
+  //     isDefault: true,
+  //   },
+  //   {
+  //     id: "1",
+  //     fullName: "kishore",
+  //     phone: "123456789",
+  //     streetAddress: ["12 Street"],
+  //     city: "chennai",
+  //     state: "Tamil Nadu",
+  //     zipCode: "605757",
+  //     country: "India",
+  //     isDefault: false,
+  //   },
+  // ];
+  useEffect(() => {
+    if (activeTab === "manage-address" && customerId) {
+      fetchBillingAddressByCustomerId(customerId);
+    }
+  }, [activeTab, customerId]);
+
+  const addresses = useMemo(() => {
+    return billingAddress?.addresses || [];
+  }, [billingAddress]);
+
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'confirm',
+    message: '',
+    id: ''
+  });
+
+  // Set User Data
+  const { wishlists, removeWishlist, error, fetchWishlists } = useMyWishListStore();
+
+  useEffect(() => {
+    if (userId?._id) {
+      fetchWishlists({ userId: userId._id, isDeleted: true });
+    }
+  }, [userId?._id]);
 
   // --- Effects ---
   useEffect(() => {
@@ -353,7 +380,6 @@ const addresses = useMemo(() => {
         // 2. Refresh Bookings
         try {
           const bookingsRes = await bookingService.getMyBookings();
-          console.log('Fetched bookings:', bookingsRes);
           if (bookingsRes?.status && Array.isArray(bookingsRes.data)) {
             const mappedBookings = bookingsRes.data.map((bk: any) => {
               // Extract primary room data
@@ -401,7 +427,6 @@ const addresses = useMemo(() => {
         } catch (e) { console.error("Membership fetch failed", e); }
 
       } catch (error) {
-        console.error("Dashboard load error", error);
       } finally {
         setLoading(false);
       }
@@ -495,95 +520,83 @@ const addresses = useMemo(() => {
         setPreviews({});
         setFiles({});
         setIsEditing(false);
-        showAlert.success("Profile updated successfully!");
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated.",
+          variant: "success",
+        });
       }
     } catch (error) {
-      console.error('Failed to update profile:', error);
-      showAlert.error('Failed to update profile. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong while updating your profile.";
+      toast({
+        title: "Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
   };
 
- const handleCancelEdit = () => {
-  setIsEditing(false);
+  const handleCancelEdit = () => {
+    setIsEditing(false);
 
-  // Clear files & previews
-  setFiles({});
-  setPreviews({});
+    // Clear files & previews
+    setFiles({});
+    setPreviews({});
 
-  // 🔥 CLEAR VALIDATION
-  setErrors({});
-  setTouched({});
+    // 🔥 CLEAR VALIDATION
+    setErrors({});
+    setTouched({});
 
-  // Reset form values
-  if (user) {
-    setFormData({
-      name: user.name || '',
-      phone: user.phone || '',
-      address: user.address || '',
-      email: user.email || '',
-    });
-  }
-};
-
-
-  const handlePayNow = async (booking: any) => {
-    try {
-      const amountStr = booking.price.replace(/[^0-9.]/g, '');
-      const amount = parseFloat(amountStr);
-      const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
-
-      if (paymentRes.status === false) {
-        showAlert.error(paymentRes.message!); // Forces TS to trust you
-        return;
-      }
-
-      const orderData = paymentRes.data;
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "RoomIntel Booking",
-        description: `Payment for ${booking.roomName}`,
-        order_id: orderData.razorpayOrderId,
-        handler: function (response: any) {
-          showAlert.success(`Payment Successful! ID: ${response.razorpay_payment_id}`);
-          window.location.reload();
-        },
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-        },
-        theme: { color: "#EDA337" },
-      };
-
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on('payment.failed', function (response: any) {
-          showAlert.error("Payment Failed: " + response.error.description);
-        });
-        rzp.open();
-      } else {
-        showAlert.error("Razorpay SDK not loaded.");
-      }
-    } catch (error: any) {
-      showAlert.error("Payment failed: " + (error.message || "Unknown error"));
+    // Reset form values
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        phone: user.phone || '',
+        address: user.address || '',
+        email: user.email || '',
+      });
     }
   };
 
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
-    try {
-      const result = await bookingService.cancelBooking(bookingId);
-      if (result.status) {
-        showAlert.success("Booking cancelled successfully");
+
+  // Payment Hook
+  const { processPayment } = usePayment();
+
+  const handlePayNow = async (booking: any) => {
+    const amountStr = booking.price.replace(/[^0-9.]/g, '');
+    const amount = parseFloat(amountStr);
+
+    await processPayment({
+      amount,
+      currency: settings?.defaultCurrency || 'INR',
+      name: user?.name,
+      email: user?.email,
+      phone: user?.phone,
+      description: `Payment for ${booking.roomName}`,
+      onSuccess: (response: any) => {
+        toast({
+          title: "Payment Successful",
+          description: `Payment ID: ${response?.razorpay_payment_id || 'Success'}`,
+          variant: "success",
+        });
         window.location.reload();
+      },
+      onFailure: (error: any) => {
+        console.error("Payment failed", error);
+        toast({
+          title: "Payment Failed",
+          description: error?.description || "Payment could not be processed",
+          variant: "destructive",
+        });
       }
-    } catch (error: any) {
-      showAlert.error("Failed to cancel: " + (error.message || "Unknown error"));
-    }
+    });
+  };
+
+  const handleCancelBooking = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setShowCancelConfirm(true);
   };
 
   const handleDownloadReceipt = (booking: any) => {
@@ -604,9 +617,31 @@ const addresses = useMemo(() => {
 
   const getImageUrl = (filename: string | undefined, fallback: string) => {
     if (!filename) return fallback;
-    if (filename.startsWith('http')) return filename;
-    const baseUrl = process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000';
-    return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
+    // Handle legacy customer images that might just be a filename
+    const path = filename.includes('uploads/') ? filename : `customers/${filename}`;
+    return `${getBaseImageUrl(path)}?v=${profileVersion}`;
+  };
+
+  const handleRemove = async (id: string) => {
+    setAlert({ isOpen: true, type: 'confirm', message: 'Do you want to remove this room?', id });
+  };
+  // The Actual Delete Action
+  const handleConfirmDelete = async () => {
+    try {
+      const idToDelete = alert.id;
+      if (!idToDelete) return;
+      setAlert({ ...alert, isOpen: false });
+      await removeWishlist(idToDelete);
+      await fetchWishlists({ userId: userId._id, isDeleted: true });
+      setAlert({
+        isOpen: true,
+        type: 'success',
+        message: 'Removed successfully!',
+        id: ''
+      });
+    } catch (err) {
+      setAlert({ isOpen: true, type: 'error', message: 'Something went wrong', id: '' });
+    }
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -616,36 +651,35 @@ const addresses = useMemo(() => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
-  console.log("========",activeTab)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }
-const handleEditAddress = (address: any) => {
-  setEditingAddress(address);
-  setShowAddressForm(true);
-};
+  const handleEditAddress = (address: any) => {
+    setEditingAddress(address);
+    setShowAddressForm(true);
+  };
 
   // 1️⃣ Define the function in your component
 
   const handleRemoveAddress = async (addressId: string | undefined) => {
     if (!addressId) return;
-  if (!billingAddress?._id) return;
+    if (!billingAddress?._id) return;
 
-  await deleteBillingAddressPermanently(billingAddress._id, addressId);
-  await fetchBillingAddressByCustomerId(customerId);
-};
+    await deleteBillingAddressPermanently(billingAddress._id, addressId);
+    await fetchBillingAddressByCustomerId(customerId);
+  };
 
-const handleSetDefault = async (addressId: string | undefined) => {
-  if (!addressId) return;
-  await setDefaultBillingAddress(customerId, addressId);
-  await fetchBillingAddressByCustomerId(customerId);
-};
+  const handleSetDefault = async (addressId: string | undefined) => {
+    if (!addressId) return;
+    await setDefaultBillingAddress(customerId, addressId);
+    await fetchBillingAddressByCustomerId(customerId);
+  };
 
 
-const handleAddNewAddress = () => {
-  setEditingAddress(null);
-  setShowAddressForm(true);
-};
+  const handleAddNewAddress = () => {
+    setEditingAddress(null);
+    setShowAddressForm(true);
+  };
 
   return (
     <div className="bg-gray-50 w-full pb-20 min-h-screen">
@@ -700,10 +734,10 @@ const handleAddNewAddress = () => {
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Bookings</div>
                     <div className="text-xl font-bold text-[#283862]">{bookings.length}</div>
                   </div>
-                  <div className="text-center border-l border-gray-100">
+                  {/* <div className="text-center border-l border-gray-100">
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Points</div>
                     <div className="text-xl font-bold text-[#c23535]">{(user.points || 0).toLocaleString()}</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -716,13 +750,13 @@ const handleAddNewAddress = () => {
                 <button onClick={() => setActiveTab('bookings')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'bookings' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
                   <FaSuitcase className={activeTab === 'bookings' ? 'text-[#c23535]' : 'text-gray-400'} /> My Bookings
                 </button>
-<button onClick={() => setActiveTab('manage-address')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'manage-address' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
-                  <FaAddressCard  className={activeTab === 'manage-address' ? 'text-[#c23535]' : 'text-gray-400'} /> Manage Address
+                <button onClick={() => setActiveTab('manage-address')} className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'manage-address' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                  <FaAddressCard className={activeTab === 'manage-address' ? 'text-[#c23535]' : 'text-gray-400'} /> Manage Address
                 </button>
 
                 <button
                   onClick={() => setActiveTab('wishlist')}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50' }`} >
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`} >
                   <FaHeart className={activeTab === 'wishlist' ? 'text-[#c23535]' : 'text-gray-400'} />
                   My Wishlist
                 </button>
@@ -745,7 +779,7 @@ const handleAddNewAddress = () => {
           {/* (No changes needed here — kept identical to your original code) */}
 
           <div className="flex-1">
-            
+
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
               {activeTab === 'profile' &&
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
@@ -797,7 +831,7 @@ const handleAddNewAddress = () => {
                     </div>
                   </div>
                   {/* Membership Section */}
-                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100">
+                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100 hidden">
                     <h3 className="text-lg noto-geogia-font font-bold text-[#283862] mb-4 flex items-center gap-2"><FaStar className="text-[#EDA337]" /> Membership Status</h3>
                     <div className="flex flex-col md:flex-row gap-6 md:items-center">
                       <div className="flex-1">
@@ -820,18 +854,18 @@ const handleAddNewAddress = () => {
                     </div>
                   </div>
                 </div>}
-  {activeTab === 'bookings' &&
+              {activeTab === 'bookings' &&
                 <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                   <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                     <div>
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">My Bookings</h2>
                       <p className="text-sm text-gray-500 mt-1">Showing <span className="font-bold text-[#283862]">{filteredBookings.length}</span> {bookingFilter} bookings.</p>
                     </div>
-                    <div className="flex gap-2 text-xs font-bold">
+                    {filteredBookings.length > 0 && <div className="flex gap-2 text-xs font-bold">
                       {['all', 'upcoming', 'completed', 'cancelled'].map(filter => (
                         <button key={filter} onClick={() => setBookingFilter(filter as any)} className={`px-4 py-2 rounded-md shadow-sm transition-all capitalize ${bookingFilter === filter ? 'bg-[#283862] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{filter}</button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                   <div className="space-y-6">
                     {filteredBookings.length > 0 ? filteredBookings.map((booking) => (
@@ -873,8 +907,9 @@ const handleAddNewAddress = () => {
                                 </div>
                               </div>
                             )}
+
                             <div className="flex gap-2 pt-4 border-t border-gray-100">
-                              <button onClick={() => handleDownloadReceipt(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition-colors flex items-center justify-center gap-1"><FaReceipt /> Receipt</button>
+                              {/* <button onClick={() => handleDownloadReceipt(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition-colors flex items-center justify-center gap-1"><FaReceipt /> Receipt</button>i,  / l/,///. */}
                               <button onClick={() => handleSupportClick(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-1"><FaConciergeBell /> Support</button>
                               {['Upcoming', 'Confirmed', 'Pending'].includes(booking.status) && (
                                 <>
@@ -890,305 +925,309 @@ const handleAddNewAddress = () => {
                     )) : <div className="text-center py-20 text-gray-400 font-bold">No bookings found in this category.</div>}
                   </div>
                 </div>}
-<div className={`relative ${showAddressForm ? "blur-sm pointer-events-none" : ""}`}>
-  {activeTab === "manage-address" && (
-  <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
-    <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
-      <div>
-        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">
-          Manage Address
-        </h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Showing{" "}
-          <span className="font-bold text-[#283862]">
-            {addresses.length}
-          </span>{" "}
-          saved addresses.
-        </p>
-      </div>
- <button onClick={handleAddNewAddress} className="mb-4 bg-[#283862] text-white px-4 py-2 rounded">+ Add New Address</button>
+              <div className={`relative ${showAddressForm ? "blur-sm pointer-events-none" : ""}`}>
+                {activeTab === "manage-address" && (
+                  <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
+                    <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
+                      <div>
+                        <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">
+                          Manage Address
+                        </h2>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Showing{" "}
+                          <span className="font-bold text-[#283862]">
+                            {addresses.length}
+                          </span>{" "}
+                          saved addresses.
+                        </p>
+                      </div>
+                      <button onClick={handleAddNewAddress} className="mb-4 bg-[#283862] text-white px-4 py-2 rounded">+ Add New Address</button>
 
 
 
-    </div>
+                    </div>
 
-    <div className="space-y-6">
-      {isLoading ? (
-        <div className="text-center py-20 text-gray-400 font-bold">
-          Loading addresses...
-        </div>
-      ) : addresses.length > 0 ? (
-        addresses.map((address) => (
-          <div
-            key={address._id}
-            className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all"
-          >
-            <div className="p-6 md:p-8 flex flex-col gap-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl noto-geogia-font font-bold text-[#283862] group-hover:text-[#c23535] transition-colors">
-                    {address.fullName}
-                  </h3>
-                  {address.isDefault && (
-                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-sm">
-                      DEFAULT
-                    </span>
-                  )}
-                </div>
-              </div>
+                    <div className="space-y-6">
+                      {isLoading ? (
+                        <div className="text-center py-20 text-gray-400 font-bold">
+                          Loading addresses...
+                        </div>
+                      ) : addresses.length > 0 ? (
+                        addresses.map((address) => (
+                          <div
+                            key={address._id}
+                            className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all"
+                          >
+                            <div className="p-6 md:p-8 flex flex-col gap-4">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="text-xl noto-geogia-font font-bold text-[#283862] group-hover:text-[#c23535] transition-colors">
+                                    {address.fullName}
+                                  </h3>
+                                  {address.isDefault && (
+                                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-sm">
+                                      DEFAULT
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
 
-              <div className="text-sm text-gray-600 leading-relaxed">
-                <p>{address.streetAddress.join(", ")}</p>
-                <p>
-                  {address.city}, {address.state} {address.zipCode}
-                </p>
-                <p>{address.country}</p>
-                <p className="mt-1 font-bold text-gray-700">
-                  Phone: {address.phone}
-                </p>
-              </div>
+                              <div className="text-sm text-gray-600 leading-relaxed">
+                                <p>{address.streetAddress.join(", ")}</p>
+                                <p>
+                                  {address.city}, {address.state} {address.zipCode}
+                                </p>
+                                <p>{address.country}</p>
+                                <p className="mt-1 font-bold text-gray-700">
+                                  Phone: {address.phone}
+                                </p>
+                              </div>
 
-              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
-                <button
-                  onClick={() => handleEditAddress(address)}
-                  className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition"
-                >
-                  Edit
-                </button>
+                              <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-100">
+                                <button
+                                  onClick={() => handleEditAddress(address)}
+                                  className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition"
+                                >
+                                  Edit
+                                </button>
 
-                <button
-                  onClick={() => handleRemoveAddress(address._id)}
-                  className="flex-1 bg-white border border-red-200 text-red-600 text-xs font-bold py-2 rounded hover:bg-red-50 transition"
-                >
-                  Remove
-                </button>
+                                <button
+                                  onClick={() => handleRemoveAddress(address._id)}
+                                  className="flex-1 bg-white border border-red-200 text-red-600 text-xs font-bold py-2 rounded hover:bg-red-50 transition"
+                                >
+                                  Remove
+                                </button>
 
-                {!address.isDefault && (
-                  <button
-                    onClick={() => handleSetDefault(address._id)}
-                    className="flex-1 bg-[#283862] text-white text-xs font-bold py-2 rounded hover:bg-[#1a2542] transition"
-                  >
-                    Set as Default
-                  </button>
+                                {!address.isDefault && (
+                                  <button
+                                    onClick={() => handleSetDefault(address._id)}
+                                    className="flex-1 bg-[#283862] text-white text-xs font-bold py-2 rounded hover:bg-[#1a2542] transition"
+                                  >
+                                    Set as Default
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-20 text-gray-400 font-bold">
+                          No addresses found.
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="text-center py-20 text-gray-400 font-bold">
-          No addresses found.
-        </div>
-      )}
-    </div>
-  </div>
-)}
-</div>
-{showAddressForm && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    {/* Overlay */}
-    <div className="absolute inset-0 bg-black/40" />
+              {showAddressForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-black/40" />
 
-    {/* Form */}
-    <div className="relative bg-white w-full max-w-3xl rounded-lg shadow-xl p-6 overflow-y-auto max-h-[90vh]">
-      <h2 className="text-xl font-bold text-[#283862] mb-6">
-        {editingAddress ? "Edit Address" : "Add New Address"}
-      </h2>
+                  {/* Form */}
+                  <div className="relative bg-white w-full max-w-3xl rounded-lg shadow-xl p-6 overflow-y-auto max-h-[90vh]">
+                    <h2 className="text-xl font-bold text-[#283862] mb-6">
+                      {editingAddress ? "Edit Address" : "Add New Address"}
+                    </h2>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                     <div className="space-y-2">
-                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
-                                         <input
-  type="text"
-  name="name"
-  value={addressFormData.name}
-  onChange={handleInputChanges}
-  onBlur={() => handleBlur('name')}
-  placeholder="e.g. John Doe"
-  className={`w-full border rounded-sm p-4 text-sm text-[#283862] 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          value={addressFormData.name}
+                          onChange={handleInputChanges}
+                          onBlur={() => handleBlur('name')}
+                          placeholder="e.g. John Doe"
+                          className={`w-full border rounded-sm p-4 text-sm text-[#283862] 
     bg-white focus:outline-none shadow-sm 
     ${touched.name && errors.name
-      ? 'border-red-500 focus:border-red-500'
-      : 'border-gray-300 focus:border-[#EDA337]'
-    }`}
- />
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#EDA337]'
+                            }`}
+                        />
 
 
-                                         {touched.name && errors.name && (
-                                             <p className="text-xs text-red-500 mt-1">{errors.name}</p>
-                                         )}
-                                     </div>
-                                    <div className="space-y-2">
-  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-    Email Address
-  </label>
+                        {touched.name && errors.name && (
+                          <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Email Address
+                        </label>
 
-  <input
-    type="email"
-    value={addressFormData.email}
-    disabled
-    className="w-full border rounded-sm p-4 text-sm text-[#283862] 
+                        <input
+                          type="email"
+                          value={addressFormData.email}
+                          disabled
+                          className="w-full border rounded-sm p-4 text-sm text-[#283862] 
       bg-[#efefef] cursor-not-allowed shadow-sm"
-  />
+                        />
 
-  <p className="text-xs text-gray-400">
-    Email is linked to your account and cannot be changed
-  </p>
-</div>
+                        <p className="text-xs text-gray-400">
+                          Email is linked to your account and cannot be changed
+                        </p>
+                      </div>
 
-                                 </div>
-     
-                                <div className="space-y-2">
-  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-    Phone *
-  </label>
-<input
-  type="tel"
-  name="phone"
-  value={addressFormData.phone}
-  onChange={handleInputChanges}
-  onBlur={() => handleBlur('phone')}
-  placeholder="+1 234 567 8900"
-  className={`w-full border rounded-sm p-4 text-sm text-[#283862] 
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Phone *
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={addressFormData.phone}
+                        onChange={handleInputChanges}
+                        onBlur={() => handleBlur('phone')}
+                        placeholder="+1 234 567 8900"
+                        className={`w-full border rounded-sm p-4 text-sm text-[#283862] 
     bg-white focus:outline-none shadow-sm 
     ${touched.phone && errors.phone
-      ? 'border-red-500 focus:border-red-500'
-      : 'border-gray-300 focus:border-[#EDA337]'
-    }`}
- />
+                            ? 'border-red-500 focus:border-red-500'
+                            : 'border-gray-300 focus:border-[#EDA337]'
+                          }`}
+                      />
 
-  {touched.phone && errors.phone && (
-    <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
-  )}
-</div>
+                      {touched.phone && errors.phone && (
+                        <p className="text-xs text-red-500 mt-1">{errors.phone}</p>
+                      )}
+                    </div>
 
-     
-                 <div className="space-y-2">
-  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-    Address
-  </label>
-  <input
-    type="text"
-    name="address"
-    value={addressFormData.address}
-    onChange={handleInputChanges}
-    placeholder="Street address"
-    className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-  />
-</div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-      Country
-    </label>
-    <select
-      name="country"
-      value={addressFormData.country}
-      onChange={handleInputChanges}
-      className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
-    >
-      <option value="">Select your country</option>
-      {countryData.map((c: any, i: number) => (
-        <option key={i} value={c.name}>{c.name}</option>
-      ))}
-    </select>
-  </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Address
+                      </label>
+                      <input
+                        type="text"
+                        name="address"
+                        value={addressFormData.address}
+                        onChange={handleInputChanges}
+                        placeholder="Street address"
+                        className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                      />
+                    </div>
 
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-      State
-    </label>
-    {availableStates.length > 0 ? (
-      <select
-        name="state"
-        value={addressFormData.state}
-        onChange={handleInputChanges}
-        className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
-      >
-        <option value="">Select State</option>
-        {availableStates.map((s: any, i: number) => (
-          <option key={i} value={s}>{s}</option>
-        ))}
-      </select>
-    ) : (
-      <input
-        type="text"
-        name="state"
-        value={addressFormData.state}
-        onChange={handleInputChanges}
-        placeholder="e.g. NY"
-        className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-      />
-    )}
-  </div>
-</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Country
+                        </label>
+                        <select
+                          name="country"
+                          value={addressFormData.country}
+                          onChange={handleInputChanges}
+                          className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
+                        >
+                          <option value="">Select your country</option>
+                          {countryData.map((c: any, i: number) => (
+                            <option key={i} value={c.name}>{c.name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-     
-<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-      Town / City
-    </label>
-    <input
-      type="text"
-      name="city"
-      value={addressFormData.city}
-      onChange={handleInputChanges}
-      placeholder="e.g. New York"
-      className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
-    />
-  </div>
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          State
+                        </label>
+                        {availableStates.length > 0 ? (
+                          <select
+                            name="state"
+                            value={addressFormData.state}
+                            onChange={handleInputChanges}
+                            className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
+                          >
+                            <option value="">Select State</option>
+                            {availableStates.map((s: any, i: number) => (
+                              <option key={i} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            name="state"
+                            value={addressFormData.state}
+                            onChange={handleInputChanges}
+                            placeholder="e.g. NY"
+                            className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                          />
+                        )}
+                      </div>
+                    </div>
 
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-      Postcode
-    </label>
-    <input
-      type="text"
-      name="postcode"
-      value={addressFormData.postcode}
-      onChange={handleInputChanges}
-      onBlur={() => handleBlur('postcode')}
-      placeholder="e.g. 10001"
-      className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm 
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Town / City
+                        </label>
+                        <input
+                          type="text"
+                          name="city"
+                          value={addressFormData.city}
+                          onChange={handleInputChanges}
+                          placeholder="e.g. New York"
+                          className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                          Postcode
+                        </label>
+                        <input
+                          type="text"
+                          name="postcode"
+                          value={addressFormData.postcode}
+                          onChange={handleInputChanges}
+                          onBlur={() => handleBlur('postcode')}
+                          placeholder="e.g. 10001"
+                          className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm 
         ${touched.postcode && errors.postcode
-          ? 'border-red-500 focus:border-red-500'
-          : 'border-gray-300 focus:border-[#EDA337]'
-        }`}
-    />
-    {touched.postcode && errors.postcode && (
-      <p className="text-xs text-red-500 mt-1">{errors.postcode}</p>
-    )}
-  </div>
-</div>
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#EDA337]'
+                            }`}
+                        />
+                        {touched.postcode && errors.postcode && (
+                          <p className="text-xs text-red-500 mt-1">{errors.postcode}</p>
+                        )}
+                      </div>
+                    </div>
 
 
-      <div className="flex justify-end gap-4 mt-6">
-        <button
-          onClick={handleCancelAddress}
-          className="px-6 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100"
-        >
-          Cancel
-        </button>
+                    <div className="flex justify-end gap-4 mt-6">
+                      <button
+                        onClick={handleCancelAddress}
+                        className="px-6 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100"
+                      >
+                        Cancel
+                      </button>
 
-        <button
-          onClick={handleSubmitAddress}
-          className="px-6 py-2 bg-[#283862] text-white rounded hover:bg-[#1a2542]"
-        >
-          {editingAddress ? "Update Address" : "Add Address"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                      <button
+                        onClick={handleSubmitAddress}
+                        className="px-6 py-2 bg-[#283862] text-white rounded hover:bg-[#1a2542]"
+                      >
+                        {editingAddress ? "Update Address" : "Add Address"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
 
-                  {activeTab === 'wishlist' &&
-                  <MyWishlist/>
-                  }         
+
+              {activeTab === 'wishlist' &&
+                <MyWishlist data={wishlists} handleRemove={handleRemove} />
+              }
+
+
+
             </motion.div>
-            
+
           </div>
         </div>
       </div>
@@ -1204,13 +1243,13 @@ const handleAddNewAddress = () => {
             <div className="p-6 space-y-6">
               {selectedBooking && <div className="bg-gray-50 p-4 rounded-lg border border-gray-200"><div className="text-xs text-gray-500 font-bold mb-1">Booking Ref: {selectedBooking.id}</div><div className="text-sm font-bold text-[#283862]">{selectedBooking.roomName}</div></div>}
               <div className="space-y-4">
-                <a href="tel:+911234567890" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
+                <a href="tel:+8618124072" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
                   <div className="w-10 h-10 rounded-full bg-[#283862] flex items-center justify-center text-white"><FaPhoneAlt size={16} /></div>
-                  <div><div className="text-xs text-gray-500 font-bold">Call Us</div><div className="text-sm font-bold text-[#283862]">+91 123 456 7890</div></div>
+                  <div><div className="text-xs text-gray-500 font-bold">Call Us</div><div className="text-sm font-bold text-[#283862]">+91 8618124072</div></div>
                 </a>
-                <a href="mailto:support@roomintel.com" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
+                <a href="mailto:support@avensstay.com" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
                   <div className="w-10 h-10 rounded-full bg-[#283862] flex items-center justify-center text-white"><FaEnvelope size={16} /></div>
-                  <div><div className="text-xs text-gray-500 font-bold">Email Us</div><div className="text-sm font-bold text-[#283862]">support@roomintel.com</div></div>
+                  <div><div className="text-xs text-gray-500 font-bold">Email Us</div><div className="text-sm font-bold text-[#283862]">support@avensstay.com</div></div>
                 </a>
               </div>
               <button onClick={() => setShowSupportModal(false)} className="w-full bg-[#283862] text-white font-bold py-3 rounded-lg hover:bg-[#1a2542] transition-colors">Close</button>
@@ -1249,6 +1288,76 @@ const handleAddNewAddress = () => {
                   className="flex-1 py-4 bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
                 >
                   Yes, Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CustomAlert */}
+      <CustomAlert
+        isOpen={alert.isOpen}
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+        onConfirm={handleConfirmDelete}
+      />
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <FaTimes className="text-red-600 text-2xl" />
+                </div>
+                <h3 className="text-xl font-bold text-[#283862] mb-2">Cancel Booking?</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  Are you sure you want to cancel this booking? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setBookingToCancel(null);
+                  }}
+                  className="flex-1 py-4 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  No, Keep Booking
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!bookingToCancel) return;
+                    try {
+                      const result = await bookingService.cancelBooking(bookingToCancel);
+                      if (result.status) {
+                        toast({
+                          title: "Booking Cancelled",
+                          description: "Your booking has been successfully cancelled.",
+                          variant: "success",
+                        });
+                        window.location.reload();
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Cancellation Failed",
+                        description: error.message || "Unable to cancel booking at this time.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setShowCancelConfirm(false);
+                      setBookingToCancel(null);
+                    }
+                  }}
+                  className="flex-1 py-4 bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Yes, Cancel Booking
                 </button>
               </div>
             </motion.div>

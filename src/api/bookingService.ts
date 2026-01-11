@@ -44,9 +44,9 @@ export const bookingService = {
   ): Promise<ApiResponse<PaymentInitiateResponse>> => {
     const receiptId = `rcpt_${Date.now()}`;
     const data = {
-      orederAmount: amount,
-      orederCurrency: currency,
-      orederId: receiptId,
+      amount: amount,
+      currency: currency,
+      receiptId: receiptId,
     };
 
     const response = await axiosInstance.post('/payment', data);
@@ -67,17 +67,16 @@ export const bookingService = {
   },
   getRoomBookings: async (slug: string): Promise<any[]> => {
     const response = await axiosInstance.get(`/bookings/room/${slug}`);
-    console.log('Fetched room bookings:', response.data);
     return response.data?.data || response.data || [];
   },
 
- getBookedDates: async (): Promise<Array<{
-  roomId: string;
-  roomSlug: string;
-  roomName: string;
-  dates: string[];
-}>> => {
-  const response = await axiosInstance.get('/site/bookings/booked-dates');
-  return response.data.status ? response.data.data : [];
-},
+  getBookedDates: async (): Promise<Array<{
+    roomId: string;
+    roomSlug: string;
+    roomName: string;
+    dates: string[];
+  }>> => {
+    const response = await axiosInstance.get('/site/bookings/booked-dates');
+    return response.data.status ? response.data.data : [];
+  },
 };

@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, addMonths, differenceInDays } from 'date-fns';
+import { FaStar } from "react-icons/fa6";
 import {
-    FaStar,
     FaCheck,
     FaPlus,
     FaMinus,
@@ -23,6 +23,8 @@ import {
     PiBed,
     PiUsers,
 } from 'react-icons/pi';
+import { useSearchParams } from 'next/navigation';
+
 // Add this import at the top with other imports
 import SimpleCalendar from '../../../utils/calender';
 import { BsGeoAlt, BsClock } from 'react-icons/bs';
@@ -52,6 +54,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
     const { slug } = use(params);
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { formatPrice, currencyIcon } = useCurrency();
     const { selectedRoom: room, loading: roomLoading, error: roomError, fetchRoomBySlug } = useRoomStore();
     const { addToCart, fetchCart } = useCartStore();
@@ -72,17 +75,43 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const [rooms, setRooms] = useState(1);
     const [adults, setAdults] = useState(2);
     const [children, setChildren] = useState(0);
-    const [checkInDate, setCheckInDate] = useState<string>(new Date().toISOString().split('T')[0]);
-    const [checkOutDate, setCheckOutDate] = useState<string>(
-        new Date(Date.now() + 86400000).toISOString().split('T')[0]
-    );
+    // const [checkInDate, setCheckInDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    // const [checkOutDate, setCheckOutDate] = useState<string>(
+    //     new Date(Date.now() + 86400000).toISOString().split('T')[0]
+    // );
+    const arrivalFromQuery = searchParams.get('arrival');
+    const departureFromQuery = searchParams.get('departure');
+    const adultsFromQuery = searchParams.get('adults');
+    const childrenFromQuery = searchParams.get('children');
 
+    const [selectedRange, setSelectedRange] = useState<DateRange>(() => {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        // Parse from URL if valid
+        let checkIn = arrivalFromQuery ? new Date(arrivalFromQuery) : null;
+        let checkOut = departureFromQuery ? new Date(departureFromQuery) : null;
+
+        // Fallback / validation
+        if (!checkIn || isNaN(checkIn.getTime()) || checkIn < today) {
+            checkIn = today;
+        }
+        if (!checkOut || isNaN(checkOut.getTime()) || checkOut <= checkIn) {
+            checkOut = tomorrow;
+        }
+
+        return {
+            checkIn,
+            checkOut,
+        };
+    });
     // New state for calendar visibility and range
     const [showCalendar, setShowCalendar] = useState(false);
-    const [selectedRange, setSelectedRange] = useState<DateRange>({
-        checkIn: new Date(),
-        checkOut: new Date(Date.now() + 86400000),
-    });
+    // const [selectedRange, setSelectedRange] = useState<DateRange>({
+    //     checkIn: new Date(),
+    //     checkOut: new Date(Date.now() + 86400000),
+    // });
 
     const bookedDates: Date[] = room?.bookedDates
         ?.map((dateStr: string) => new Date(dateStr))
@@ -94,7 +123,12 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
     // Related Rooms Carousel State
     const [relatedIndex, setRelatedIndex] = useState(0);
-
+    const [checkInDate, setCheckInDate] = useState<string>(
+        format(selectedRange.checkIn!, 'yyyy-MM-dd')
+    );
+    const [checkOutDate, setCheckOutDate] = useState<string>(
+        format(selectedRange.checkOut!, 'yyyy-MM-dd')
+    );
     // Banner State
     const [banner, setBanner] = useState<{
         image: string;
@@ -185,6 +219,27 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         fetchFaqs();
     }, [slug, fetchRoomBySlug,]);
 
+
+    useEffect(() => {
+        if (selectedRange.checkIn) {
+            setCheckInDate(format(selectedRange.checkIn, 'yyyy-MM-dd'));
+        }
+        if (selectedRange.checkOut) {
+            setCheckOutDate(format(selectedRange.checkOut, 'yyyy-MM-dd'));
+        }
+    }, [selectedRange]);
+
+    // 5. Optional: Also fill adults/children from query if present
+    useEffect(() => {
+        if (adultsFromQuery) {
+            const num = parseInt(adultsFromQuery);
+            if (!isNaN(num) && num > 0) setAdults(num);
+        }
+        if (childrenFromQuery) {
+            const num = parseInt(childrenFromQuery);
+            if (!isNaN(num) && num >= 0) setChildren(num);
+        }
+    }, [adultsFromQuery, childrenFromQuery]);
     // Review Effect
     useEffect(() => {
         if (slug) {
@@ -210,9 +265,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
             try {
                 const bookings = await bookingService.getRoomBookings(slug);
                 setRoomBookings(bookings);
-                console.log('All room bookings fetched:', bookings);
             } catch (err) {
-                console.error('Failed to fetch room availability:', err);
                 setRoomBookings([]);
             } finally {
                 setAvailabilityLoading(false);
@@ -223,7 +276,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     }, [slug, room]);
 
 
-    console.log('roomBookings:', roomBookings);
 
     const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
         if (ref.current) {
@@ -281,58 +333,58 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
     };
     const handleBookRoom = async () => {
-    if (!room || !selectedRange.checkIn || !selectedRange.checkOut) {
-        showAlert.error('Please select check-in and check-out dates');
-        return;
-    }
+        if (!room || !selectedRange.checkIn || !selectedRange.checkOut) {
+            showAlert.error('Please select check-in and check-out dates');
+            return;
+        }
 
-    if (!isLoggedIn) {
-        showAlert.error('Please login to book a room');
-        openLoginModal();
-        return;
-    }
+        if (!isLoggedIn) {
+            showAlert.error('Please login to book a room');
+            openLoginModal();
+            return;
+        }
 
-    // Calculate nights
-    const nights = differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
-    if (nights <= 0) {
-        showAlert.error('Check-out must be after check-in');
-        return;
-    }
+        // Calculate nights
+        const nights = differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
+        if (nights <= 0) {
+            showAlert.error('Check-out must be after check-in');
+            return;
+        }
 
-    // Calculate price per night with extras
-    const extraAdults = Math.max(0, adults - (room.baseAdults || 2));
-    const extraChildren = Math.max(0, children - (room.baseChildren || 0));
-    const extrasPerNight = extraAdults * (room.extraAdultPrice || 0) + extraChildren * (room.extraChildPrice || 0);
-    const pricePerNight = (room.price || 0) + extrasPerNight;
+        // Calculate price per night with extras
+        const extraAdults = Math.max(0, adults - (room.baseAdults || 2));
+        const extraChildren = Math.max(0, children - (room.baseChildren || 0));
+        const extrasPerNight = extraAdults * (room.extraAdultPrice || 0) + extraChildren * (room.extraChildPrice || 0);
+        const pricePerNight = (room.price || 0) + extrasPerNight;
 
-    // Total for all nights and rooms
-    const roomTotal = pricePerNight * nights * rooms;
+        // Total for all nights and rooms
+        const roomTotal = pricePerNight * nights * rooms;
 
-    // Taxes & Service Charge (same as checkout logic)
-    const tax = roomTotal * 0.10;
-    const serviceCharge = roomTotal * 0.05;
-    const grandTotal = roomTotal + tax + serviceCharge;
+        // Taxes & Service Charge (same as checkout logic)
+        const tax = roomTotal * 0.10;
+        const serviceCharge = roomTotal * 0.05;
+        const grandTotal = roomTotal + tax + serviceCharge;
 
-    // Format dates for URL
-    const checkIn = format(selectedRange.checkIn, 'yyyy-MM-dd');
-    const checkOut = format(selectedRange.checkOut, 'yyyy-MM-dd');
+        // Format dates for URL
+        const checkIn = format(selectedRange.checkIn, 'yyyy-MM-dd');
+        const checkOut = format(selectedRange.checkOut, 'yyyy-MM-dd');
 
-    // Build URL with all data
-    const queryParams = new URLSearchParams({
-        checkIn,
-        checkOut,
-        adults: adults.toString(),
-        children: children.toString(),
-        rooms: rooms.toString(),
-        roomTotal: roomTotal.toFixed(2),
-        tax: tax.toFixed(2),
-        serviceCharge: serviceCharge.toFixed(2),
-        grandTotal: grandTotal.toFixed(2),
-    });
+        // Build URL with all data
+        const queryParams = new URLSearchParams({
+            checkIn,
+            checkOut,
+            adults: adults.toString(),
+            children: children.toString(),
+            rooms: rooms.toString(),
+            roomTotal: roomTotal.toFixed(2),
+            tax: tax.toFixed(2),
+            serviceCharge: serviceCharge.toFixed(2),
+            grandTotal: grandTotal.toFixed(2),
+        });
 
-    // Navigate with all data
-    router.push(`/room-checkout/${room.slug}?${queryParams.toString()}`);
-};
+        // Navigate with all data
+        router.push(`/room-checkout/${room.slug}?${queryParams.toString()}`);
+    };
 
 
     // Show loading state
@@ -414,7 +466,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         { label: "Useful Info", ref: infoRef },
                         { label: "Amenities", ref: amenitiesRef },
                         { label: "FAQ", ref: faqRef },
-                        { label: "Review & Rating", ref: reviewRef }
+                        ...(filteredReview.length > 0
+                            ? [{ label: "Review & Rating", ref: reviewRef }]
+                            : [])
                     ].map((tab, idx) => (
                         <button
                             key={idx}
@@ -497,7 +551,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     room.usefulInformation.map((row: any, idx: number) => (
                                         <div key={idx} className={`flex justify-between p-4 text-xs md:text-sm border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'}`}>
                                             <span className="font-bold text-[#283862]">{row.name}</span>
+
                                             <span className="text-gray-500 font-medium text-right">{row.value}</span>
+
                                         </div>
                                     ))
                                 ) : (
@@ -508,7 +564,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     ].map((row, idx) => (
                                         <div key={idx} className={`flex justify-between p-4 text-xs md:text-sm border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'}`}>
                                             <span className="font-bold text-[#283862]">{row.label}</span>
-                                            <span className="text-gray-500 font-medium text-right">{row.value}</span>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <span className="text-gray-500 font-medium">{row.value}</span>
+
+                                                {row.label === "Cleanliness Rating" && (
+                                                    <FaStar className="text-[#ffae1a]" />
+                                                )}
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -547,6 +609,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         </div>
 
                         {/* Reviews & Rating sec */}
+                        {filteredReview.length > 0 &&
                         <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
@@ -562,7 +625,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     All {filteredReview.length} reviews →
                                 </button>
                             }
-                        </div>
+                        </div>}
 
                         {/* Nearby */}
                         <div>
@@ -627,7 +690,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                             <div className="text-sm font-medium text-gray-700 mb-1">Check-In</div>
                                                             <div className="text-base font-semibold text-[#283862]">
                                                                 {selectedRange.checkIn
-                                                                    ? format(selectedRange.checkIn, 'EEE, MMM d')
+                                                                    ? format(selectedRange.checkIn, 'EEE, MMM d, yyyy')
                                                                     : 'Select date'}
                                                             </div>
                                                         </div>
@@ -645,7 +708,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                             <div className="text-sm font-medium text-gray-700 mb-1">Check-Out</div>
                                                             <div className="text-base font-semibold text-[#283862]">
                                                                 {selectedRange.checkOut
-                                                                    ? format(selectedRange.checkOut, 'EEE, MMM d')
+                                                                    ? format(selectedRange.checkOut, 'EEE, MMM d, yyyy')
                                                                     : 'Select date'}
                                                             </div>
                                                         </div>
@@ -654,13 +717,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                             <FaChevronDown className={`transition-transform ${showCalendar ? 'rotate-180' : ''}`} />
                                                         </div>
                                                     </div>
-
-
                                                 </div>
                                             </div>
 
-
-                                            {/* Calendar Dropdown */}
                                             <AnimatePresence>
                                                 {showCalendar && (
                                                     <motion.div
@@ -679,7 +738,6 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                                     onClose={() => setShowCalendar(false)}
                                                                 />
                                                             </div>
-                                                            {/* Close button for mobile */}
                                                             <button
                                                                 onClick={() => setShowCalendar(false)}
                                                                 className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -693,7 +751,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
 
                                         {/* Rest of the booking controls remain the same */}
-                                        
+
 
                                         {rooms >= (room?.maxRooms || 10) && (
                                             <div className="text-[10px] text-yellow-400 text-center py-1">
@@ -714,11 +772,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 </button>
                                             </div>
                                         </div>
-                                        {extraAdultPrice > 0 && (
-                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                                +{formatPrice(extraAdultPrice)} per extra adult
-                                            </div>
-                                        )}
+                                        
 
                                         {/* Children */}
                                         <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300 mt-2">
@@ -733,11 +787,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 </button>
                                             </div>
                                         </div>
-                                        {extraChildPrice > 0 && (
-                                            <div className="text-[10px] text-gray-400 text-right uppercase tracking-wider font-bold">
-                                                +{formatPrice(extraChildPrice)} per extra child
-                                            </div>
-                                        )}
+                                        
                                     </div>
 
                                     <div className="border-t border-[#00000029] my-4 pt-4 flex justify-between font-bold text-lg text-[#1e2c4e]">

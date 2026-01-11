@@ -2,48 +2,64 @@
 "use client";
 
 import { create } from "zustand";
-import { myWishListService } from "@/api/myWishListService";
+import { myWishListService } from "@/api/wishListService";
 import { useAuthStore } from "./useAuthStore";
 
 
+interface RoomInfo {
+	_id: string;
+	name: string;
+	price: number;
+	previewImage : string;
+	rating : number;
+	slug : string;
+	size : string;
+	adults : number
+}
 export interface WishlistItem {
 	_id: string;
 	userId: string;
-	roomId: string;
-	room?: any;
+	roomId: RoomInfo;
 	status?: string;
 	isDeleted?: boolean;
 	createdAt?: string;
 	updatedAt?: string;
 }
 
+interface formData {
+	userId: string;
+	roomId: string;
+}
+
 interface WishlistState {
 	wishlists: WishlistItem[];
-	formData: WishlistItem | null;
+	formData: formData | null;
 	isLoading: boolean;
 	error: string | null;
 	message: string | null;
-	toggleWishlist: (payload: { userId: string; roomId: string }) => Promise<void>;
+	addWishList: (payload: formData) => Promise<void>;
 	fetchWishlists: (filter: {}) => Promise<void>;
 	removeWishlist: (id: string) => Promise<void>;
 }
 
-export const useMyWishListStore = create<WishlistState>((set) => ({
+export const useMyWishListStore = create<WishlistState>((set ,get) => ({
 	wishlists: [],
 	formData: null,
 	isLoading: false,
 	error: null,
 	message: null,
 
-	toggleWishlist: async (payload) => {
+	addWishList: async (payload) => {
 		set({ isLoading: true, error: null, message: null });
 		try {
-			const response = await myWishListService.toggleWishlist(payload);
+			const response = await myWishListService.addWishList(payload);
+
 			set({
-				formData: response.data,
+				formData: response.result, // backend returns 'result'
 				message: response.message || 'Wishlist updated',
 				isLoading: false,
 			});
+			return response;
 		} catch (error: any) {
 			set({
 				isLoading: false,
@@ -60,6 +76,7 @@ export const useMyWishListStore = create<WishlistState>((set) => ({
 				wishlists: response.data || [],
 				isLoading: false,
 			});
+			return response;
 		} catch (error: any) {
 			set({
 				isLoading: false,
