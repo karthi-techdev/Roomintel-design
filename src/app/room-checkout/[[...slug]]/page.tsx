@@ -14,6 +14,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 import RoomCartCard from '@/components/room-view/RoomCardSingle';
 import { Room, useRoomStore } from '@/store/useRoomStore';
 import { useSearchParams } from 'next/navigation';
+import { useBillingAddressStore } from '@/store/useBillingAddressStore';
+import { BillingAddress } from '@/api/billingAddressService';
 interface SingleBookingInfo {
     room: number;
     adults: number;
@@ -61,7 +63,171 @@ const RoomCheckout: React.FC = () => {
         serviceCharge: 0,
         grandTotal: 0,
     });
-    const [singleBookingInfo, setSingleBookingInfo] = useState();
+
+const { createBillingAddress, billingAddress,isLoading ,fetchBillingAddressByCustomerId,setDefaultBillingAddress,updateBillingAddress} = useBillingAddressStore();
+const [isAddressSaved, setIsAddressSaved] = useState(false);
+const addresses = billingAddress?.addresses || [];
+//-----
+const [showAddressForm, setShowAddressForm] = useState(false);
+const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
+
+useEffect(() => {
+  if (addresses.length > 0 && !selectedAddressId) {
+    const def = addresses.find(a => a.isDefault);
+    setSelectedAddressId(def?._id || addresses[0]._id);
+  }
+}, [addresses]);
+
+const handleSelectAddress = async (addressId: string) => {
+  setSelectedAddressId(addressId);
+
+  try {
+    await useBillingAddressStore
+      .getState()
+      .setDefaultBillingAddress(userId, addressId); // ✅ FIX
+
+    await fetchBillingAddressByCustomerId(userId); // refresh
+  } catch (err) {
+    showAlert.error("Failed to update default address");
+  }
+};
+
+
+
+// assume user already exists (customer id)
+const userId = user?._id; // or user.id based on your auth
+
+const validateAddressForm = () => {
+  const newErrors: Record<string, string> = {};
+
+  if (!formData.name.trim()) newErrors.name = "Name is required";
+  if (!formData.email.trim()) newErrors.email = "Email is required";
+  else if (!/^\S+@\S+\.\S+$/.test(formData.email))
+    newErrors.email = "Invalid email";
+
+  if (!formData.phone.trim()) newErrors.phone = "Phone is required";
+  if (!formData.address.trim()) newErrors.address = "Address is required";
+  if (!formData.country) newErrors.country = "Country is required";
+  if (!formData.state) newErrors.state = "State is required";
+  if (!formData.city) newErrors.city = "City is required";
+  if (!formData.postcode.trim()) newErrors.postcode = "Postcode is required";
+
+  setErrors(newErrors);
+
+  // 🔥 THIS IS THE KEY PART
+  setTouched({
+    name: true,
+    email: true,
+    phone: true,
+    address: true,
+    country: true,
+    state: true,
+    city: true,
+    postcode: true,
+  });
+
+  return Object.keys(newErrors).length === 0;
+};
+
+
+const resetAddressForm = () => {
+  setFormData(prev => ({
+    ...prev,          // keep name, email, company
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    notes: "",
+  }));
+
+  setErrors({});       // optional: clear validation errors
+  setTouched({});      // optional: clear touched fields
+};
+
+
+const handleCancelAddressForm = () => {
+  resetAddressForm();       // clear only phone, address, city, state, postcode, country, notes
+  setShowAddressForm(false); // hide the form/modal
+};
+
+
+const handleSaveAddress = async () => {
+  const isValid = validateAddressForm();
+
+  // ❌ IF ERROR → STOP EVERYTHING
+  if (!isValid) {
+    return;
+  }
+
+  try {
+    const storeState = useBillingAddressStore.getState();
+    const billingAddress = storeState.billingAddress;
+
+    const addressPayload = {
+      fullName: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      country: formData.country,
+      state: formData.state,
+      city: formData.city,
+      zipCode: formData.postcode,
+      streetAddress: [formData.address],
+      isDefault: true,
+    };
+
+    if (!billingAddress?._id) {
+      await createBillingAddress({
+        customerId: userId,
+        addresses: [addressPayload],
+      });
+    } else {
+      await updateBillingAddress(
+        billingAddress._id,
+        "new",
+        addressPayload
+      );
+    }
+
+    await fetchBillingAddressByCustomerId(userId);
+
+    showAlert.success("Address saved successfully");
+
+    resetAddressForm();
+    setShowAddressForm(false);
+
+  } catch (err) {
+    console.error(err);
+    showAlert.error("Failed to save address");
+  }
+};
+
+
+
+
+
+
+useEffect(() => {
+  if (user?._id) {
+    fetchBillingAddressByCustomerId(user._id);
+  }
+}, [user?._id]);
+useEffect(() => {
+  if (user?.billingAddress) {
+    setIsAddressSaved(true);
+    setFormData(prev => ({
+      ...prev,
+      address: user.billingAddress.streetAddress?.[0] || "",
+      city: user.billingAddress.city || "",
+      state: user.billingAddress.state || "",
+      country: user.billingAddress.country || "",
+      postcode: user.billingAddress.zipCode || "",
+    }));
+  }
+}, [user]);
+
+
 
     // Slug check
     const slug = params?.slug as string[] | undefined;
@@ -220,8 +386,6 @@ const RoomCheckout: React.FC = () => {
         ? countryData.find((c: any) => c.name === formData.country)?.states || []
         : [];
 
-
-
     // Load Cart & Services
     useEffect(() => {
         fetchCart();
@@ -326,35 +490,28 @@ const RoomCheckout: React.FC = () => {
 
 
     // --- VALIDATION ---
-    const validateField = (name: string, value: string): string => {
-        switch (name) {
-            case 'name':
-                if (!value.trim()) return 'Name is required';
-                if (value.trim().length < 2) return 'Name must be at least 2 characters';
-                if (value.trim().length > 50) return 'Name must not exceed 50 characters';
-                // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
-                return '';
+ const validateField = (name: string, value: string) => {
+  switch(name) {
+    case "phone":
+      if (!value.trim()) return "Phone is required";
+      if (!/^[0-9+()\s-]+$/.test(value)) return "Invalid phone number";
+      break;
+    case "postcode":
+      if (!value.trim()) return "Postcode is required";
+      break;
+    case "name":
+      if (!value.trim()) return "Name is required";
+      break;
+    case "email":
+      if (!value.trim()) return "Email is required";
+      if (!/^\S+@\S+\.\S+$/.test(value)) return "Invalid email";
+      break;
+    default:
+      return "";
+  }
+  return "";
+};
 
-            case 'email':
-                if (!value.trim()) return 'Email is required';
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(value)) return 'Please enter a valid email address';
-                return '';
-
-            case 'phone':
-                if (!value.trim()) return 'Phone number is required';
-                const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
-                if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number (10-15 digits)';
-                return '';
-
-            case 'postcode':
-                if (value && !/^[a-zA-Z0-9\s\-]{3,10}$/.test(value)) return 'Please enter a valid postcode';
-                return '';
-
-            default:
-                return '';
-        }
-    };
 
     const validateDates = (): { checkIn: string; checkOut: string } => {
         const errors = { checkIn: '', checkOut: '' };
@@ -482,148 +639,145 @@ const RoomCheckout: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
-    const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async () => {
+  if (!isSlug && cartItems.length === 0) {
+    return showAlert.error("Your cart is empty and valid booking details are missing.");
+  }
 
-        if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
+  // Validate form
+  if (!validateForm()) {
+    showAlert.error("Please fix the errors in the form before proceeding.");
+    return;
+  }
 
-        // Validate form
-        if (!validateForm()) {
-            showAlert.error("Please fix the errors in the form before proceeding.");
-            return;
+  if (!selectedAddressId) {
+    return showAlert.error("Please select a billing address");
+  }
+
+  setIsProcessing(true);
+
+  const totalAmount = totals.grandTotal;
+  const bookedRooms = isSlug
+    ? [{
+        roomId: selectedRoomByslug?._id,
+        roomName: selectedRoomByslug?.title,
+        price: singleItemInfo.grandTotal,
+        guestDetails: {                
+            adults: singleItemInfo.adults,
+            children: singleItemInfo.children
         }
+      }]
+    : cartItems.map(item => ({
+        roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
+        roomName: item.roomName,
+        price: item.financials?.grandTotal || item.price,
+        checkIn: item.checkIn || dates.checkIn,
+        checkOut: item.checkOut || dates.checkOut,
+        guestDetails: item.guestDetails
+    }));
 
-        setIsProcessing(true);
+  const primaryRoomId = bookedRooms[0]?.roomId;
 
-        const totalAmount = totals.grandTotal;
-        const bookedRooms = isSlug ? [{
-            roomId: selectedRoomByslug?._id,
-            roomName: selectedRoomByslug?.title,
-            price: singleItemInfo.grandTotal,
-            // checkIn: item.checkIn || dates.checkIn,
-            // checkOut: item.checkOut || dates.checkOut,
-            guestDetails: {                
-                adults: singleItemInfo.adults,
-                children: singleItemInfo.children
-            }
-        }
-        ]
-            :
-            cartItems.map(item => ({
-                roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
-                roomName: item.roomName,
-                price: item.financials?.grandTotal || item.price,
-                checkIn: item.checkIn || dates.checkIn,
-                checkOut: item.checkOut || dates.checkOut,
-                guestDetails: item.guestDetails
-            }));
+  const bookingPayload = {
+    guestName: formData.name,
+    guestEmail: formData.email,
+    guestPhone: formData.phone,
+    room: primaryRoomId,
+    rooms: bookedRooms,
+    checkIn: dates.checkIn,
+    checkOut: dates.checkOut,
+    totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
+    specialRequests: formData.notes,
+    billingAddressId: selectedAddressId, // ✅ send selected address _id
+    paymentStatus: 'Pending',
+    paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
+    bookingStatus: 'Pending'
+  };
 
-        const primaryRoomId = bookedRooms[0]?.roomId;
+  console.log('============bookingPayload======', bookingPayload);
 
-        const bookingPayload = {
-            guestName: formData.name,
-            guestEmail: formData.email,
-            guestPhone: formData.phone,
-            room: primaryRoomId,
-            rooms: bookedRooms,
-            checkIn: dates.checkIn,
-            checkOut: dates.checkOut,
-            totalAmount: isSlug ? singleItemInfo?.grandTotal : totalAmount,
-            specialRequests: formData.notes,
-            billingAddress: {
-                street: formData.address,
-                city: formData.city,
-                state: formData.state,
-                country: formData.country,
-                zipCode: formData.postcode
-            },
-            paymentStatus: 'Pending',
-            paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
-            bookingStatus: 'Pending'
-        };
-        console.log('============bookingPayload======', bookingPayload)
-        try {
-            if (paymentMethod === 'cash') {
-                // CASH FLOW
-                await bookingService.createBooking(bookingPayload);
-                const pointsEarned = Math.floor(totalAmount * 10);
-                showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                await finalizeOrder(bookingPayload);
+  try {
+    if (paymentMethod === 'cash') {
+      // CASH FLOW
+      await bookingService.createBooking(bookingPayload);
+      const pointsEarned = Math.floor(totalAmount * 10);
+      showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+      await finalizeOrder(bookingPayload);
 
-            } else if (paymentMethod === 'card') {
-                // RAZORPAY / ONLINE FLOW
-                const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
+    } else if (paymentMethod === 'card') {
+      // RAZORPAY / ONLINE FLOW
+      const paymentRes = await bookingService.initiatePayment(totalAmount, "INR");
 
-                if (paymentRes.status === false) throw new Error(paymentRes.message);
+      if (paymentRes.status === false) throw new Error(paymentRes.message);
 
-                const orderData = paymentRes.data;
+      const orderData = paymentRes.data;
 
-                const options = {
-                    key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-                    amount: orderData.amount,
-                    currency: orderData.currency,
-                    name: "RoomIntel Booking",
-                    description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
-                    order_id: orderData.razorpayOrderId,
-                    handler: async function (response: any) {
-                        console.log("Payment Successful:", response);
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "RoomIntel Booking",
+        description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
+        order_id: orderData.razorpayOrderId,
+        handler: async function (response: any) {
+          console.log("Payment Successful:", response);
 
-                        // Update payload with payment success
-                        const paidPayload = {
-                            ...bookingPayload,
-                            paymentStatus: 'Paid',
-                            paymentMode: 'Card',
-                        };
+          const paidPayload = {
+            ...bookingPayload,
+            paymentStatus: 'Paid',
+            paymentMode: 'Card',
+          };
 
-                        try {
-                            await bookingService.createBooking(paidPayload);
-                            const pointsEarned = Math.floor(totalAmount * 10);
-                            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
-                            await finalizeOrder(bookingPayload);
-                        } catch (err) {
-                            console.error("Failed to save booking after payment", err);
-                            showAlert.error("Payment successful but booking failed to save. Please contact support.");
-                            setIsProcessing(false);
-                        }
-                    },
-                    prefill: {
-                        name: formData.name,
-                        email: formData.email,
-                        contact: formData.phone,
-                    },
-                    theme: {
-                        color: "#EDA337",
-                    },
-                    modal: {
-                        ondismiss: function () {
-                            console.log('Payment cancelled by user');
-                            setIsProcessing(false);
-                            showAlert.info("Payment cancelled");
-                        }
-                    }
-                };
-
-                if (typeof window !== "undefined" && (window as any).Razorpay) {
-                    const rzp = new (window as any).Razorpay(options);
-                    rzp.on('payment.failed', function (response: any) {
-                        showAlert.error("Payment Failed: " + response.error.description);
-                        setIsProcessing(false);
-                    });
-                    rzp.open();
-                } else {
-                    showAlert.error("Razorpay SDK not loaded. Check connection.");
-                    setIsProcessing(false);
-                }
-            } else {
-                showAlert.warning("Selected payment method not supported yet.");
-                setIsProcessing(false);
-            }
-
-        } catch (error: any) {
-            console.error("Order processing error:", error);
-            showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
+          try {
+            await bookingService.createBooking(paidPayload);
+            const pointsEarned = Math.floor(totalAmount * 10);
+            showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
+            await finalizeOrder(paidPayload);
+          } catch (err) {
+            console.error("Failed to save booking after payment", err);
+            showAlert.error("Payment successful but booking failed to save. Please contact support.");
             setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: {
+          color: "#EDA337",
+        },
+        modal: {
+          ondismiss: function () {
+            console.log('Payment cancelled by user');
+            setIsProcessing(false);
+            showAlert.info("Payment cancelled");
+          }
         }
-    };
+      };
+
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          showAlert.error("Payment Failed: " + response.error.description);
+          setIsProcessing(false);
+        });
+        rzp.open();
+      } else {
+        showAlert.error("Razorpay SDK not loaded. Check connection.");
+        setIsProcessing(false);
+      }
+    } else {
+      showAlert.warning("Selected payment method not supported yet.");
+      setIsProcessing(false);
+    }
+  } catch (error: any) {
+    console.error("Order processing error:", error);
+    showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
+    setIsProcessing(false);
+  }
+};
+
 
 
     if (isBookingConfirmed) {
@@ -772,8 +926,59 @@ const RoomCheckout: React.FC = () => {
                                     )}
                                 </div>
                             </div>
+{!showAddressForm && addresses.length > 0 ? (
+  /* ---------------- RADIO LIST ---------------- */
+  <div className="space-y-4">
+    <h3 className="text-xl font-bold text-[#283862]">
+      Select Billing Address
+    </h3>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {addresses.map(addr => (
+      <label
+        key={addr._id}
+        className={`flex gap-4 p-4 border rounded-lg cursor-pointer
+          ${selectedAddressId === addr._id
+            ? "border-[#EDA337] bg-[#fff8ec]"
+            : "border-gray-200"
+          }`}
+      >
+        <input
+          type="radio"
+          checked={selectedAddressId === addr._id}
+          onChange={() => handleSelectAddress(addr._id)}
+        />
+
+        <div>
+          <div className="font-bold flex gap-2">
+            {addr.fullName}
+            {addr.isDefault && (
+              <span className="text-[10px] bg-green-100 px-2 rounded">
+                DEFAULT
+              </span>
+            )}
+          </div>
+
+          <p>{addr.streetAddress.join(", ")}</p>
+          <p>{addr.city}, {addr.state} {addr.zipCode}</p>
+          <p>{addr.country}</p>
+          <p className="font-semibold">📞 {addr.phone}</p>
+        </div>
+      </label>
+    ))}
+
+    <button
+      type="button"
+      onClick={() => setShowAddressForm(true)}
+      className="text-xs font-bold text-[#EDA337] underline"
+    >
+      + Add New Address
+    </button>
+  </div>
+
+) : (
+  /* ---------------- ADDRESS FORM ---------------- */
+  <>
+   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Your Name *</label>
                                     <input
@@ -888,11 +1093,27 @@ const RoomCheckout: React.FC = () => {
                                     )}
                                 </div>
                             </div>
+    {/* ADD Cancel button at bottom */}
+    <div className="flex gap-4 pt-4">
+      <button
+        type="button"
+        onClick={handleSaveAddress}
+        className="bg-[#EDA337] text-white font-bold px-6 py-3 text-xs"
+      >
+        Save Address
+      </button>
 
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Special Requests</label>
-                                <textarea name="notes" value={formData.notes} onChange={handleInputChange} className="w-full h-32 bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm resize-none" placeholder="Notes about your stay, e.g. dietary requirements, late check-in." />
-                            </div>
+      <button
+        type="button"
+        onClick={handleCancelAddressForm}
+        className="border px-6 py-3 text-xs font-bold"
+      >
+        Cancel
+      </button>
+    </div>
+  </>
+)}
+
                         </form>
                     </div>
 
