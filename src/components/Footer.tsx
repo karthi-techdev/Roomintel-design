@@ -6,6 +6,7 @@ import { PiHouseLineBold } from "react-icons/pi";
 import { FaArrowRight, FaArrowUp } from "react-icons/fa";
 import Image from "next/image";
 import logoImg from "../../public/Navbar-Logo.png"
+import axiosInstance from "../api/axiosInstance";
 
 export default function Footer() {
 
@@ -21,6 +22,43 @@ export default function Footer() {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+    const [email, setEmail] = useState("");
+    const [submitting, setSubmitting] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
+
+    const handleSubscribe = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        setMessage(null);
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setMessage('Please enter a valid email address.');
+            return;
+        }
+        setSubmitting(true);
+        try {
+            // Backend createSubscriber requires several fields; provide sensible defaults for newsletter signup
+            const payload = {
+                email: email.toLowerCase(),
+                name: email.split('@')[0] || 'Subscriber',
+                profileType: 'Advertiser',
+                companyName: 'Individual',
+                position: 'Subscriber',
+            };
+            const res = await axiosInstance.post('/subscribers', payload);
+            if (res?.data?.status === 'success' || res?.status === 201 || res?.status === 200) {
+                setMessage('Thanks! Your email has been saved.');
+                setEmail('');
+            } else {
+                setMessage('Subscription failed. Please try again.');
+            }
+        } catch (err: any) {
+            console.error('Subscribe error:', err);
+            const msg = err?.response?.data?.message || err?.message || 'Subscription failed';
+            setMessage(msg);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
        <>
@@ -79,16 +117,20 @@ export default function Footer() {
                 {/* Newsletter */}
                 <div>
                     <h3 className="text-2xl noto-geogia-font font-bold mb-4">Sign up for our newsletter to receive special offers, news and events.</h3>
-                    <div className="mt-8 relative">
+                    <form onSubmit={handleSubscribe} className="mt-8 relative">
                         <input 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             type="email" 
                             placeholder="Enter your email address" 
                             className="w-full h-[60px] bg-transparent border border-gray-700 rounded-sm px-6 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-red transition-colors"
+                            disabled={submitting}
                         />
-                        <button className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red transition-colors">
+                        <button type="submit" disabled={submitting} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red transition-colors">
                             <FaArrowRight />
                         </button>
-                    </div>
+                        {message && <p className="mt-3 text-sm text-gray-300">{message}</p>}
+                    </form>
                 </div>
             </div>
 
