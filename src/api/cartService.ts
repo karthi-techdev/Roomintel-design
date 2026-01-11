@@ -5,7 +5,6 @@ const getCart = async () => {
         const response = await axiosInstance.get('/site/cart');
         return response.data;
     } catch (error) {
-        console.error("Cart fetch error", error);
         return null; // Return null on error or if no cart
     }
 };

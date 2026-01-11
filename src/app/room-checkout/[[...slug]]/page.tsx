@@ -13,7 +13,7 @@ import { FaCheckCircle, FaHome, FaListAlt, FaArrowRight } from 'react-icons/fa';
 import { useCurrency } from '@/hooks/useCurrency';
 import RoomCartCard from '@/components/room-view/RoomCardSingle';
 import { Room, useRoomStore } from '@/store/useRoomStore';
-
+import { useSearchParams } from 'next/navigation';
 interface SingleBookingInfo {
     room: number;
     adults: number;
@@ -38,17 +38,19 @@ interface RoomCheckoutProps {
     onUpdate: (data: any) => void;
 }
 
-const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpdate }) => {
+const RoomCheckout: React.FC = () => {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
     // Set User Data
-    const user = authService.getCurrentUser(); 
+    const user = authService.getCurrentUser();
 
     // ============Single booking 
     const { fetchRoomBySlug, selectedRoom } = useRoomStore();
 
 
     const [selectedRoomByslug, setSelectedRoomByslug] = useState<Room>();
+
     const [singleItemInfo, setSingleItemInfo] = useState<SingleBookingInfo>({
         room: 0,
         adults: 0,
@@ -70,7 +72,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         if (isSlug) {
             fetchRoomBySlug(isSlug);
         };
-        
+
     }, [isSlug]);
 
     useEffect(() => {
@@ -89,8 +91,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     }, [selectedRoom]);
 
 
-    const onUpdateGetData = (data: any) => {
-        setSingleItemInfo((prev) => ({
+    const onUpdateGetData = React.useCallback((data: any) => {
+    setSingleItemInfo(prev => {
+        // 🔐 prevent unnecessary updates
+        if (
+            prev.room === data?.room &&
+            prev.roomTotal === data?.roomTotal &&
+            prev.serviceTotal === data?.serviceTotal &&
+            prev.tax === data?.tax &&
+            prev.serviceCharge === data?.serviceCharge &&
+            prev.grandTotal === data?.grandTotal
+        ) {
+            return prev;
+        }
+
+        return {
             ...prev,
             room: data?.room,
             roomTotal: data?.roomTotal,
@@ -98,24 +113,11 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             tax: data?.tax,
             serviceCharge: data?.serviceCharge,
             grandTotal: data?.grandTotal
-        }));
-    }
-    console.log('=======AAAAAAAAAAAA====', user);
-
-    console.log('=======selectedRoom====', selectedRoomByslug);
+        };
+    });
+}, []);
 
 
-
-
-
-
-
-
-
-
-
-
-    // =====================================
 
 
     // --- STORE ---
@@ -127,7 +129,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
-
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
         const base = cartItems.reduce((acc: any, item: any) => {
@@ -233,6 +234,41 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         };
         fetchServices();
     }, []);
+
+    useEffect(() => {
+    if (!isSlug) return;
+
+    const checkIn = searchParams.get('checkIn');
+    const checkOut = searchParams.get('checkOut');
+    const adults = searchParams.get('adults');
+    const children = searchParams.get('children');
+    const rooms = searchParams.get('rooms');
+    const roomTotal = searchParams.get('roomTotal');
+    const tax = searchParams.get('tax');
+    const serviceCharge = searchParams.get('serviceCharge');
+    const grandTotal = searchParams.get('grandTotal');
+
+    if (checkIn && checkOut) {
+        setDates({
+            checkIn,
+            checkOut
+        });
+    }
+
+    if (grandTotal && roomTotal && tax && serviceCharge) {
+        setSingleItemInfo(prev => ({
+            ...prev,
+            room: Number(rooms) || 1,
+            adults: Number(adults) || 2,
+            children: Number(children) || 0,
+            roomTotal: Number(roomTotal) || 0,
+            serviceTotal: 0, // no extras in single booking yet
+            tax: Number(tax) || 0,
+            serviceCharge: Number(serviceCharge) || 0,
+            grandTotal: Number(grandTotal) || 0,
+        }));
+    }
+}, [searchParams, isSlug]);
     // --- FORM VALIDITY CHECK ---
     const isFormValid = useMemo(() => {
         if (cartItems.length === 0) return false;
@@ -264,7 +300,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     // Load Data from Cart & User
     useEffect(() => {
         if (cartItem) {
-            // Set Dates from Cart if available
             if (cartItem.checkIn && cartItem.checkOut) {
                 setDates({
                     checkIn: new Date(cartItem.checkIn).toISOString().split('T')[0],
@@ -431,17 +466,21 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         setErrors(prev => ({ ...prev, ...dateErrors }));
     };
 
-    const finalizeOrder = async (bookingData: any) => {
-        await clearCart();
-        setConfirmedBookingDetails(bookingData);
-        setIsBookingConfirmed(true);
-        setIsProcessing(false);
-        // Scroll to top to see the confirmation
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
+    const finalizeOrder = async (data: any) => {
+    await clearCart();
+    setConfirmedBookingDetails({
+        id: data.id,
+        totalAmount: data.totalAmount,
+        points: data.points,
+        paymentMode: data.paymentMode
+    });
+    setIsBookingConfirmed(true);
+    setIsProcessing(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
     const handlePlaceOrder = async () => {
-        
+
         if (!isSlug && cartItems.length === 0) return showAlert.error("Your cart is empty and valid booking details are missing.");
 
         // Validate form
@@ -453,30 +492,27 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
         setIsProcessing(true);
 
         const totalAmount = totals.grandTotal;
-
-        // Prepare rooms array for backend
-        const bookedRooms =isSlug ? [{
-            roomId : selectedRoomByslug?._id,
+        const bookedRooms = isSlug ? [{
+            roomId: selectedRoomByslug?._id,
             roomName: selectedRoomByslug?.title,
             price: singleItemInfo.grandTotal,
             // checkIn: item.checkIn || dates.checkIn,
             // checkOut: item.checkOut || dates.checkOut,
-            guestDetails: {
-                    rooms: singleItemInfo?.room,
-                    adults: singleItemInfo.adults,
-                    children: singleItemInfo.children
+            guestDetails: {                
+                adults: singleItemInfo.adults,
+                children: singleItemInfo.children
             }
         }
-        ] 
-        : 
-        cartItems.map(item => ({
-            roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
-            roomName: item.roomName,
-            price: item.financials?.grandTotal || item.price,
-            checkIn: item.checkIn || dates.checkIn,
-            checkOut: item.checkOut || dates.checkOut,
-            guestDetails: item.guestDetails
-        }));
+        ]
+            :
+            cartItems.map(item => ({
+                roomId: typeof item.roomId === 'object' ? item.roomId._id : item.roomId,
+                roomName: item.roomName,
+                price: item.financials?.grandTotal || item.price,
+                checkIn: item.checkIn || dates.checkIn,
+                checkOut: item.checkOut || dates.checkOut,
+                guestDetails: item.guestDetails
+            }));
 
         const primaryRoomId = bookedRooms[0]?.roomId;
 
@@ -501,7 +537,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
-        console.log('============bookingPayload======',bookingPayload)
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
@@ -527,7 +562,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                     description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
                     order_id: orderData.razorpayOrderId,
                     handler: async function (response: any) {
-                        console.log("Payment Successful:", response);
 
                         // Update payload with payment success
                         const paidPayload = {
@@ -542,7 +576,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                             await finalizeOrder(bookingPayload);
                         } catch (err) {
-                            console.error("Failed to save booking after payment", err);
                             showAlert.error("Payment successful but booking failed to save. Please contact support.");
                             setIsProcessing(false);
                         }
@@ -557,7 +590,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                     },
                     modal: {
                         ondismiss: function () {
-                            console.log('Payment cancelled by user');
                             setIsProcessing(false);
                             showAlert.info("Payment cancelled");
                         }
@@ -581,7 +613,6 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
             }
 
         } catch (error: any) {
-            console.error("Order processing error:", error);
             showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
             setIsProcessing(false);
         }
@@ -591,11 +622,11 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
     if (isBookingConfirmed) {
         return (
             <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="max-w-[600px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                <div className="max-w-[500px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
                     {/* Top Accent Bar */}
                     <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
-                    <div className="p-8 md:p-12 text-center">
+                    <div className="p-6 text-center">
                         {/* Success Icon */}
                         <div className="mb-5 relative inline-block">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
@@ -616,7 +647,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-7 text-left">
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-8 mb-6 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
@@ -624,7 +655,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
-                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.amount || 0)}</p>
+                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.totalAmount || 0)}</p>
                                 </div>
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
@@ -640,13 +671,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="px-8 py-4 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
+                                className="px-3 py-2 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
                             >
                                 View Dashboard
                             </button>
                             <button
                                 onClick={() => router.push('/')}
-                                className="px-8 py-4 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
+                                className="px-3 py-2 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
                             >
                                 Back to Home
                             </button>
@@ -690,13 +721,13 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
-                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} availableServices={availableServices} onUpdate={onUpdateGetData} />
+                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} checkIn={dates.checkIn} checkOut={dates.checkOut} availableServices={availableServices} onUpdate={onUpdateGetData} />
                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">
 
                             {/* DATES SECTION */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
                                     <input
@@ -957,7 +988,7 @@ const RoomCheckout: React.FC<RoomCheckoutProps> = ({ onBack, onPlaceOrder, onUpd
                                 <button
                                     onClick={handlePlaceOrder}
                                     // disabled={!cartItem || isProcessing || !isFormValid}
-                                    className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
+                                    className={`w-full bg-[#283862] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
                                         `}
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}

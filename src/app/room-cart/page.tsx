@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -229,7 +230,6 @@ export default function RoomCart() {
                 });
             }
         } catch (error) {
-            console.error(error);
             setAlertState({
                 type: 'destructive',
                 title: 'Error',
@@ -370,7 +370,7 @@ export default function RoomCart() {
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 lg:py-8 mt-16 lg:mt-0">
+            <div className="max-w-5xl mx-auto mx-auto px-4 sm:px-6 py-6 lg:py-8 mt-16 lg:mt-0">
                 {loading ? (
                     <div className="flex justify-center items-center py-20">
                         <div className="w-12 h-12 border-4 border-[#283862] border-t-transparent rounded-full animate-spin"></div>
@@ -441,44 +441,7 @@ export default function RoomCart() {
                                                         />
                                                     </div>
                                                     <div className="flex-1 space-y-4">
-                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                            <div className="space-y-1">
-                                                                <label className="text-[10px] font-bold text-gray-400 uppercase">Rooms</label>
-                                                                <div className="flex items-center gap-3">
-                                                                    <button
-                                                                        onClick={() => handleUpdateRooms(index, (item.guestDetails?.rooms || 1) - 1)}
-                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        disabled={(item.guestDetails?.rooms || 1) <= 1}
-                                                                    >
-                                                                        -
-                                                                    </button>
-                                                                    <span className="font-bold text-[#283862]">
-                                                                        {item.guestDetails?.rooms || 1}
-                                                                    </span>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                            const maxRooms = roomData?.maxRooms || 10;
-                                                                            handleUpdateRooms(index, Math.min(maxRooms, (item.guestDetails?.rooms || 1) + 1));
-                                                                        }}
-                                                                        className="w-8 h-8 flex items-center justify-center border rounded hover:text-[#c23535] disabled:opacity-50 disabled:cursor-not-allowed"
-                                                                        disabled={(() => {
-                                                                            const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                            const maxRooms = roomData?.maxRooms || 10;
-                                                                            return (item.guestDetails?.rooms || 1) >= maxRooms;
-                                                                        })()}
-                                                                    >
-                                                                        +
-                                                                    </button>
-                                                                </div>
-                                                                {(() => {
-                                                                    const roomData = allRooms.find((r: any) => r._id === item.roomId);
-                                                                    const maxRooms = roomData?.maxRooms || 10;
-                                                                    return (item.guestDetails?.rooms || 1) >= maxRooms && (
-                                                                        <div className="text-[9px] text-yellow-500">Max limit reached</div>
-                                                                    );
-                                                                })()}
-                                                            </div>
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">                                                            
                                                             <div className="space-y-1">
                                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">Adults</label>
                                                                 <div className="flex items-center gap-3">

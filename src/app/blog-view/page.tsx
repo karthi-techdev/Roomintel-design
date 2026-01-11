@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   FaSearch, 
   FaFacebookF, 
@@ -10,6 +10,7 @@ import {
   FaUser,
   FaRegComment
 } from 'react-icons/fa';
+import hotelLocationService from '@/api/hotelLocationService';
 
 interface BlogViewProps {
   onBack: () => void;
@@ -31,7 +32,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
     },
     {
       id: 2,
-      title: "Know the secreat of Bluebell Resort",
+      title: "Know the secreat of AvensStay Resort",
       date: "January 4, 2022",
       image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=200&auto=format&fit=crop"
     },
@@ -44,6 +45,21 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
   ];
 
   const tags = ["Holidays", "Hotels", "Prices", "Relaxation", "Resort", "Tips"];
+    const [hotelName, setHotelName] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchHotelName = async () => {
+            try {
+                const json = await hotelLocationService.getActiveLocations();
+                const items = Array.isArray(json?.data) ? json.data : json;
+                const item = Array.isArray(items) ? items[0] : items;
+                if (item?.hotelName) setHotelName(item.hotelName);
+            } catch (err) {
+                // ignore, will use fallback
+            }
+        };
+        fetchHotelName();
+    }, []);
 
   return (
     <div className="w-full   pb-20 min-h-screen">
@@ -98,7 +114,7 @@ const BlogView: React.FC<BlogViewProps> = ({ onBack }) => {
                     {/* Content Body */}
                     <div className="text-gray-500 leading-relaxed space-y-6 text-[15px] font-light">
                         <p className="text-lg text-gray-600 font-normal">
-                            Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
+                            Our objective at {hotelName || 'AvensStay'} is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
                         </p>
                         <p>
                             Nor again is there anyone who loves or pursues or desires to obtain pain of itself, because it is pain, but because occasionally circumstances occur in which toil and pain can procure him some great pleasure. To take a trivial example, which of us ever undertakes laborious physical exercise, except to obtain some advantage from it.
