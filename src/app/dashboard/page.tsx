@@ -627,14 +627,16 @@ const handleEditAddress = (address: any) => {
 
   // 1️⃣ Define the function in your component
 
-  const handleRemoveAddress = async (addressId: string) => {
+  const handleRemoveAddress = async (addressId: string | undefined) => {
+    if (!addressId) return;
   if (!billingAddress?._id) return;
 
   await deleteBillingAddressPermanently(billingAddress._id, addressId);
   await fetchBillingAddressByCustomerId(customerId);
 };
 
-const handleSetDefault = async (addressId: string) => {
+const handleSetDefault = async (addressId: string | undefined) => {
+  if (!addressId) return;
   await setDefaultBillingAddress(customerId, addressId);
   await fetchBillingAddressByCustomerId(customerId);
 };

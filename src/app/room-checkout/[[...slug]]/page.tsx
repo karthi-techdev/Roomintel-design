@@ -78,19 +78,23 @@ useEffect(() => {
   }
 }, [addresses]);
 
-const handleSelectAddress = async (addressId: string) => {
+// Type-safe function to handle selecting an address
+const handleSelectAddress = async (addressId: string | undefined) => {
+  if (!addressId) return; // safety check
+
   setSelectedAddressId(addressId);
 
   try {
-    await useBillingAddressStore
-      .getState()
-      .setDefaultBillingAddress(userId, addressId); // ✅ FIX
+    // Update default billing address in the store
+    await useBillingAddressStore.getState().setDefaultBillingAddress(userId, addressId);
 
-    await fetchBillingAddressByCustomerId(userId); // refresh
+    // Refresh addresses for the user
+    await fetchBillingAddressByCustomerId(userId);
   } catch (err) {
     showAlert.error("Failed to update default address");
   }
 };
+
 
 
 

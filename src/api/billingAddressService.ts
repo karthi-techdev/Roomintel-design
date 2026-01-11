@@ -2,7 +2,7 @@ import axiosInstance from "./axiosInstance";
 
 /* ---------- Address Interface ---------- */
 export interface Address {
-  _id?: string;
+  _id?: string | undefined;
   label?: string;
   fullName: string;
   email: string;
