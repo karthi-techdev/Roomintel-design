@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PiHouseLineBold } from "react-icons/pi";
 import { FaArrowRight, FaArrowUp } from "react-icons/fa";
@@ -29,14 +29,44 @@ export default function Footer() {
     const [email, setEmail] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
+    const [messageType, setMessageType] = useState<"success" | "error" | null>(null);
+    const [errorSource, setErrorSource] = useState<"validation" | "api" | null>(null);
+
+
+    useEffect(() => {
+        if (!message) return;
+
+        if (messageType === "error" && errorSource === "validation") {
+            return;
+        }
+
+
+        const timer = setTimeout(() => {
+            setMessage(null);
+            setMessageType(null);
+            setErrorSource(null);
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [message, messageType, errorSource]);
+
+
+
+    const emailpattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     const handleSubscribe = async (e?: React.FormEvent) => {
         e?.preventDefault();
         setMessage(null);
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            setMessage('Please enter a valid email address.');
+        setMessageType(null);
+        setErrorSource(null);
+        if (!email || !emailpattern.test(email)) {
+            setMessage("Please enter a valid email address.");
+            setMessageType("error");
+            setErrorSource("validation");
             return;
         }
+
+
         setSubmitting(true);
         try {
             // Backend createSubscriber requires several fields; provide sensible defaults for newsletter signup
@@ -48,12 +78,17 @@ export default function Footer() {
                 position: 'Subscriber',
             };
             const res = await axiosInstance.post('/subscribers', payload);
-            if (res?.data?.status === 'success' || res?.status === 201 || res?.status === 200) {
-                setMessage('Thanks! Your email has been saved.');
-                setEmail('');
+            if (res?.data?.status === "success" || res?.status === 201 || res?.status === 200) {
+                setMessage("Thanks! Your email has been saved.");
+                setMessageType("success");
+                setEmail("");
+                setErrorSource(null);
             } else {
-                setMessage('Subscription failed. Please try again.');
+                setMessage("Subscription failed. Please try again.");
+                setMessageType("error");
+                setErrorSource("api");
             }
+
         } catch (err: any) {
             console.error('Subscribe error:', err);
             const msg = err?.response?.data?.message || err?.message || 'Subscription failed';
@@ -119,7 +154,7 @@ export default function Footer() {
                         {/* Newsletter */}
                         <div>
                             <h3 className="text-2xl noto-geogia-font font-bold mb-4">Sign up for our newsletter to receive special offers, news and events.</h3>
-                            <form onSubmit={handleSubscribe} className="mt-8 relative">
+                            <form onSubmit={handleSubscribe} noValidate className="mt-8 relative">
                                 <input
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
@@ -128,11 +163,29 @@ export default function Footer() {
                                     className="w-full h-[60px] bg-transparent border border-gray-700 rounded-sm px-6 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-red transition-colors"
                                     disabled={submitting}
                                 />
-                                <button type="submit" disabled={submitting} className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red transition-colors">
+
+                                {/* Arrow Icon - always centered */}
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-red transition-colors"
+                                >
                                     <FaArrowRight />
                                 </button>
-                                {message && <p className="mt-3 text-sm text-gray-300">{message}</p>}
+
+                                {/* Message - does NOT affect layout */}
+                                {message && (
+                                    <p
+                                        className={`absolute -bottom-6 left-0 text-sm
+      ${messageType === "success" ? "text-green-500" : "text-red-500"}
+    `}
+                                    >
+                                        {message}
+                                    </p>
+                                )}
+
                             </form>
+
                         </div>
                     </div>
 
