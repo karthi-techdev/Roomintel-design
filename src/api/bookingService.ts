@@ -67,7 +67,6 @@ export const bookingService = {
   },
   getRoomBookings: async (slug: string): Promise<any[]> => {
     const response = await axiosInstance.get(`/bookings/room/${slug}`);
-    console.log('Fetched room bookings:', response.data);
     return response.data?.data || response.data || [];
   },
 

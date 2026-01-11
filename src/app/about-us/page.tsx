@@ -53,7 +53,6 @@ const AboutUs: React.FC = () => {
                 // Fetch content for banners
                 await fetchBanners();
             } catch (error: any) {
-                console.warn('Backend fetch failed, using default sections:', error);
                 setPageSections(DEFAULT_ABOUT_SECTIONS);
             } finally {
                 setLoading(false);

@@ -51,7 +51,6 @@ export const useRoomStore = create<RoomState>((set) => ({
                 set({ error: res.message || 'Failed to fetch rooms', loading: false });
             }
         } catch (error: any) {
-            console.error(error);
             set({ error: error.message || 'Failed to fetch rooms', loading: false });
         }
     },

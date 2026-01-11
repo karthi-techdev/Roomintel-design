@@ -34,7 +34,6 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
           setCategories(['All', ...catNames]);
         }
       } catch (err) {
-        console.error("Error fetching gallery data:", err);
         setError("Failed to load gallery items. Please try again later.");
       } finally {
         setLoading(false);
@@ -67,7 +66,7 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
   };
 
   return (
-    <div className=" w-full   pb-20 min-h-screen">
+    <div className=" w-full   pb-10 min-h-screen">
 
       {/* --- HEADER --- */}
       <div className="min-h-[250px]  sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
@@ -94,7 +93,7 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
 
 
 
-      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-16 md:py-20">
+      <div className="max-w-[1400px] mx-auto px-6 lg:px-12 py-15 md:py-20">
 
         {/* --- FILTER BUTTONS --- */}
         <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-16">
@@ -146,11 +145,13 @@ const Gallery: React.FC<GalleryProps> = ({ onBack }) => {
                   className="break-inside-avoid relative group cursor-pointer rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-shadow"
                   onClick={() => openLightbox(index)}
                 >
-                  <img
-                    src={getImageUrl(img.image, '/image/placeholder.jpg')}
-                    alt={img.name}
-                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
+                  <div className="w-full aspect-[4/3] overflow-hidden">
+  <img
+    src={getImageUrl(img.image, '/image/placeholder.jpg')}
+    alt={img.name}
+    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+  />
+</div>
                   {/* Overlay */}
                   <div className="absolute inset-0 bg-[#283862]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 text-center">
                     <div className="w-10 h-10 rounded-full bg-brand-red text-white flex items-center justify-center mb-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">

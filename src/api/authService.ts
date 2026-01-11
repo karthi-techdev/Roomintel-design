@@ -5,6 +5,14 @@ export const authService = {
         const response = await axiosInstance.post('/site/auth/register', data);
         return response.data;
     },
+    forgotPassword: async (email: string) => {
+        const response = await axiosInstance.post('/site/auth/forgot-password', { email });
+        return response.data;
+    },
+    resetPassword: async (token: string, password: string) => {
+        const response = await axiosInstance.post('/site/auth/reset-password', { token, password });
+        return response.data;
+    },
 
     login: async (data: any) => {
         const response = await axiosInstance.post('/site/auth/login', data);

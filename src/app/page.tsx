@@ -90,23 +90,7 @@ export default function Home() {
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
 
-  // const [bookedDates, setBookedDates] = useState<Date[]>([]);
 
-  // useEffect(() => {
-  //   const fetchBookedDates = async () => {
-  //     try {
-  //       const { default: axiosInstance } = await import('../api/axiosInstance');
-  //       const res = await axiosInstance.get('/site/bookings/booked-dates');
-  //       if (res.data.status) {
-  //         const dates = res.data.data.map((d: string) => new Date(d));
-  //         setBookedDates(dates);
-  //       }
-  //     } catch (err) {
-  //       console.error("Failed to fetch booked dates", err);
-  //     }
-  //   };
-  //   fetchBookedDates();
-  // }, []);
 
   const carouselTestimonials: Reviews[] | undefined = testimonialData;
 
@@ -144,7 +128,6 @@ export default function Home() {
     "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
   ),
   }));
-console.log('rooms',rooms)
 
 
   // Carousel Navigation

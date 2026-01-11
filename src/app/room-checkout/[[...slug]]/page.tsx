@@ -117,9 +117,7 @@ const RoomCheckout: React.FC = () => {
     });
 }, []);
 
-    console.log('=======AAAAAAAAAAAA====', user);
 
-    console.log('=======selectedRoom====', selectedRoomByslug);
 
 
     // --- STORE ---
@@ -131,7 +129,6 @@ const RoomCheckout: React.FC = () => {
     const [isBookingConfirmed, setIsBookingConfirmed] = useState(false);
     const [confirmedBookingDetails, setConfirmedBookingDetails] = useState<any>(null);
     const [availableServices, setAvailableServices] = useState<any[]>([]);
-    console.log("confirmedBookingDetails:", confirmedBookingDetails);
     // Aggregate calculations for all items (same as cart page)
     const totals = useMemo(() => {
         const base = cartItems.reduce((acc: any, item: any) => {
@@ -540,7 +537,6 @@ const RoomCheckout: React.FC = () => {
             paymentMode: paymentMethod === 'cash' ? 'Cash' : 'Card',
             bookingStatus: 'Pending'
         };
-        console.log('============bookingPayload======', bookingPayload)
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
@@ -565,7 +561,6 @@ const RoomCheckout: React.FC = () => {
                     description: `Multiple Room Booking (${totals.roomsCount} rooms)`,
                     order_id: orderData.razorpayOrderId,
                     handler: async function (response: any) {
-                        console.log("Payment Successful:", response);
 
                         // Update payload with payment success
                         const paidPayload = {
@@ -580,7 +575,6 @@ const RoomCheckout: React.FC = () => {
                             showAlert.success(`Payment Successful! Payment ID: ${response.razorpay_payment_id}\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                             await finalizeOrder(bookingPayload);
                         } catch (err) {
-                            console.error("Failed to save booking after payment", err);
                             showAlert.error("Payment successful but booking failed to save. Please contact support.");
                             setIsProcessing(false);
                         }
@@ -595,7 +589,6 @@ const RoomCheckout: React.FC = () => {
                     },
                     modal: {
                         ondismiss: function () {
-                            console.log('Payment cancelled by user');
                             setIsProcessing(false);
                             showAlert.info("Payment cancelled");
                         }
@@ -619,7 +612,6 @@ const RoomCheckout: React.FC = () => {
             }
 
         } catch (error: any) {
-            console.error("Order processing error:", error);
             showAlert.error("Order failed: " + (error.response?.data?.message || error.message));
             setIsProcessing(false);
         }
@@ -629,11 +621,11 @@ const RoomCheckout: React.FC = () => {
     if (isBookingConfirmed) {
         return (
             <div className="w-full pb-20 min-h-screen bg-gray-50 flex items-center justify-center px-4">
-                <div className="max-w-[600px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
+                <div className="max-w-[500px]  mt-25 w-full bg-white rounded-[30px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
                     {/* Top Accent Bar */}
                     <div className="h-2 w-full bg-gradient-to-r from-[#EDA337] via-[#f1bb6d] to-[#EDA337]"></div>
 
-                    <div className="p-8 md:p-12 text-center">
+                    <div className="p-6 text-center">
                         {/* Success Icon */}
                         <div className="mb-5 relative inline-block">
                             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center animate-pulse">
@@ -654,7 +646,7 @@ const RoomCheckout: React.FC = () => {
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6 md:p-8 mb-7 text-left">
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-8 mb-6 text-left">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
@@ -678,13 +670,13 @@ const RoomCheckout: React.FC = () => {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <button
                                 onClick={() => router.push('/dashboard')}
-                                className="px-8 py-4 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
+                                className="px-3 py-2 bg-[#283862] text-white font-bold rounded-xl hover:bg-[#1a2542] transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider shadow-lg"
                             >
                                 View Dashboard
                             </button>
                             <button
                                 onClick={() => router.push('/')}
-                                className="px-8 py-4 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
+                                className="px-3 py-2 bg-white border-2 border-[#283862] text-[#283862] font-bold rounded-xl hover:bg-gray-50 transition-all transform hover:scale-105 active:scale-95 text-sm uppercase tracking-wider"
                             >
                                 Back to Home
                             </button>
@@ -734,7 +726,7 @@ const RoomCheckout: React.FC = () => {
                         <form className="space-y-6">
 
                             {/* DATES SECTION */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center p-4 bg-gray-50 border border-gray-200 rounded-lg">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Check-In Date *</label>
                                     <input
@@ -995,7 +987,7 @@ const RoomCheckout: React.FC = () => {
                                 <button
                                     onClick={handlePlaceOrder}
                                     // disabled={!cartItem || isProcessing || !isFormValid}
-                                    className={`w-full bg-[#EDA337] hover:bg-[#d8922f] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
+                                    className={`w-full bg-[#283862] hover:bg-[#c23535] text-white font-bold py-4 text-xs uppercase tracking-[0.15em] rounded-sm transition-all shadow-md hover:shadow-lg 
                                         `}
                                 >
                                     {isProcessing ? 'Processing...' : 'Place Booking'}
