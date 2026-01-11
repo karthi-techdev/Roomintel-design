@@ -1,4 +1,4 @@
-export const LIVE = false;
+export const LIVE = true;
 
 export const SITE_URL = 'http://localhost:3000/'; // Frontend URL
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
