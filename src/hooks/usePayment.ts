@@ -51,7 +51,7 @@ export const usePayment = () => {
                 key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
                 amount: orderData.amount,
                 currency: orderData.currency,
-                name: "RoomIntel Booking",
+                name: "Avensstay Booking",
                 description: description || "Payment for Booking",
                 order_id: orderData.razorpayOrderId,
                 handler: function (response: any) {
@@ -70,6 +70,7 @@ export const usePayment = () => {
                     ondismiss: function () {
                         setIsProcessing(false);
                         showAlert.info("Payment cancelled");
+                        if (onFailure) onFailure(new Error("Payment cancelled by user"));
                     }
                 }
             };

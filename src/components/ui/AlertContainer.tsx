@@ -12,7 +12,7 @@ export function AlertContainer() {
     if (alerts.length === 0) return null;
 
     return (
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 w-full max-w-sm pointer-events-none">
+        <div className="fixed top-24 right-4 z-[10000] flex flex-col gap-2 w-full max-w-sm pointer-events-none">
             <AnimatePresence>
                 {alerts.map((alert: AlertMessage) => (
                     <motion.div

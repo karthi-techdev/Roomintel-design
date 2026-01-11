@@ -15,7 +15,7 @@ interface BillingAddressState {
   /* ---------- Actions ---------- */
   fetchAllBillingAddresses: () => Promise<void>;
   fetchBillingAddressByCustomerId: (customerId: string) => Promise<void>;
-  createBillingAddress: (payload: Partial<BillingAddress>) => Promise<void>;
+  createBillingAddress: (payload: any) => Promise<void>;
   updateBillingAddress: (
     billingId: string,
     addressId: string | undefined,
@@ -65,6 +65,11 @@ export const useBillingAddressStore = create<BillingAddressState>((set) => ({
         await billingAddressService.getBillingAddressByCustomerId(customerId);
       set({ billingAddress: data, isLoading: false });
     } catch (err: any) {
+      if (err.response && err.response.status === 404) {
+        set({ billingAddress: null, isLoading: false });
+        return;
+      }
+
       set({
         isLoading: false,
         error: err.message || "Failed to load billing address",
@@ -77,8 +82,8 @@ export const useBillingAddressStore = create<BillingAddressState>((set) => ({
   createBillingAddress: async (payload) => {
     set({ isLoading: true, error: null });
     try {
-      await billingAddressService.createBillingAddress(payload);
-      set({ isLoading: false });
+      const data = await billingAddressService.createBillingAddress(payload);
+      set({ billingAddress: data, isLoading: false });
     } catch (err: any) {
       set({
         isLoading: false,
@@ -89,24 +94,24 @@ export const useBillingAddressStore = create<BillingAddressState>((set) => ({
   },
 
   /* ---------- UPDATE ---------- */
-updateBillingAddress: async (
-  billingId: string,
-  addressId: string | undefined,
-  payload: Partial<Address>
-) => {
-  set({ isLoading: true, error: null });
-  try {
-    console.log("Updating billing address:", billingId, addressId, payload);
-    await billingAddressService.updateBillingAddress(billingId, addressId, payload);
-    set({ isLoading: false });
-  } catch (err: any) {
-    set({
-      isLoading: false,
-      error: err.message || "Failed to update billing address",
-    });
-    console.error("Update billing address failed:", err);
-  }
-},
+  updateBillingAddress: async (
+    billingId: string,
+    addressId: string | undefined,
+    payload: Partial<Address>
+  ) => {
+    set({ isLoading: true, error: null });
+    try {
+      console.log("Updating billing address:", billingId, addressId, payload);
+      const updatedData = await billingAddressService.updateBillingAddress(billingId, addressId, payload);
+      set({ billingAddress: updatedData, isLoading: false });
+    } catch (err: any) {
+      set({
+        isLoading: false,
+        error: err.message || "Failed to update billing address",
+      });
+      console.error("Update billing address failed:", err);
+    }
+  },
 
 
 

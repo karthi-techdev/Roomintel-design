@@ -77,15 +77,53 @@ const RoomCheckout: React.FC = () => {
     useEffect(() => {
         if (addresses.length > 0 && !selectedAddressId) {
             const def = addresses.find(a => a.isDefault);
-            setSelectedAddressId(def?._id || addresses[0]._id);
+            const initialAddr = def || addresses[0];
+            setSelectedAddressId(initialAddr._id);
+            setFormData(prev => ({
+                ...prev,
+                name: initialAddr.fullName || '',
+                email: initialAddr.email || prev.email || user?.email || '',
+                phone: initialAddr.phone || '',
+                address: initialAddr.streetAddress?.[0] || '',
+                city: initialAddr.city || '',
+                state: initialAddr.state || '',
+                postcode: initialAddr.zipCode || '',
+                country: initialAddr.country || ''
+            }));
         }
     }, [addresses]);
+
+    // Validate form immediately when opening 'Add Address'
+    useEffect(() => {
+        if (showAddressForm) {
+            validateAddressForm();
+        }
+    }, [showAddressForm]);
 
     // Type-safe function to handle selecting an address
     const handleSelectAddress = async (addressId: string | undefined) => {
         if (!addressId) return; // safety check
 
         setSelectedAddressId(addressId);
+
+        // Update formData to match selected address
+        const selectedAddr = addresses.find(a => a._id === addressId);
+        if (selectedAddr) {
+            setFormData(prev => ({
+                ...prev,
+                name: selectedAddr.fullName || '',
+                email: selectedAddr.email || prev.email || user?.email || '',
+                phone: selectedAddr.phone || '',
+                address: selectedAddr.streetAddress?.[0] || '',
+                city: selectedAddr.city || '',
+                state: selectedAddr.state || '',
+                postcode: selectedAddr.zipCode || '',
+                country: selectedAddr.country || ''
+            }));
+            // Clear any validation errors since this is a valid saved address
+            setErrors({});
+            setTouched({});
+        }
 
         try {
             // Update default billing address in the store
@@ -499,7 +537,7 @@ const RoomCheckout: React.FC = () => {
 
     // --- VALIDATION ---
     const validateField = (name: string, value: string) => {
-  switch(name) {
+        switch (name) {
             case "phone":
                 if (!value.trim()) return "Phone is required";
                 if (!/^[0-9+()\s-]+$/.test(value)) return "Invalid phone number";
@@ -513,6 +551,18 @@ const RoomCheckout: React.FC = () => {
             case "email":
                 if (!value.trim()) return "Email is required";
                 if (!/^\S+@\S+\.\S+$/.test(value)) return "Invalid email";
+                break;
+            case "address":
+                if (!value.trim()) return "Address is required";
+                break;
+            case "city":
+                if (!value.trim()) return "City is required";
+                break;
+            case "state":
+                if (!value.trim()) return "State is required";
+                break;
+            case "country":
+                if (!value.trim()) return "Country is required";
                 break;
             default:
                 return "";
@@ -548,6 +598,10 @@ const RoomCheckout: React.FC = () => {
         newErrors.email = validateField('email', formData.email);
         newErrors.phone = validateField('phone', formData.phone);
         newErrors.postcode = validateField('postcode', formData.postcode);
+        newErrors.address = validateField('address', formData.address);
+        newErrors.city = validateField('city', formData.city);
+        newErrors.state = validateField('state', formData.state);
+        newErrors.country = validateField('country', formData.country);
 
         // Validate dates
         const dateErrors = validateDates();
@@ -566,7 +620,11 @@ const RoomCheckout: React.FC = () => {
             phone: true,
             checkIn: true,
             checkOut: true,
-            postcode: true
+            postcode: true,
+            address: true,
+            city: true,
+            state: true,
+            country: true
         });
 
         return Object.keys(newErrors).length === 0;
@@ -654,6 +712,7 @@ const RoomCheckout: React.FC = () => {
         // Validate form
         if (!validateForm()) {
             showAlert.error("Please fix the errors in the form before proceeding.");
+            setIsProcessing(false);
             return;
         }
 
@@ -740,7 +799,10 @@ const RoomCheckout: React.FC = () => {
                         }
                     },
                     onFailure: (error) => {
-                        console.error("Payment failed", error);
+                        // Only log real errors to avoid "Console Error" overlay for cancellations
+                        if (error?.message !== "Payment cancelled by user") {
+                            console.error("Payment failed", error);
+                        }
                         setIsProcessing(false);
                     }
                 });
@@ -873,7 +935,15 @@ const RoomCheckout: React.FC = () => {
 
                     {/* --- LEFT COLUMN: BILLING DETAILS --- */}
                     <div className="w-full lg:w-2/3">
-                        <RoomCartCard selectedRoomByslug={selectedRoomByslug} checkIn={dates.checkIn} checkOut={dates.checkOut} availableServices={availableServices} onUpdate={onUpdateGetData} />
+                        <RoomCartCard
+                            selectedRoomByslug={selectedRoomByslug}
+                            checkIn={dates.checkIn}
+                            checkOut={dates.checkOut}
+                            availableServices={availableServices}
+                            onUpdate={onUpdateGetData}
+                            initialAdults={searchParams.get('adults') ? Number(searchParams.get('adults')) : undefined}
+                            initialChildren={searchParams.get('children') ? Number(searchParams.get('children')) : undefined}
+                        />
                         <h2 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 pb-4 border-b border-gray-200">Billing & Booking Details</h2>
 
                         <form className="space-y-6">
@@ -924,42 +994,48 @@ const RoomCheckout: React.FC = () => {
                                         Select Billing Address
                                     </h3>
 
-                                    {addresses.map(addr => (
-                                        <label
-                                            key={addr._id}
-                                            className={`flex gap-4 p-4 border rounded-lg cursor-pointer
-          ${selectedAddressId === addr._id
-                                                    ? "border-[#EDA337] bg-[#fff8ec]"
-                                                    : "border-gray-200"
-                                                }`}
-                                        >
-                                            <input
-                                                type="radio"
-                                                checked={selectedAddressId === addr._id}
-                                                onChange={() => handleSelectAddress(addr._id)}
-                                            />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {addresses.map(addr => (
+                                            <label
+                                                key={addr._id}
+                                                className={`flex gap-4 p-4 border rounded-lg cursor-pointer
+                                    ${selectedAddressId === addr._id
+                                                        ? "border-[#EDA337] bg-[#fff8ec]"
+                                                        : "border-gray-200"
+                                                    }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    checked={selectedAddressId === addr._id}
+                                                    onChange={() => handleSelectAddress(addr._id)}
+                                                    className="mt-1"
+                                                />
 
-                                            <div>
-                                                <div className="font-bold flex gap-2">
-                                                    {addr.fullName}
-                                                    {addr.isDefault && (
-                                                        <span className="text-[10px] bg-green-100 px-2 rounded">
-                                                            DEFAULT
-                                                        </span>
-                                                    )}
+                                                <div>
+                                                    <div className="font-bold flex gap-2">
+                                                        {addr.fullName}
+                                                        {addr.isDefault && (
+                                                            <span className="text-[10px] bg-green-100 px-2 rounded">
+                                                                DEFAULT
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    <p className="text-sm text-gray-600 mt-1">{addr.streetAddress.join(", ")}</p>
+                                                    <p className="text-sm text-gray-600">{addr.city}, {addr.state} {addr.zipCode}</p>
+                                                    <p className="text-sm text-gray-600">{addr.country}</p>
+                                                    <p className="font-semibold text-sm mt-2">📞 {addr.phone}</p>
                                                 </div>
-
-                                                <p>{addr.streetAddress.join(", ")}</p>
-                                                <p>{addr.city}, {addr.state} {addr.zipCode}</p>
-                                                <p>{addr.country}</p>
-                                                <p className="font-semibold">📞 {addr.phone}</p>
-                                            </div>
-                                        </label>
-                                    ))}
+                                            </label>
+                                        ))}
+                                    </div>
 
                                     <button
                                         type="button"
-                                        onClick={() => setShowAddressForm(true)}
+                                        onClick={() => {
+                                            resetAddressForm();
+                                            setShowAddressForm(true);
+                                        }}
                                         className="text-xs font-bold text-[#EDA337] underline"
                                     >
                                         + Add New Address
@@ -1032,30 +1108,67 @@ const RoomCheckout: React.FC = () => {
 
                                     <div className="space-y-2">
                                         <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Address</label>
-                                        <input type="text" name="address" value={formData.address} onChange={handleInputChange} placeholder="Street address" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                        <input
+                                            type="text"
+                                            name="address"
+                                            value={formData.address}
+                                            onChange={handleInputChange}
+                                            placeholder="Street address"
+                                            className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.address && errors.address ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#EDA337]'
+                                                }`}
+                                        />
+                                        {touched.address && errors.address && (
+                                            <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+                                        )}
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Country</label>
-                                            <select name="country" value={formData.country} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                            <select
+                                                name="country"
+                                                value={formData.country}
+                                                onChange={handleInputChange}
+                                                className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm appearance-none cursor-pointer ${touched.country && errors.country ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#EDA337]'
+                                                    }`}
+                                            >
                                                 <option value="">Select your country</option>
                                                 {countryData.map((c: any, i: number) => (
                                                     <option key={i} value={c.name}>{c.name}</option>
                                                 ))}
                                             </select>
+                                            {touched.country && errors.country && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.country}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">State</label>
                                             {availableStates.length > 0 ? (
-                                                <select name="state" value={formData.state} onChange={handleInputChange} className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer">
+                                                <select
+                                                    name="state"
+                                                    value={formData.state}
+                                                    onChange={handleInputChange}
+                                                    className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm appearance-none cursor-pointer ${touched.state && errors.state ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#EDA337]'
+                                                        }`}
+                                                >
                                                     <option value="">Select State</option>
                                                     {availableStates.map((s: any, i: number) => (
                                                         <option key={i} value={s}>{s}</option>
                                                     ))}
                                                 </select>
                                             ) : (
-                                                <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. NY" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                                <input
+                                                    type="text"
+                                                    name="state"
+                                                    value={formData.state}
+                                                    onChange={handleInputChange}
+                                                    placeholder="e.g. NY"
+                                                    className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.state && errors.state ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#EDA337]'
+                                                        }`}
+                                                />
+                                            )}
+                                            {touched.state && errors.state && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.state}</p>
                                             )}
                                         </div>
                                     </div>
@@ -1063,7 +1176,18 @@ const RoomCheckout: React.FC = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Town / City</label>
-                                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. New York" className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm" />
+                                            <input
+                                                type="text"
+                                                name="city"
+                                                value={formData.city}
+                                                onChange={handleInputChange}
+                                                placeholder="e.g. New York"
+                                                className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm ${touched.city && errors.city ? 'border-red-500 focus:border-red-500' : 'border-gray-300 focus:border-[#EDA337]'
+                                                    }`}
+                                            />
+                                            {touched.city && errors.city && (
+                                                <p className="text-xs text-red-500 mt-1">{errors.city}</p>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Postcode</label>
@@ -1120,6 +1244,9 @@ const RoomCheckout: React.FC = () => {
                                                 <div>
                                                     <div className="font-bold text-[black]">{selectedRoomByslug.roomName}</div>
                                                     <div className="text-xs text-[black] ">x {singleItemInfo?.room} Rooms</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {singleItemInfo?.adults} Adults, {singleItemInfo?.children} Children
+                                                    </div>
                                                 </div>
                                                 <span className="font-bold text-[#c23535]">{fmt(singleItemInfo?.roomTotal)}</span>
                                             </div>
