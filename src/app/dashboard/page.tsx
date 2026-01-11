@@ -35,6 +35,7 @@ interface AddressFormData {
 }
 import useMyWishListStore from "@/store/useMyWishListstore";
 import { CustomAlert } from "@/components/alert/CustomAlert";
+import { validateField } from "@/utils/validation";
 
 
 
@@ -213,79 +214,42 @@ const Dashboard: React.FC = () => {
   };
 
 
-  const handleSubmitAddress = async () => {
-    if (!customerId || !billingAddress?._id) return;
-    const addressPayload = {
-      fullName: addressFormData.name,
-      phone: addressFormData.phone,
-      streetAddress: [addressFormData.address],
-      city: addressFormData.city,
-      state: addressFormData.state,
-      zipCode: addressFormData.postcode,
-      country: addressFormData.country,
-    };
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    const fieldsToValidate = ['name', 'email', 'phone', 'address', 'city', 'state', 'country', 'postcode'];
+    let isValid = true;
 
-
-    try {
-      if (editingAddress) {
-        // ✅ UPDATE ADDRESS - use the addressId from editingAddress
-        await updateBillingAddress(
-          billingAddress._id,  // billingId
-          editingAddress._id,  // addressId
-          addressPayload
-        );
-      } else {
-        // ✅ CREATE ADDRESS
-        await updateBillingAddress(
-          billingAddress._id,  // billingId
-          "new",  // addressId
-          addressPayload
-        );
+    fieldsToValidate.forEach((field) => {
+      const value = addressFormData[field as keyof AddressFormData] || '';
+      const error = validateField(field, value);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
       }
+    });
 
-      setShowAddressForm(false);
-      setEditingAddress(null);
-      fetchBillingAddressByCustomerId(customerId);
-    } catch (error) {
-      console.error("Address save failed", error);
+    setErrors(newErrors);
+
+    // Mark all as touched
+    const allTouched = fieldsToValidate.reduce((acc, curr) => ({ ...acc, [curr]: true }), {});
+    setTouched(allTouched);
+
+    if (!isValid) {
+      toast({
+        title: "Form Error",
+        description: "Please fill in all required fields correctly.",
+        variant: "destructive",
+      });
     }
+
+    return isValid;
   };
 
-
-
-
-
-
-  const validateField = (name: string, value: string): string => {
-    switch (name) {
-      case 'name':
-        if (!value.trim()) return 'Name is required';
-        if (value.trim().length < 2) return 'Name must be at least 2 characters';
-        if (value.trim().length > 50) return 'Name must not exceed 50 characters';
-        // if (!/^[a-zA-Z\s]+$/.test(value)) return 'Name should only contain letters'; 
-        return '';
-
-      case 'phone':
-        if (!value.trim()) return 'Phone number is required';
-        const phoneRegex = /^[\d\s\-\+\(\)]{10,15}$/;
-        if (!phoneRegex.test(value.replace(/\s/g, ''))) return 'Please enter a valid phone number (10-15 digits)';
-        return '';
-
-      case 'postcode':
-        if (value && !/^[a-zA-Z0-9\s\-]{3,10}$/.test(value)) return 'Please enter a valid postcode';
-        return '';
-
-      default:
-        return '';
-    }
-  };
   const handleBlur = (fieldName: keyof AddressFormData) => {
     setTouched(prev => ({ ...prev, [fieldName]: true }));
 
-    const error = validateField(
-      fieldName,
-      addressFormData[fieldName]
-    );
+    const value = addressFormData[fieldName] || '';
+    const error = validateField(fieldName, value);
 
     setErrors(prev => ({ ...prev, [fieldName]: error }));
   };
@@ -298,8 +262,6 @@ const Dashboard: React.FC = () => {
       }));
     }
   }, [showAddressForm, user]);
-
-
 
 
   //   const addresses = [
@@ -336,11 +298,101 @@ const Dashboard: React.FC = () => {
     return billingAddress?.addresses || [];
   }, [billingAddress]);
 
-  const [alert, setAlert] = useState({
+  const handleSubmitAddress = async () => {
+    if (!customerId) return;
+
+    // Validate form before submission
+    if (!validateForm()) return;
+
+    const addressPayload = {
+      fullName: addressFormData.name,
+      phone: addressFormData.phone,
+      streetAddress: [addressFormData.address],
+      city: addressFormData.city,
+      state: addressFormData.state,
+      zipCode: addressFormData.postcode,
+      country: addressFormData.country,
+      email: addressFormData.email
+    };
+
+    try {
+      // If user has no billing address document yet, create one
+      if (!billingAddress || !billingAddress._id) {
+        await createBillingAddress({
+          customerId: customerId,
+          addresses: [addressPayload as any] // Cast as any if Types mismatch, ideally fix Interface
+        });
+        toast({
+          title: "Success",
+          description: "Address added successfully",
+          variant: "success",
+        });
+      }
+      else if (editingAddress) {
+        // ✅ UPDATE EXISTING ADDRESS
+        await updateBillingAddress(
+          billingAddress._id,
+          editingAddress._id,
+          addressPayload
+        );
+        toast({
+          title: "Success",
+          description: "Address updated successfully",
+          variant: "success",
+        });
+      } else {
+        // ✅ ADD NEW ADDRESS TO EXISTING BILLING DOC
+        await updateBillingAddress(
+          billingAddress._id,
+          undefined,
+          addressPayload
+        );
+        toast({
+          title: "Success",
+          description: "Address added successfully",
+          variant: "success",
+        });
+      }
+
+      setShowAddressForm(false);
+      setEditingAddress(null);
+      setErrors({});
+      setTouched({});
+      setAddressFormData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        city: "",
+        state: "",
+        postcode: "",
+        country: "",
+      });
+      fetchBillingAddressByCustomerId(customerId);
+    } catch (error) {
+      console.error("Address save failed", error);
+      toast({
+        title: "Error",
+        description: "Failed to save address",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+
+  const [alert, setAlert] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm';
+    message: string;
+    id: string;
+    action: 'wishlist' | 'address' | null;
+  }>({
     isOpen: false,
-    type: 'success' as 'success' | 'error' | 'confirm',
+    type: 'success',
     message: '',
-    id: ''
+    id: '',
+    action: null
   });
 
   // Set User Data
@@ -600,7 +652,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleDownloadReceipt = (booking: any) => {
-    const receiptContent = `ROOMINTEL BOOKING RECEIPT\nID: ${booking.id}\nRoom: ${booking.roomName}\nGuest: ${user?.name}\nTotal: ${booking.price}\nStatus: ${booking.status}`;
+    const receiptContent = `Avensstay BOOKING RECEIPT\nID: ${booking.id}\nRoom: ${booking.roomName}\nGuest: ${user?.name}\nTotal: ${booking.price}\nStatus: ${booking.status}`;
     const blob = new Blob([receiptContent], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -623,24 +675,41 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRemove = async (id: string) => {
-    setAlert({ isOpen: true, type: 'confirm', message: 'Do you want to remove this room?', id });
+    setAlert({ isOpen: true, type: 'confirm', message: 'Do you want to remove this room?', id, action: 'wishlist' });
   };
   // The Actual Delete Action
   const handleConfirmDelete = async () => {
     try {
       const idToDelete = alert.id;
       if (!idToDelete) return;
+
       setAlert({ ...alert, isOpen: false });
-      await removeWishlist(idToDelete);
-      await fetchWishlists({ userId: userId._id, isDeleted: true });
-      setAlert({
-        isOpen: true,
-        type: 'success',
-        message: 'Removed successfully!',
-        id: ''
-      });
+
+      if (alert.action === 'wishlist') {
+        await removeWishlist(idToDelete);
+        await fetchWishlists({ userId: userId._id, isDeleted: true });
+        setAlert({
+          isOpen: true,
+          type: 'success',
+          message: 'Removed successfully!',
+          id: '',
+          action: null
+        });
+      } else if (alert.action === 'address') {
+        if (!billingAddress?._id) return;
+        await deleteBillingAddressPermanently(billingAddress._id, idToDelete);
+        await fetchBillingAddressByCustomerId(customerId);
+        setAlert({
+          isOpen: true,
+          type: 'success',
+          message: 'Address removed successfully!',
+          id: '',
+          action: null
+        });
+      }
+
     } catch (err) {
-      setAlert({ isOpen: true, type: 'error', message: 'Something went wrong', id: '' });
+      setAlert({ isOpen: true, type: 'error', message: 'Something went wrong', id: '', action: null });
     }
   };
 
@@ -663,10 +732,13 @@ const Dashboard: React.FC = () => {
 
   const handleRemoveAddress = async (addressId: string | undefined) => {
     if (!addressId) return;
-    if (!billingAddress?._id) return;
-
-    await deleteBillingAddressPermanently(billingAddress._id, addressId);
-    await fetchBillingAddressByCustomerId(customerId);
+    setAlert({
+      isOpen: true,
+      type: 'confirm',
+      message: 'Are you sure you want to remove this address?',
+      id: addressId,
+      action: 'address'
+    });
   };
 
   const handleSetDefault = async (addressId: string | undefined) => {
@@ -1107,9 +1179,17 @@ const Dashboard: React.FC = () => {
                         name="address"
                         value={addressFormData.address}
                         onChange={handleInputChanges}
+                        onBlur={() => handleBlur('address')}
                         placeholder="Street address"
-                        className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                        className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm 
+                        ${touched.address && errors.address
+                            ? 'border-red-500 focus:border-red-500'
+                            : 'border-gray-300 focus:border-[#EDA337]'
+                          }`}
                       />
+                      {touched.address && errors.address && (
+                        <p className="text-xs text-red-500 mt-1">{errors.address}</p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1121,13 +1201,21 @@ const Dashboard: React.FC = () => {
                           name="country"
                           value={addressFormData.country}
                           onChange={handleInputChanges}
-                          className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
+                          onBlur={() => handleBlur('country')}
+                          className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm appearance-none cursor-pointer
+                          ${touched.country && errors.country
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#EDA337]'
+                            }`}
                         >
                           <option value="">Select your country</option>
                           {countryData.map((c: any, i: number) => (
                             <option key={i} value={c.name}>{c.name}</option>
                           ))}
                         </select>
+                        {touched.country && errors.country && (
+                          <p className="text-xs text-red-500 mt-1">{errors.country}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1139,7 +1227,12 @@ const Dashboard: React.FC = () => {
                             name="state"
                             value={addressFormData.state}
                             onChange={handleInputChanges}
-                            className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm appearance-none cursor-pointer"
+                            onBlur={() => handleBlur('state')}
+                            className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm appearance-none cursor-pointer
+                            ${touched.state && errors.state
+                                ? 'border-red-500 focus:border-red-500'
+                                : 'border-gray-300 focus:border-[#EDA337]'
+                              }`}
                           >
                             <option value="">Select State</option>
                             {availableStates.map((s: any, i: number) => (
@@ -1152,9 +1245,17 @@ const Dashboard: React.FC = () => {
                             name="state"
                             value={addressFormData.state}
                             onChange={handleInputChanges}
+                            onBlur={() => handleBlur('state')}
                             placeholder="e.g. NY"
-                            className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                            className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm 
+                            ${touched.state && errors.state
+                                ? 'border-red-500 focus:border-red-500'
+                                : 'border-gray-300 focus:border-[#EDA337]'
+                              }`}
                           />
+                        )}
+                        {touched.state && errors.state && (
+                          <p className="text-xs text-red-500 mt-1">{errors.state}</p>
                         )}
                       </div>
                     </div>
@@ -1170,9 +1271,17 @@ const Dashboard: React.FC = () => {
                           name="city"
                           value={addressFormData.city}
                           onChange={handleInputChanges}
+                          onBlur={() => handleBlur('city')}
                           placeholder="e.g. New York"
-                          className="w-full bg-white border border-gray-300 rounded-sm p-4 text-sm text-[#283862] focus:outline-none focus:border-[#EDA337] shadow-sm"
+                          className={`w-full bg-white border rounded-sm p-4 text-sm text-[#283862] focus:outline-none shadow-sm 
+                          ${touched.city && errors.city
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-gray-300 focus:border-[#EDA337]'
+                            }`}
                         />
+                        {touched.city && errors.city && (
+                          <p className="text-xs text-red-500 mt-1">{errors.city}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">

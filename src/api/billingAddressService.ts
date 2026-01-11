@@ -30,11 +30,14 @@ export interface BillingAddress {
 export const billingAddressService = {
   /* ---------- CREATE BILLING ADDRESS ---------- */
   createBillingAddress: async (
-    payload: Partial<BillingAddress>
+    payload: { customerId: string; addresses: any[] }
   ): Promise<BillingAddress> => {
     const response = await axiosInstance.post(
       "/site/billingaddress",
-      payload
+      {
+        customersId: payload.customerId,
+        addresses: payload.addresses
+      }
     );
     return response.data.data || response.data;
   },
@@ -56,19 +59,19 @@ export const billingAddressService = {
   },
 
   /* ---------- UPDATE BILLING / ADDRESS ---------- */
-updateBillingAddress: async (
-  billingId: string,
-  addressId: string | undefined,
-  payload: Partial<Address>
-): Promise<BillingAddress> => {
+  updateBillingAddress: async (
+    billingId: string,
+    addressId: string | undefined,
+    payload: Partial<Address>
+  ): Promise<BillingAddress> => {
 
-  const url = addressId
-    ? `/site/billingaddress/update/${billingId}/address/${addressId}`
-    : `/site/billingaddress/update/${billingId}/address/`;
+    const url = addressId
+      ? `/site/billingaddress/update/${billingId}/address/${addressId}`
+      : `/site/billingaddress/update/${billingId}/address/`;
 
-  const response = await axiosInstance.put(url, payload);
-  return response.data.data || response.data;
-},
+    const response = await axiosInstance.put(url, payload);
+    return response.data.data || response.data;
+  },
 
 
 
