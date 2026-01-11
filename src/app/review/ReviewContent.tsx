@@ -30,7 +30,7 @@ export default function ReviewContent() {
       isSetReviewExist(true);
     }
   }, [alreadyExistErrMsg]);
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     if (rating === 0) return showAlert.warning("Please select a rating ⭐");
     if (verifyResponse?.bookingId && verifyResponse?.userId && rating && token) {
       const formData: ReviewDetails = {
@@ -40,7 +40,7 @@ export default function ReviewContent() {
         rating,
         comment: feedbackContext,
       }
-      addReview(formData)
+      await addReview(formData)
 
     }
     setSubmitted(true);

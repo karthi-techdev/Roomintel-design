@@ -65,6 +65,7 @@ const RoomCheckout: React.FC = () => {
         serviceCharge: 0,
         grandTotal: 0,
     });
+    const [bookingId, setBookingId] = useState<string>('')
 
     const { createBillingAddress, billingAddress, isLoading, fetchBillingAddressByCustomerId, setDefaultBillingAddress, updateBillingAddress } = useBillingAddressStore();
     const [isAddressSaved, setIsAddressSaved] = useState(false);
@@ -764,6 +765,7 @@ const RoomCheckout: React.FC = () => {
             guestName: formData.name,
             guestEmail: formData.email,
             guestPhone: formData.phone,
+            user: user?._id,
             room: primaryRoomId,
             rooms: bookedRooms,
             checkIn: dates.checkIn,
@@ -778,7 +780,8 @@ const RoomCheckout: React.FC = () => {
         try {
             if (paymentMethod === 'cash') {
                 // CASH FLOW
-                await bookingService.createBooking(bookingPayload);
+                const bookingData = await bookingService.createBooking(bookingPayload);
+                setBookingId(bookingData._id);
                 const pointsEarned = Math.floor(finalTotalAmount * 10);
                 showAlert.success(`Booking Confirmed! Please pay on arrival.\n\n🎉 You earned ${pointsEarned} loyalty points!`);
                 await finalizeOrder(bookingPayload);
@@ -794,7 +797,7 @@ const RoomCheckout: React.FC = () => {
                     phone: formData.phone,
                     description: `Booking for ${formData.name}`,
                     onSuccess: async (response) => {
-                        // Update payload with payment success
+                        // Update payload with p    ayment success
                         const paidPayload = {
                             ...bookingPayload,
                             paymentStatus: 'Paid',
@@ -856,27 +859,41 @@ const RoomCheckout: React.FC = () => {
                             Booking Confirmed!
                         </h2>
                         <p className="text-gray-500 text-[12px] mb-6 max-w-md mx-auto">
-                            Thank you for choosing Avensstay. Your reservation has been successfully processed and a confirmation email is on its way.
+                            Thank you for choosing AvensStay. Your reservation has been successfully processed and a confirmation email is on its way.
                         </p>
 
                         {/* Details Card */}
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 md:p-8 mb-6 text-left">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Booking ID</label>
-                                    <p className="font-mono text-[#283862] font-semibold">#{confirmedBookingDetails?.id?.slice(-8).toUpperCase() || 'RT-XXXXX'}</p>
+                        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 md:p-4 mb-8 text-left shadow-sm">
+                            <div className="grid grid-cols-2 gap-y-4 gap-x-4">
+
+                                <div className="col-span-2 border-b border-gray-100 pb-6">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Booking ID
+                                    </label>
+                                    <p className="text-[14px] font-black text-[#283862] tracking-tight uppercase">
+                                        #{bookingId || "RT-LOADING"}
+                                    </p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Total Amount</label>
-                                    <p className="text-[#EDA337] font-bold">{fmt(confirmedBookingDetails?.totalAmount || 0)}</p>
+
+                                <div className="col-span-1">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Total Amount
+                                    </label>
+                                    <p className="text-[14px] font-black text-[#c23535]">
+                                        {fmt(confirmedBookingDetails?.totalAmount || 0)}
+                                    </p>
                                 </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Points Earned</label>
-                                    <p className="text-green-600 font-bold">🎉 +{confirmedBookingDetails?.points || 0} Points</p>
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 block">Payment Status</label>
-                                    <p className="text-blue-600 font-semibold">{confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}</p>
+
+                                <div className="col-span-1 border-l border-gray-100 pl-6">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">
+                                        Payment Status
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${confirmedBookingDetails?.paymentMode === 'Cash' ? 'bg-orange-500' : 'bg-green-500'}`} />
+                                        <p className="text-[14px] font-black text-[#283862] uppercase tracking-tighter">
+                                            {confirmedBookingDetails?.paymentMode === 'Cash' ? 'Pay on Arrival' : 'Paid Online'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
