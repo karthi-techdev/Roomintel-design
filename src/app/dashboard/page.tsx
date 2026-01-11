@@ -279,7 +279,6 @@ const Dashboard: React.FC = () => {
   const { processPayment } = usePayment();
 
   const handlePayNow = async (booking: any) => {
-<<<<<<< HEAD
     const amountStr = booking.price.replace(/[^0-9.]/g, '');
     const amount = parseFloat(amountStr);
 
@@ -290,88 +289,23 @@ const Dashboard: React.FC = () => {
       email: user?.email,
       phone: user?.phone,
       description: `Payment for ${booking.roomName}`,
-      onSuccess: (response) => {
-        showAlert.success(`Payment Successful! ID: ${response.razorpay_payment_id}`);
+      onSuccess: (response: any) => {
+        toast({
+          title: "Payment Successful",
+          description: `Payment ID: ${response?.razorpay_payment_id || 'Success'}`,
+          variant: "success",
+        });
         window.location.reload();
       },
-      onFailure: (error) => {
+      onFailure: (error: any) => {
         console.error("Payment failed", error);
+        toast({
+          title: "Payment Failed",
+          description: error?.description || "Payment could not be processed",
+          variant: "destructive",
+        });
       }
     });
-=======
-    const { toast } = useToast(); // Make sure this is at the top of your component
-
-    try {
-      const amountStr = booking.price.replace(/[^0-9.]/g, '');
-      const amount = parseFloat(amountStr);
-
-      const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
-
-      if (paymentRes.status === false) {
-        toast({
-          title: "Payment Initiation Failed",
-          description: paymentRes.message || "Unable to start payment process",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const orderData = paymentRes.data;
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: "RoomIntel Booking",
-        description: `Payment for ${booking.roomName}`,
-        order_id: orderData.razorpayOrderId,
-
-        handler: function (response: any) {
-          toast({
-            title: "Payment Successful",
-            description: `Payment ID: ${response.razorpay_payment_id}`,
-            variant: "success",
-          });
-          window.location.reload();
-        },
-
-        prefill: {
-          name: user?.name || '',
-          email: user?.email || '',
-          contact: user?.phone || '',
-        },
-
-        theme: { color: "#EDA337" },
-      };
-
-      if (typeof window !== "undefined" && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-
-        // Payment failure handler
-        rzp.on('payment.failed', function (response: any) {
-          toast({
-            title: "Payment Failed",
-            description: response.error?.description || "Payment could not be processed",
-            variant: "destructive",
-          });
-        });
-
-        rzp.open();
-      } else {
-        toast({
-          title: "Payment Error",
-          description: "Razorpay SDK not loaded. Please try again later.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Payment Error",
-        description: error.message || "An unexpected error occurred during payment",
-        variant: "destructive",
-      });
-    }
->>>>>>> dce3ddc8c5669b88115b89c0c3d81d081f631245
   };
 
   const handleCancelBooking = (bookingId: string) => {
