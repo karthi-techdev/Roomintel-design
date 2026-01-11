@@ -268,27 +268,27 @@ const RoomsGridContent = () => {
   const filteredAndSortedRooms = useMemo(() => {
     let result = rooms;
     if (arrival && departure) {
-    const checkIn = new Date(arrival);
-    const checkOut = new Date(departure);
+      const checkIn = new Date(arrival);
+      const checkOut = new Date(departure);
 
-    // Build set of booked room IDs in the selected range
-    const bookedRoomIds = new Set<string>();
+      // Build set of booked room IDs in the selected range
+      const bookedRoomIds = new Set<string>();
 
-    allBookings.forEach((bookedRoom: any) => {
-      const hasOverlap = bookedRoom.dates.some((date: string) => {
-        const d = new Date(date);
-        return d >= checkIn && d < checkOut;
+      allBookings.forEach((bookedRoom: any) => {
+        const hasOverlap = bookedRoom.dates.some((date: string) => {
+          const d = new Date(date);
+          return d >= checkIn && d < checkOut;
+        });
+
+        if (hasOverlap) {
+          bookedRoomIds.add(bookedRoom.roomId);
+        }
       });
 
-      if (hasOverlap) {
-        bookedRoomIds.add(bookedRoom.roomId);
-      }
-    });
 
 
-
-    result = result.filter(room => !bookedRoomIds.has(room.id as string));
-  }
+      result = result.filter(room => !bookedRoomIds.has(room.id as string));
+    }
     // 1. Filter
     result = result.filter(room => {
       // Price Filter
@@ -384,34 +384,34 @@ const RoomsGridContent = () => {
       />
       {/* --- Page Header --- */}
       <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
-  
-  {/* Background Image */}
-  <div className="absolute inset-0 opacity-40">
-    <img
-      src={Roombg.src}
-      alt="Rooms Background"
-      className="w-full h-full object-cover"
-    />
-  </div>
 
-  {/* Center Content */}
-  <div className="relative z-10 flex flex-col items-center justify-center">
-    <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
-      Rooms Grid
-    </h1>
+        {/* Background Image */}
+        <div className="absolute inset-0 opacity-40">
+          <img
+            src={Roombg.src}
+            alt="Rooms Background"
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-    <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
-      <Link href="/">
-        <span className="hover:text-brand-red cursor-pointer transition-colors">
-          Home
-        </span>
-      </Link>
-      <span>/</span>
-      <span className="text-white">Rooms</span>
-    </div>
-  </div>
+        {/* Center Content */}
+        <div className="relative z-10 flex flex-col items-center justify-center">
+          <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
+            Rooms Grid
+          </h1>
 
-</div>
+          <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
+            <Link href="/">
+              <span className="hover:text-brand-red cursor-pointer transition-colors">
+                Home
+              </span>
+            </Link>
+            <span>/</span>
+            <span className="text-white">Rooms</span>
+          </div>
+        </div>
+
+      </div>
 
 
 
@@ -954,7 +954,10 @@ const RoomsGridContent = () => {
                       <div className={`p-8 flex flex-col justify-between ${viewMode === 'list' ? 'w-full md:w-[60%]' : ''}`}>
                         <div>
                           <div className="flex justify-between items-start gap-4 mb-4">
-                            <Link href={`/room-view/${room.slug}`}>
+                            <Link href={{
+                              pathname: `/room-view/${room.slug}`,
+                              query: Object.fromEntries(searchParams) // passes all current query params
+                            }}>
                               <h3 className="text-xl font-black text-[#283862] leading-tight group-hover:text-[#c23535] transition-colors line-clamp-2 uppercase tracking-tight">
                                 {room.name}
                               </h3>
@@ -992,10 +995,13 @@ const RoomsGridContent = () => {
 
                         {/* --- ACTION BUTTONS --- */}
                         <div className="flex gap-4">
+
                           <button
                             onClick={() => {
                               if (isLoggedIn) {
-                                router.push(`/room-view/${room.slug}`);
+                                // Preserve ALL current query params + go to room view
+                                const currentQuery = new URLSearchParams(searchParams.toString());
+                                router.push(`/room-view/${room.slug}?${currentQuery.toString()}`);
                               } else {
                                 useAuthStore.getState().openLoginModal();
                               }
