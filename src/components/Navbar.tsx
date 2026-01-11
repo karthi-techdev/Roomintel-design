@@ -78,18 +78,28 @@ const Navbar: React.FC = () => {
 
     const getCurrentView = () => {
         const path = pathname || '/';
+
         if (path === '/') return 'home';
         if (path === '/about-us') return 'about-us';
-        if (path === '/rooms') return 'rooms';
-        if (path.startsWith('/room-detail')) return 'room-detail';
-        if (path === '/room-cart') return 'room-cart';
-        if (path === '/room-view') return 'rooms';
-        if (path === '/room-checkout') return 'room-checkout';
+
+
+        
+        if (
+            path.startsWith('/rooms') ||
+            path.startsWith('/room-view') ||
+            path.startsWith('/room-checkout') ||
+            path.startsWith('/room-cart')
+        ) {
+            return 'rooms';
+        }
+
         if (path === '/gallery') return 'gallery';
         if (path === '/contact-us') return 'contact-us';
         if (path === '/dashboard') return 'dashboard';
+
         return 'home';
     };
+
 
     const currentView = getCurrentView();
 
