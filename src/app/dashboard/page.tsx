@@ -14,24 +14,29 @@ import { authService } from '@/api/authService';
 import { bookingService } from '@/api/bookingService';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { membershipService } from '@/api/membershipService';
-import { showAlert } from '@/utils/alertStore';
+// At the top of Dashboard.tsx
+import { useToast } from '@/components/ui/Toast';   // adjust path if needed
 import { useCurrency } from '@/hooks/useCurrency';
 import { usePayment } from '@/hooks/usePayment';
 import { getImageUrl as getBaseImageUrl } from '@/utils/getImage';
 import { FaHeart } from "react-icons/fa6";
 
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
+import useMyWishListStore from "@/store/useMyWishListstore";
+import { CustomAlert } from "@/components/alert/CustomAlert";
 
 
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings' | 'wishlist'>('profile');
   const { formatPrice } = useCurrency();
   const { settings } = useSettingsStore();
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
+  const userId = authService.getCurrentUser();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', email: '' });
@@ -49,8 +54,27 @@ const Dashboard: React.FC = () => {
   // UI States
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'confirm',
+    message: '',
+    id: ''
+  });
+
+  // Set User Data
+  const { wishlists, removeWishlist, isLoading, error, fetchWishlists } = useMyWishListStore();
+
+  useEffect(() => {
+    if (userId?._id) {
+      fetchWishlists({ userId: userId._id, isDeleted: true });
+    }
+  }, [userId?._id]);
+
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -219,10 +243,19 @@ const Dashboard: React.FC = () => {
         setPreviews({});
         setFiles({});
         setIsEditing(false);
-        showAlert.success("Profile updated successfully!");
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated.",
+          variant: "success",
+        });
       }
     } catch (error) {
-      showAlert.error('Failed to update profile. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong while updating your profile.";
+      toast({
+        title: "Update Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -246,6 +279,7 @@ const Dashboard: React.FC = () => {
   const { processPayment } = usePayment();
 
   const handlePayNow = async (booking: any) => {
+<<<<<<< HEAD
     const amountStr = booking.price.replace(/[^0-9.]/g, '');
     const amount = parseFloat(amountStr);
 
@@ -264,19 +298,85 @@ const Dashboard: React.FC = () => {
         console.error("Payment failed", error);
       }
     });
-  };
+=======
+    const { toast } = useToast(); // Make sure this is at the top of your component
 
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm("Are you sure you want to cancel this booking?")) return;
     try {
-      const result = await bookingService.cancelBooking(bookingId);
-      if (result.status) {
-        showAlert.success("Booking cancelled successfully");
-        window.location.reload();
+      const amountStr = booking.price.replace(/[^0-9.]/g, '');
+      const amount = parseFloat(amountStr);
+
+      const paymentRes = await bookingService.initiatePayment(amount * 100, "INR");
+
+      if (paymentRes.status === false) {
+        toast({
+          title: "Payment Initiation Failed",
+          description: paymentRes.message || "Unable to start payment process",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const orderData = paymentRes.data;
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "RoomIntel Booking",
+        description: `Payment for ${booking.roomName}`,
+        order_id: orderData.razorpayOrderId,
+
+        handler: function (response: any) {
+          toast({
+            title: "Payment Successful",
+            description: `Payment ID: ${response.razorpay_payment_id}`,
+            variant: "success",
+          });
+          window.location.reload();
+        },
+
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || '',
+        },
+
+        theme: { color: "#EDA337" },
+      };
+
+      if (typeof window !== "undefined" && (window as any).Razorpay) {
+        const rzp = new (window as any).Razorpay(options);
+
+        // Payment failure handler
+        rzp.on('payment.failed', function (response: any) {
+          toast({
+            title: "Payment Failed",
+            description: response.error?.description || "Payment could not be processed",
+            variant: "destructive",
+          });
+        });
+
+        rzp.open();
+      } else {
+        toast({
+          title: "Payment Error",
+          description: "Razorpay SDK not loaded. Please try again later.",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
-      showAlert.error("Failed to cancel: " + (error.message || "Unknown error"));
+      toast({
+        title: "Payment Error",
+        description: error.message || "An unexpected error occurred during payment",
+        variant: "destructive",
+      });
     }
+>>>>>>> dce3ddc8c5669b88115b89c0c3d81d081f631245
+  };
+
+  const handleCancelBooking = (bookingId: string) => {
+    setBookingToCancel(bookingId);
+    setShowCancelConfirm(true);
   };
 
   const handleDownloadReceipt = (booking: any) => {
@@ -300,6 +400,28 @@ const Dashboard: React.FC = () => {
     // Handle legacy customer images that might just be a filename
     const path = filename.includes('uploads/') ? filename : `customers/${filename}`;
     return `${getBaseImageUrl(path)}?v=${profileVersion}`;
+  };
+
+  const handleRemove = async (id: string) => {
+    setAlert({ isOpen: true, type: 'confirm', message: 'Do you want to remove this room?', id });
+  };
+  // The Actual Delete Action
+  const handleConfirmDelete = async () => {
+    try {
+      const idToDelete = alert.id;
+      if (!idToDelete) return;
+      setAlert({ ...alert, isOpen: false });
+      await removeWishlist(idToDelete);
+      await fetchWishlists({ userId: userId._id, isDeleted: true });
+      setAlert({
+        isOpen: true,
+        type: 'success',
+        message: 'Removed successfully!',
+        id: ''
+      });
+    } catch (err) {
+      setAlert({ isOpen: true, type: 'error', message: 'Something went wrong', id: '' });
+    }
   };
 
   const filteredBookings = bookings.filter(b => {
@@ -366,10 +488,10 @@ const Dashboard: React.FC = () => {
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Bookings</div>
                     <div className="text-xl font-bold text-[#283862]">{bookings.length}</div>
                   </div>
-                  <div className="text-center border-l border-gray-100">
+                  {/* <div className="text-center border-l border-gray-100">
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Points</div>
                     <div className="text-xl font-bold text-[#c23535]">{(user.points || 0).toLocaleString()}</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -461,7 +583,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   {/* Membership Section */}
-                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100">
+                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100 hidden">
                     <h3 className="text-lg noto-geogia-font font-bold text-[#283862] mb-4 flex items-center gap-2"><FaStar className="text-[#EDA337]" /> Membership Status</h3>
                     <div className="flex flex-col md:flex-row gap-6 md:items-center">
                       <div className="flex-1">
@@ -491,11 +613,11 @@ const Dashboard: React.FC = () => {
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">My Bookings</h2>
                       <p className="text-sm text-gray-500 mt-1">Showing <span className="font-bold text-[#283862]">{filteredBookings.length}</span> {bookingFilter} bookings.</p>
                     </div>
-                    <div className="flex gap-2 text-xs font-bold">
+                    {filteredBookings.length > 0 && <div className="flex gap-2 text-xs font-bold">
                       {['all', 'upcoming', 'completed', 'cancelled'].map(filter => (
                         <button key={filter} onClick={() => setBookingFilter(filter as any)} className={`px-4 py-2 rounded-md shadow-sm transition-all capitalize ${bookingFilter === filter ? 'bg-[#283862] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{filter}</button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                   <div className="space-y-6">
                     {filteredBookings.length > 0 ? filteredBookings.map((booking) => (
@@ -537,6 +659,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                               </div>
                             )}
+
                             <div className="flex gap-2 pt-4 border-t border-gray-100">
                               {/* <button onClick={() => handleDownloadReceipt(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#283862] hover:text-[#283862] transition-colors flex items-center justify-center gap-1"><FaReceipt /> Receipt</button>i,  / l/,///. */}
                               <button onClick={() => handleSupportClick(booking)} className="flex-1 bg-white border border-gray-200 text-gray-500 text-xs font-bold py-2 rounded hover:border-[#c23535] hover:text-[#c23535] transition-colors flex items-center justify-center gap-1"><FaConciergeBell /> Support</button>
@@ -555,7 +678,7 @@ const Dashboard: React.FC = () => {
                   </div>
                 </div>}
               {activeTab === 'wishlist' &&
-                <MyWishlist />
+                <MyWishlist data={wishlists} handleRemove={handleRemove} />
               }
 
 
@@ -577,13 +700,13 @@ const Dashboard: React.FC = () => {
             <div className="p-6 space-y-6">
               {selectedBooking && <div className="bg-gray-50 p-4 rounded-lg border border-gray-200"><div className="text-xs text-gray-500 font-bold mb-1">Booking Ref: {selectedBooking.id}</div><div className="text-sm font-bold text-[#283862]">{selectedBooking.roomName}</div></div>}
               <div className="space-y-4">
-                <a href="tel:+911234567890" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
+                <a href="tel:+8618124072" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
                   <div className="w-10 h-10 rounded-full bg-[#283862] flex items-center justify-center text-white"><FaPhoneAlt size={16} /></div>
-                  <div><div className="text-xs text-gray-500 font-bold">Call Us</div><div className="text-sm font-bold text-[#283862]">+91 123 456 7890</div></div>
+                  <div><div className="text-xs text-gray-500 font-bold">Call Us</div><div className="text-sm font-bold text-[#283862]">+91 8618124072</div></div>
                 </a>
-                <a href="mailto:support@roomintel.com" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
+                <a href="mailto:support@avensstay.com" className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-[#283862] transition-all group">
                   <div className="w-10 h-10 rounded-full bg-[#283862] flex items-center justify-center text-white"><FaEnvelope size={16} /></div>
-                  <div><div className="text-xs text-gray-500 font-bold">Email Us</div><div className="text-sm font-bold text-[#283862]">support@roomintel.com</div></div>
+                  <div><div className="text-xs text-gray-500 font-bold">Email Us</div><div className="text-sm font-bold text-[#283862]">support@avensstay.com</div></div>
                 </a>
               </div>
               <button onClick={() => setShowSupportModal(false)} className="w-full bg-[#283862] text-white font-bold py-3 rounded-lg hover:bg-[#1a2542] transition-colors">Close</button>
@@ -622,6 +745,76 @@ const Dashboard: React.FC = () => {
                   className="flex-1 py-4 bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
                 >
                   Yes, Logout
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* CustomAlert */}
+      <CustomAlert
+        isOpen={alert.isOpen}
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+        onConfirm={handleConfirmDelete}
+      />
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-xl shadow-2xl max-w-sm w-full overflow-hidden"
+            >
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                  <FaTimes className="text-red-600 text-2xl" />
+                </div>
+                <h3 className="text-xl font-bold text-[#283862] mb-2">Cancel Booking?</h3>
+                <p className="text-gray-600 text-sm mb-6">
+                  Are you sure you want to cancel this booking? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex border-t border-gray-100">
+                <button
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setBookingToCancel(null);
+                  }}
+                  className="flex-1 py-4 text-gray-600 font-semibold hover:bg-gray-50 transition-colors"
+                >
+                  No, Keep Booking
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!bookingToCancel) return;
+                    try {
+                      const result = await bookingService.cancelBooking(bookingToCancel);
+                      if (result.status) {
+                        toast({
+                          title: "Booking Cancelled",
+                          description: "Your booking has been successfully cancelled.",
+                          variant: "success",
+                        });
+                        window.location.reload();
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Cancellation Failed",
+                        description: error.message || "Unable to cancel booking at this time.",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setShowCancelConfirm(false);
+                      setBookingToCancel(null);
+                    }
+                  }}
+                  className="flex-1 py-4 bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                >
+                  Yes, Cancel Booking
                 </button>
               </div>
             </motion.div>

@@ -8,11 +8,12 @@ import {
   FaChevronRight,
   // FaTwitter,
 } from 'react-icons/fa';
+import hotelLocationService from '@/api/hotelLocationService';
 import { BsArrowLeft, BsArrowRight } from 'react-icons/bs';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PiArrowsOutSimple, PiBathtub, PiBed, PiCar, PiCoffee, PiSwimmingPool, PiTelevision, PiWifiHigh } from 'react-icons/pi';
 import { RiDoubleQuotesL, RiFacebookBoxFill } from 'react-icons/ri';
-import {  getImageUrl } from '../utils/getImage';
+import { getImageUrl } from '../utils/getImage';
 import { RiDoubleQuotesR } from "react-icons/ri";
 import { IoIosArrowRoundBack, IoIosArrowRoundForward, IoLogoLinkedin } from 'react-icons/io';
 import { FaStar } from "react-icons/fa6";
@@ -75,6 +76,24 @@ export default function Home() {
     fetchAccommodations();
   }, [fetchActiveSlides, fetchAccommodations]);
 
+  // load hotel name for dynamic texts
+  const [hotelName, setHotelName] = useState<string | null>(null);
+  useEffect(() => {
+    const loadName = async () => {
+      try {
+        const json = await hotelLocationService.getActiveLocations();
+        if (json && json.status !== false) {
+          const arr = Array.isArray(json.data) ? json.data : [];
+          const item = arr.find((h: any) => Array.isArray(h.locations) && h.locations.length > 0) || arr[0];
+          if (item?.hotelName) setHotelName(item.hotelName);
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    loadName();
+  }, []);
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [formData, setFormData] = useState({
     arrival: '',
@@ -107,7 +126,7 @@ export default function Home() {
       }
     }, 4000); // 4 sec
     return () => clearInterval(interval);
-    }, [testimonialData]);
+  }, [testimonialData]);
 
   if (loading || slides.length === 0) {
     return <div className="w-full h-screen flex justify-center items-center">Loading...</div>;
@@ -124,9 +143,9 @@ export default function Home() {
       area: 45 // Default area as it's not in the backend model yet
     },
     image: getImageUrl(
-    acc.image,
-    "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
-  ),
+      acc.image,
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2670&auto=format&fit=crop"
+    ),
   }));
 
 
@@ -465,7 +484,7 @@ export default function Home() {
                 <div className="flex items-center gap-1">
                   <span className="w-12 h-[2px] bg-[#c23535]"></span>
                   <span className="text-end text-[#c23535] text-xs lg:text-sm font-bold tracking-[0.15em] uppercase">
-                    Welcome to Bluebell
+                   Welcome to Greenview Resort
                   </span>
                 </div>
 
@@ -477,22 +496,21 @@ export default function Home() {
                   transition={{ duration: 0.6 }}
                   className="text-4xl xl:text-[3.25rem] noto-geogia-font text-[#283862] leading-[1.2] font-semibold"
                 >
-                  We Invite guests to celebrate life
+                  Where luxury meets nature, and every moment is refined
                 </motion.h2>
 
                 {/* Description Text */}
                 <div className="text-gray-500 text-[15px] leading-relaxed space-y-6 font-light">
                   <p>
-                    Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality. Delightful herbs and flavors consolidate surfaces to pacify wide based palates.
-                  </p>
+                    At Greenview Resort, our goal is to create a memorable experience where comfort, nature, and heartfelt hospitality come together. We believe in welcoming every guest not just as a visitor, but as part of our extended family—sharing warmth, care, and unforgettable moments.  
+                  </p>    
                   <p>
-                    Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality.
-                  </p>
+                    Whether you’re here for a quiet getaway, a family vacation, or a special occasion, Greenview Resort is your perfect retreat to unwind and create lasting memories.                  </p>
                 </div>
 
                 {/* Signature */}
                 <div className="mt-4">
-                  <span className="font-cursive text-4xl text-gray-500">Kathy A. Xemn</span>
+                  <span className="font-cursive text-4xl text-gray-500">Greenview Resort</span>
                 </div>
 
               </div>
@@ -576,7 +594,7 @@ export default function Home() {
             <div className="w-full max-w-[1200px] px-6 lg:px-0 mt-8">
               <AnimatePresence mode='wait'>
                 <motion.div
-                  key={activeRoom.id}
+                  key={activeRoom?.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -586,10 +604,10 @@ export default function Home() {
                   {/* Left: Price & Title */}
                   <div className="w-full md:w-1/3 flex flex-col">
                     <div className="flex items-end gap-2 mb-2">
-                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from {formatPrice(activeRoom.price)} Night</span>
+                      <span className="text-[#c23535] font-bold uppercase tracking-widest text-xs">Price from {formatPrice(activeRoom?.price)} Night</span>
                     </div>
                     <h3 className="text-3xl md:text-4xl noto-geogia-font text-[#283862] font-bold leading-tight">
-                      {activeRoom.name}
+                      {activeRoom?.name}
                     </h3>
                   </div>
 
@@ -599,21 +617,21 @@ export default function Home() {
                     <div className="flex flex-row items-center gap-1 md:gap-8 border-b border-gray-100 pb-6">
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiBed className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.beds} beds</span>
+                        <span className="text-sm">{activeRoom?.amenities?.beds} beds</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiBathtub className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.baths} Bathroom</span>
+                        <span className="text-sm">{activeRoom?.amenities?.baths} Bathroom</span>
                       </div>
                       <div className="flex items-center gap-2 text-gray-500">
                         <PiArrowsOutSimple className="text-2xl" />
-                        <span className="text-sm">{activeRoom.amenities.area} m2</span>
+                        <span className="text-sm">{activeRoom?.amenities?.area} m2</span>
                       </div>
                     </div>
 
                     {/* Description */}
                     <p className="text-gray-500 text-[15px] leading-relaxed">
-                      {activeRoom.description}
+                      {activeRoom?.description}
                     </p>
                   </div>
                 </motion.div>
@@ -812,11 +830,11 @@ export default function Home() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
-              What Our Customer Says
+              What Our Guest Says
             </h2>
 
             <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-              Our objective at Bluebell is to bring together our visitor's societies and spirits with our own.
+              Our objective at Greenview is to bring together our visitor's societies and spirits with our own.
             </p>
           </div>
 

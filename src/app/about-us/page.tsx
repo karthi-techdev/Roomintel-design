@@ -6,12 +6,14 @@ import { useRouter } from 'next/navigation';
 import { useBannerStore } from '@/store/useBannerStore';
 import { getImageUrl } from '@/utils/getImage';
 import { API_BASE_URL } from '@/utils/urls';
+import hotelLocationService from '@/api/hotelLocationService';
 
 const AboutUs: React.FC = () => {
     const router = useRouter();
     const [pageSections, setPageSections] = React.useState<any[]>([]);
     const [error, setError] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [hotelName, setHotelName] = React.useState<string | null>(null);
     const { banners, fetchBanners, loading: bannerLoading } = useBannerStore();
 
     // Use centralized getImageUrl from utils, no local definition needed
@@ -52,6 +54,20 @@ const AboutUs: React.FC = () => {
         fetchSections();
     }, []);
 
+    React.useEffect(() => {
+        const fetchHotelName = async () => {
+            try {
+                const json = await hotelLocationService.getActiveLocations();
+                const items = Array.isArray(json?.data) ? json.data : json;
+                const item = Array.isArray(items) ? items[0] : items;
+                if (item?.hotelName) setHotelName(item.hotelName);
+            } catch (err) {
+                // ignore - optional fallback will be used
+            }
+        };
+        fetchHotelName();
+    }, []);
+
     const features = [
         "Spa/gym",
         "Shopping",
@@ -79,7 +95,7 @@ const AboutUs: React.FC = () => {
                                 <div className="flex items-center gap-4 mb-2">
                                     <div className="w-12 h-[2px] bg-[#c23535]"></div>
                                     <span className="text-[#c23535] text-xs font-bold tracking-[0.2em] uppercase">
-                                        {b1?.subtitle || "Welcome to Bluebell"}
+                                        {b1?.subtitle || `Welcome to ${hotelName || 'AvensStay'}`}
                                     </span>
                                 </div>
                                 <motion.h2
@@ -102,7 +118,7 @@ const AboutUs: React.FC = () => {
                                             We make the best for all our customers.
                                         </p>
                                         <p className="text-gray-500 text-[10px] md:text-[12px] lg:text-[16px] leading-relaxed">
-                                            Our objective at Bluebell is to bring together our visitor's societies and spirits with our own...
+                                            Our objective at {hotelName || 'Avenstay'} is to bring together our visitor's societies and spirits with our own...
                                         </p>
                                     </>
                                 )}
@@ -157,7 +173,7 @@ const AboutUs: React.FC = () => {
                                 {b2?.title || "Why Choose Us"}
                             </h2>
                             <p className="text-gray-500 text-sm mt-6 max-w-2xl mx-auto leading-relaxed">
-                                {b2?.descriptionTwo || b2?.descriptionOne || "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share."}
+                                {b2?.descriptionTwo || b2?.descriptionOne || `Our objective at ${hotelName || 'Avenstay'} is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.`}
                             </p>
                         </motion.div>
 
@@ -186,7 +202,8 @@ const AboutUs: React.FC = () => {
 
                             <div className="w-full lg:w-1/2">
                                 <p className="text-[#283862] font-serif italic text-lg mb-6 leading-relaxed">
-                                    {b2?.descriptionOne || "At Bluebell, we understand the different expectations of visitors. We feel elated when you come back for the second time!"}
+                                    {b2?.descriptionOne ||
+                                        `At ${hotelName || "AvensStay"}, we understand the different expectations of visitors. We feel elated when you come back for the second time!`}
                                 </p>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
                                     {features.map((feature, idx) => (
@@ -217,7 +234,7 @@ const AboutUs: React.FC = () => {
                                 {b3?.title || "The Story of Behind Our Resort"}
                             </h3>
                             <p className="text-sm lg:text-[17px] text-white mb-6 leading-relaxed">
-                                {b3?.descriptionOne || "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own..."}
+                                {b3?.descriptionOne || `Our objective at ${hotelName || 'Avenstay'} is to bring together our visitor's societies and spirits with our own...`}
                             </p>
                             <div className="h-[250px] lg:h-[380px]">
                                 <img
@@ -234,7 +251,8 @@ const AboutUs: React.FC = () => {
                                 alt="Story image 2"
                             />
                             <p className="text-sm lg:text-[17px] text-white mb-6 mt-6 leading-relaxed">
-                                {b3?.descriptionTwo || "Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share."}
+                                {b3?.descriptionTwo ||
+                                    `Our objective at ${hotelName || "AvensStay"} is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.`}
                             </p>
                             <a href="#"><span className="text-red-500 font-semibold">Read More</span></a>
                         </div>

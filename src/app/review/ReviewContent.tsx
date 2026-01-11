@@ -18,7 +18,6 @@ export default function ReviewContent() {
   const [submitted, setSubmitted] = useState(false);
   const [feedbackContext, setFeedbackContext] = useState<string>('');
   const [isReviewExist, isSetReviewExist] = useState<boolean>(false);
-
   useEffect(() => {
     if (token && token !== null) {
       verifyReview(token);

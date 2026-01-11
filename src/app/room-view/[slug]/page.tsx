@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect, use, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format, addMonths, differenceInDays } from 'date-fns';
+import { FaStar } from "react-icons/fa6";
 import {
-    FaStar,
     FaCheck,
     FaPlus,
     FaMinus,
@@ -278,58 +278,58 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
         }
     };
     const handleBookRoom = async () => {
-    if (!room || !selectedRange.checkIn || !selectedRange.checkOut) {
-        showAlert.error('Please select check-in and check-out dates');
-        return;
-    }
+        if (!room || !selectedRange.checkIn || !selectedRange.checkOut) {
+            showAlert.error('Please select check-in and check-out dates');
+            return;
+        }
 
-    if (!isLoggedIn) {
-        showAlert.error('Please login to book a room');
-        openLoginModal();
-        return;
-    }
+        if (!isLoggedIn) {
+            showAlert.error('Please login to book a room');
+            openLoginModal();
+            return;
+        }
 
-    // Calculate nights
-    const nights = differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
-    if (nights <= 0) {
-        showAlert.error('Check-out must be after check-in');
-        return;
-    }
+        // Calculate nights
+        const nights = differenceInDays(selectedRange.checkOut, selectedRange.checkIn);
+        if (nights <= 0) {
+            showAlert.error('Check-out must be after check-in');
+            return;
+        }
 
-    // Calculate price per night with extras
-    const extraAdults = Math.max(0, adults - (room.baseAdults || 2));
-    const extraChildren = Math.max(0, children - (room.baseChildren || 0));
-    const extrasPerNight = extraAdults * (room.extraAdultPrice || 0) + extraChildren * (room.extraChildPrice || 0);
-    const pricePerNight = (room.price || 0) + extrasPerNight;
+        // Calculate price per night with extras
+        const extraAdults = Math.max(0, adults - (room.baseAdults || 2));
+        const extraChildren = Math.max(0, children - (room.baseChildren || 0));
+        const extrasPerNight = extraAdults * (room.extraAdultPrice || 0) + extraChildren * (room.extraChildPrice || 0);
+        const pricePerNight = (room.price || 0) + extrasPerNight;
 
-    // Total for all nights and rooms
-    const roomTotal = pricePerNight * nights * rooms;
+        // Total for all nights and rooms
+        const roomTotal = pricePerNight * nights * rooms;
 
-    // Taxes & Service Charge (same as checkout logic)
-    const tax = roomTotal * 0.10;
-    const serviceCharge = roomTotal * 0.05;
-    const grandTotal = roomTotal + tax + serviceCharge;
+        // Taxes & Service Charge (same as checkout logic)
+        const tax = roomTotal * 0.10;
+        const serviceCharge = roomTotal * 0.05;
+        const grandTotal = roomTotal + tax + serviceCharge;
 
-    // Format dates for URL
-    const checkIn = format(selectedRange.checkIn, 'yyyy-MM-dd');
-    const checkOut = format(selectedRange.checkOut, 'yyyy-MM-dd');
+        // Format dates for URL
+        const checkIn = format(selectedRange.checkIn, 'yyyy-MM-dd');
+        const checkOut = format(selectedRange.checkOut, 'yyyy-MM-dd');
 
-    // Build URL with all data
-    const queryParams = new URLSearchParams({
-        checkIn,
-        checkOut,
-        adults: adults.toString(),
-        children: children.toString(),
-        rooms: rooms.toString(),
-        roomTotal: roomTotal.toFixed(2),
-        tax: tax.toFixed(2),
-        serviceCharge: serviceCharge.toFixed(2),
-        grandTotal: grandTotal.toFixed(2),
-    });
+        // Build URL with all data
+        const queryParams = new URLSearchParams({
+            checkIn,
+            checkOut,
+            adults: adults.toString(),
+            children: children.toString(),
+            rooms: rooms.toString(),
+            roomTotal: roomTotal.toFixed(2),
+            tax: tax.toFixed(2),
+            serviceCharge: serviceCharge.toFixed(2),
+            grandTotal: grandTotal.toFixed(2),
+        });
 
-    // Navigate with all data
-    router.push(`/room-checkout/${room.slug}?${queryParams.toString()}`);
-};
+        // Navigate with all data
+        router.push(`/room-checkout/${room.slug}?${queryParams.toString()}`);
+    };
 
 
     // Show loading state
@@ -411,7 +411,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         { label: "Useful Info", ref: infoRef },
                         { label: "Amenities", ref: amenitiesRef },
                         { label: "FAQ", ref: faqRef },
-                        { label: "Review & Rating", ref: reviewRef }
+                        ...(filteredReview.length > 0
+                            ? [{ label: "Review & Rating", ref: reviewRef }]
+                            : [])
                     ].map((tab, idx) => (
                         <button
                             key={idx}
@@ -494,7 +496,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     room.usefulInformation.map((row: any, idx: number) => (
                                         <div key={idx} className={`flex justify-between p-4 text-xs md:text-sm border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'}`}>
                                             <span className="font-bold text-[#283862]">{row.name}</span>
+
                                             <span className="text-gray-500 font-medium text-right">{row.value}</span>
+
                                         </div>
                                     ))
                                 ) : (
@@ -505,7 +509,13 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     ].map((row, idx) => (
                                         <div key={idx} className={`flex justify-between p-4 text-xs md:text-sm border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'}`}>
                                             <span className="font-bold text-[#283862]">{row.label}</span>
-                                            <span className="text-gray-500 font-medium text-right">{row.value}</span>
+                                            <div className="flex items-center justify-end gap-1">
+                                                <span className="text-gray-500 font-medium">{row.value}</span>
+
+                                                {row.label === "Cleanliness Rating" && (
+                                                    <FaStar className="text-[#ffae1a]" />
+                                                )}
+                                            </div>
                                         </div>
                                     ))
                                 )}
@@ -544,6 +554,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         </div>
 
                         {/* Reviews & Rating sec */}
+                        {filteredReview.length > 0 &&
                         <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
@@ -559,7 +570,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     All {filteredReview.length} reviews →
                                 </button>
                             }
-                        </div>
+                        </div>}
 
                         {/* Nearby */}
                         <div>
@@ -690,7 +701,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                         </div>
 
                                         {/* Rest of the booking controls remain the same */}
-                                        
+
 
                                         {rooms >= (room?.maxRooms || 10) && (
                                             <div className="text-[10px] text-yellow-400 text-center py-1">
