@@ -272,10 +272,10 @@ useEffect(() => {
                         </div>
                     </div>
 
-                    <div className="border-t border-dashed border-slate-200 pt-6 flex flex-col sm:flex-row justify-between items-end gap-4">
-                        <div className="text-slate-400 text-xs font-medium italic">
+                    <div className="border-t border-dashed border-slate-200 pt-6 flex flex-col sm:flex-row justify-end items-end gap-4">
+                        {/* <div className="text-slate-400 text-xs font-medium italic">
                             ({IND_CURRENCY}{baseRoomPrice.toFixed(2)} Base + extras) × {nights} night{nights > 1 ? 's' : ''} × {room} Room{room > 1 ? 's' : ''}
-                        </div>
+                        </div> */}
                         <div className="text-right">
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total for this room</p>
                             <div className="text-3xl font-black text-[#283862] tracking-tighter">

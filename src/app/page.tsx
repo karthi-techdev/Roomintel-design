@@ -484,7 +484,7 @@ export default function Home() {
                 <div className="flex items-center gap-1">
                   <span className="w-12 h-[2px] bg-[#c23535]"></span>
                   <span className="text-end text-[#c23535] text-xs lg:text-sm font-bold tracking-[0.15em] uppercase">
-                    {`Welcome to ${hotelName || 'AvensStay'}`}
+                   Welcome to Greenview Resort
                   </span>
                 </div>
 
@@ -496,23 +496,21 @@ export default function Home() {
                   transition={{ duration: 0.6 }}
                   className="text-4xl xl:text-[3.25rem] noto-geogia-font text-[#283862] leading-[1.2] font-semibold"
                 >
-                  We Invite guests to celebrate life
+                  Where luxury meets nature, and every moment is refined
                 </motion.h2>
 
                 {/* Description Text */}
                 <div className="text-gray-500 text-[15px] leading-relaxed space-y-6 font-light">
                   <p>
-                    Our objective at {hotelName || "AvensStay"} is to bring together our visitors' societies and spirits with our own, communicating enthusiasm and liberality in the food we share. Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, and Mediterranean inspired cuisine infused with a New York mindset. Delightful herbs and rich flavors combine perfectly to satisfy a wide range of palates.
-                  </p>
-
+                    At Greenview Resort, our goal is to create a memorable experience where comfort, nature, and heartfelt hospitality come together. We believe in welcoming every guest not just as a visitor, but as part of our extended family—sharing warmth, care, and unforgettable moments.  
+                  </p>    
                   <p>
-                    Official Chef and Owner Philippe Massoud superbly creates a blend of Lebanese, Levantine, Mediterranean motivated food blended in with New York mentality.
-                  </p>
+                    Whether you’re here for a quiet getaway, a family vacation, or a special occasion, Greenview Resort is your perfect retreat to unwind and create lasting memories.                  </p>
                 </div>
 
                 {/* Signature */}
                 <div className="mt-4">
-                  <span className="font-cursive text-4xl text-gray-500">Kathy A. Xemn</span>
+                  <span className="font-cursive text-4xl text-gray-500">Greenview Resort</span>
                 </div>
 
               </div>
@@ -832,11 +830,11 @@ export default function Home() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] noto-geogia-font text-[#283862] font-bold mb-6">
-              What Our Customer Says
+              What Our Guest Says
             </h2>
 
             <p className="text-gray-500 text-[15px] leading-relaxed max-w-3xl">
-              Our objective at {hotelName || 'AvensStay'} is to bring together our visitor's societies and spirits with our own.
+              Our objective at Greenview is to bring together our visitor's societies and spirits with our own.
             </p>
           </div>
 
