@@ -11,18 +11,20 @@ interface WishlistFilter {
 
 export const myWishListService = {
   // Add or toggle wishlist
-  toggleWishlist: async (payload: WishlistPayload) => {
+  addWishList: async (payload: WishlistPayload) => {
     const response = await axiosInstance.post('/wishlist', payload);
+    console.log('============000000000====',response.data)
     return response.data;
   },
-  // Get wishlists with flexible filter (like reviewService)
-  getWishlists: async (filter: WishlistFilter = {}) => {
-    const response = await axiosInstance.get('/wishlist/all', { params: filter });
+  getWishlists: async (filter: any = {}) => {
+    const response = await axiosInstance.get('/wishlist', { params: filter });
     return response.data;
   },
   // Delete wishlist
   deleteWishlist: async (id: string) => {
-    const response = await axiosInstance.delete(`/wishlist/${id}`);
+    const response = await axiosInstance.post(`/wishlist/${id}`);
+    console.log('=================response',response)
+
     return response.data;
   },
 };

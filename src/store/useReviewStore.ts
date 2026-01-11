@@ -80,8 +80,11 @@ export const useReviewStore = create<ReviewState>((set) => ({
         }
     },
     verifyReview: async (token: string) => {
+        console.log('=============reeeeeeeeeeeeee',token)
+
         try {
             const response = await reviewService.verifyReview(token);
+            console.log('=============reeeeeeeeeeeeee',response ,token)
             set({
                 verifyResponse: response
             })
