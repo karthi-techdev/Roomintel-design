@@ -144,7 +144,7 @@ const ContactUs: React.FC = () => {
             </h2>
 
             <p className="text-gray-500 text-sm md:text-base lg:text-[17px] mb-8 md:mb-10 leading-relaxed max-w-2xl">
-              Our objective at Bluebell is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
+              Our objective at Greenview is to bring together our visitor's societies and spirits with our own, communicating enthusiasm and liberality in the food we share.
             </p>
 
             {/* Success Message */}
@@ -251,7 +251,7 @@ const ContactUs: React.FC = () => {
           <div className="w-full lg:w-1/3 space-y-6 md:space-y-8 lg:pt-8">
             <div>
               <h3 className="text-xl md:text-2xl noto-geogia-font font-bold text-[#283862] mb-4 md:mb-6 flex items-baseline gap-3 md:gap-4">
-                Bluebell Resort <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
+                Greenview Resort <span className="w-8 md:w-12 h-[1px] bg-[#283862]"></span>
               </h3>
               <div className="text-black text-sm md:text-base lg:text-[17px] space-y-2 font-light leading-relaxed pl-1">
                 {addressLines.map((part, idx) => (
