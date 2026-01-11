@@ -187,7 +187,7 @@ const AboutUs: React.FC = () => {
                         </motion.div>
 
                         <div className="flex flex-col gap-10 p-4 lg:flex-row lg:gap-20">
-                            <div className="w-full lg:w-1/2 relative flex justify-center lg:block">
+                            <div className="w-full lg:w-1/2 relative flex justify-center lg:block mb-5">
                                 <div className="relative w-full h-[300px] lg:h-[400px]">
                                     <img
                                         src={getImageUrl(b2?.backgroundImage, "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2525&auto=format&fit=crop")}
@@ -195,17 +195,29 @@ const AboutUs: React.FC = () => {
                                         alt="Main feature"
                                     />
                                 </div>
-                                <div className="bg-white shadow-lg rounded-md p-3 text-center w-[240px] mt-6 lg:mt-35 lg:absolute lg:top-[25px] lg:left-30">
-                                    <img
-                                        src={getImageUrl((b2?.cardImages || [])[0]?.url, "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=2525&auto=format&fit=crop")}
-                                        className="h-[180px] w-full object-cover rounded"
-                                        alt="Card"
-                                    />
-                                    <div className="flex justify-center gap-1 mt-3">
-                                        <h3 className="text-[20px] font-bold">{b2?.cardTitle || "1350+"}</h3>
-                                        <span className="text-[20px] font-semibold text-[#00000075]">{b2?.highlightedCardTitle || "Visitors"}</span>
+                                <div className="bg-white shadow-lg rounded-2xl p-5 w-[250px] mt-6 lg:mt-35 lg:absolute lg:top-[25px] lg:left-30">
+                                    <div className="relative h-[150px] w-full overflow-hidden rounded-xl mb-5">
+                                        <img
+                                            src={getImageUrl((b2?.cardImages || [])[0]?.url, "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=2525&auto=format&fit=crop")}
+                                            className="h-full w-full object-cover"
+                                            alt="Visitors"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
                                     </div>
-                                    <span className="block text-[18px] font-semibold text-[#00000075]">Come Annually</span>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-baseline justify-between">
+                                            <div className="flex items-baseline gap-2">
+                                                <h3 className="text-3xl font-bold text-gray-900">{b2?.cardTitle || "1350+"}</h3>
+                                                <span className="text-lg font-medium text-gray-600">{b2?.highlightedCardTitle || "Visitors"}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-gray-50 py-2.5 px-3 rounded-lg">
+                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                            <span className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Come Annually</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
