@@ -408,7 +408,9 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         { label: "Useful Info", ref: infoRef },
                         { label: "Amenities", ref: amenitiesRef },
                         { label: "FAQ", ref: faqRef },
-                        { label: "Review & Rating", ref: reviewRef }
+                        ...(filteredReview.length > 0
+                            ? [{ label: "Review & Rating", ref: reviewRef }]
+                            : [])
                     ].map((tab, idx) => (
                         <button
                             key={idx}
@@ -541,6 +543,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                         </div>
 
                         {/* Reviews & Rating sec */}
+                        {filteredReview.length > 0 &&
                         <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
                             <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
                             <RoomOverAllReview reviews={filteredReview} />
@@ -553,7 +556,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                     All {filteredReview.length} reviews →
                                 </button>
                             }
-                        </div>
+                        </div>}
 
                         {/* Nearby */}
                         <div>

@@ -19,6 +19,8 @@ import { calculateStatsByRoom } from '@/utils/common';
 import { ArrowRight, BedDouble, Heart, Maximize, Search, ShoppingCart, Star, Users } from 'lucide-react';
 import { IND_CURRENCY } from '@/utils/constant';
 import ShareModal from '@/components/socialMedia/ShareModal';
+import useMyWishListStore from '@/store/useMyWishListstore';
+import { authService } from '@/api/authService';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -45,6 +47,8 @@ const adultsOptions = ["4 Adults", "3 Adults", "2 Adults", "1 Adult",];
 
 
 export default function RoomsGrid() {
+  const userId = authService.getCurrentUser();
+
   // --- STATE ---
   const { rooms: rawRooms, categories: rawCategories, loading: storeLoading, fetchRooms, fetchCategories } = useRoomStore();
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -65,14 +69,24 @@ export default function RoomsGrid() {
   const [isShareOpen, setIsShareOpen] = useState<boolean>(false);
   const [roomSlug, setRoomSlug] = useState<string>('');
   const [currentOrigin, setCurrentOrigin] = useState("");
-
+  const { addWishList, removeWishlist, fetchWishlists, wishlists } = useMyWishListStore();
   //Share social media
+  useEffect(() => {
+    fetchWishlistTrigger();
+  }, [userId?._id,]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-        setCurrentOrigin(window.location.origin);
+      setCurrentOrigin(window.location.origin);
     }
-}, []);
+  }, []);
+
+
+  function fetchWishlistTrigger() {
+    if (userId?._id) {
+      fetchWishlists({ userId: userId._id, isDeleted: true });
+    }
+  }
 
   // Initial Fetch
   useEffect(() => {
@@ -294,6 +308,36 @@ export default function RoomsGrid() {
     setIsShareOpen(true);
     setRoomSlug(slug);
   }
+
+  const handleWishlist = async (roomId: string | number) => {
+
+    if (!userId?._id) {
+      useAuthStore.getState().openLoginModal();
+      return;
+    }
+
+    const wishlistItem = wishlists.find(w => String(w.roomId._id) === String(roomId));
+
+    try {
+      if (wishlistItem) {
+        await removeWishlist(wishlistItem._id);
+      } else {
+        await addWishList({
+          userId: userId._id,
+          roomId: String(roomId),
+        });
+      }
+      fetchWishlistTrigger();
+    } catch (err) {
+      console.error("Wishlist toggle failed", err);
+    }
+  }
+
+  const wishlistRoomIds = useMemo(() => {
+    return new Set(
+      wishlists.map(w => String(w.roomId._id))
+    );
+  }, [wishlists]);
 
 
   return (
@@ -815,7 +859,7 @@ export default function RoomsGrid() {
                 {currentRooms.map((room) => {
                   const roomId: string | number = room.id;
                   const overAllRating = calculateStatsByRoom(reviews, roomId);
-
+                  const isFav = wishlists.length > 0 && wishlistRoomIds.has(String(room.id));
                   return (
                     <motion.div
                       key={room.id}
@@ -857,8 +901,18 @@ export default function RoomsGrid() {
                             )}
                           </div>
                           <div className="absolute top-0 right-0 flex flex-col gap-3">
-                            <button className="p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white hover:text-red-500 transition-all duration-300 shadow-lg border border-white/10">
-                              <Heart size={20} fill="currentColor" fillOpacity={0} className="hover:fill-red-500 transition-all" />
+                            <button
+                              onClick={() => handleWishlist(room.id)}
+                              className="group p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white transition-all duration-300 shadow-lg border border-white/10"
+                            >
+                              <Heart
+                                size={20}
+                                className={`transition-all duration-300 
+                                ${isFav
+                                    ? 'fill-[#c23535] text-[#c23535]' // If Favorite: Red fill & Red border
+                                    : 'fill-none text-white group-hover:text-[#c23535]' // Not Fav: White border, Red border on hover
+                                  }`}
+                              />
                             </button>
                             <button onClick={() => handleShowShareModel(room.slug)} className="flex items-center justify-center rounded-full h-[46px] w-[46px] p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-300 text-slate-600 hover:text-red-500 group">
                               <FaShare className="text-lg group-active:scale-90 transition-transform" />

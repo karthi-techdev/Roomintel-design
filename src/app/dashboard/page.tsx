@@ -18,6 +18,8 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { FaHeart } from "react-icons/fa6";
 
 import MyWishlist from '@/components/my-wishlist/MyWishlist';
+import useMyWishListStore from "@/store/useMyWishListstore";
+import { CustomAlert } from "@/components/alert/CustomAlert";
 
 
 const Dashboard: React.FC = () => {
@@ -27,6 +29,7 @@ const Dashboard: React.FC = () => {
 
   // --- State Management ---
   const { user, isLoggedIn, logout, loadFromStorage, updateUser } = useAuthStore();
+  const userId = authService.getCurrentUser(); 
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', address: '', email: '' });
@@ -45,7 +48,23 @@ const Dashboard: React.FC = () => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  console.log('Rendered Dashboard with bookings:', bookings);
+
+  const [alert, setAlert] = useState({
+    isOpen: false,
+    type: 'success' as 'success' | 'error' | 'confirm',
+    message: '',
+    id: '' // To remember which item to delete
+  });
+
+  // Set User Data
+  const { wishlists, removeWishlist, isLoading, error, fetchWishlists } = useMyWishListStore();
+
+  useEffect(() => {
+    if (userId?._id) {
+      fetchWishlists({ userId: userId._id, isDeleted: true });
+  } 
+  }, [userId?._id]);
+
   // --- Effects ---
   useEffect(() => {
     loadFromStorage();
@@ -321,6 +340,28 @@ const Dashboard: React.FC = () => {
     return `${baseUrl}/uploads/customers/${filename}?v=${profileVersion}`;
   };
 
+  const handleRemove = async (id: string) => {
+    setAlert({ isOpen: true, type: 'confirm', message: 'Do you want to remove this room?', id });
+  };
+  // The Actual Delete Action
+  const handleConfirmDelete = async () => {
+    try {
+      const idToDelete = alert.id;
+        if (!idToDelete) return;
+        setAlert({ ...alert, isOpen: false }); 
+        await removeWishlist(idToDelete); 
+        await fetchWishlists({ userId: userId._id, isDeleted: true });
+        setAlert({ 
+            isOpen: true, 
+            type: 'success', 
+            message: 'Removed successfully!', 
+            id: '' 
+        });
+    } catch (err) {
+      setAlert({ isOpen: true, type: 'error', message: 'Something went wrong', id: '' });
+    }
+  };
+
   const filteredBookings = bookings.filter(b => {
     if (bookingFilter === 'all') return true;
     if (bookingFilter === 'upcoming') return ['Upcoming', 'Confirmed', 'Pending'].includes(b.status);
@@ -328,7 +369,6 @@ const Dashboard: React.FC = () => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
-  console.log("========",activeTab)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }
@@ -386,10 +426,10 @@ const Dashboard: React.FC = () => {
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Bookings</div>
                     <div className="text-xl font-bold text-[#283862]">{bookings.length}</div>
                   </div>
-                  <div className="text-center border-l border-gray-100">
+                  {/* <div className="text-center border-l border-gray-100">
                     <div className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Points</div>
                     <div className="text-xl font-bold text-[#c23535]">{(user.points || 0).toLocaleString()}</div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -406,7 +446,7 @@ const Dashboard: React.FC = () => {
 
                 <button
                   onClick={() => setActiveTab('wishlist')}
-                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50' }`} >
+                  className={`w-full flex items-center gap-4 px-6 py-4 text-sm font-bold tracking-wide rounded-md transition-all ${activeTab === 'wishlist' ? 'bg-[#283862] text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'}`} >
                   <FaHeart className={activeTab === 'wishlist' ? 'text-[#c23535]' : 'text-gray-400'} />
                   My Wishlist
                 </button>
@@ -429,7 +469,7 @@ const Dashboard: React.FC = () => {
           {/* (No changes needed here — kept identical to your original code) */}
 
           <div className="flex-1">
-            
+
             <motion.div key={activeTab} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
               {activeTab === 'profile' &&
                 <div className="bg-white rounded-lg shadow-lg border border-gray-100 overflow-hidden">
@@ -481,7 +521,7 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   {/* Membership Section */}
-                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100">
+                  <div className="bg-[#FAFAFA] p-8 border-t border-gray-100 hidden">
                     <h3 className="text-lg noto-geogia-font font-bold text-[#283862] mb-4 flex items-center gap-2"><FaStar className="text-[#EDA337]" /> Membership Status</h3>
                     <div className="flex flex-col md:flex-row gap-6 md:items-center">
                       <div className="flex-1">
@@ -504,18 +544,18 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                 </div>}
-  {activeTab === 'bookings' &&
+              {activeTab === 'bookings' &&
                 <div className="space-y-8 bg-white px-4 pt-8 rounded-[5px]">
                   <div className="flex flex-col sm:flex-row justify-between items-end sm:items-center gap-4">
                     <div>
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">My Bookings</h2>
                       <p className="text-sm text-gray-500 mt-1">Showing <span className="font-bold text-[#283862]">{filteredBookings.length}</span> {bookingFilter} bookings.</p>
                     </div>
-                    <div className="flex gap-2 text-xs font-bold">
+                    {filteredBookings.length > 0 &&<div className="flex gap-2 text-xs font-bold">
                       {['all', 'upcoming', 'completed', 'cancelled'].map(filter => (
                         <button key={filter} onClick={() => setBookingFilter(filter as any)} className={`px-4 py-2 rounded-md shadow-sm transition-all capitalize ${bookingFilter === filter ? 'bg-[#283862] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{filter}</button>
                       ))}
-                    </div>
+                    </div>}
                   </div>
                   <div className="space-y-6">
                     {filteredBookings.length > 0 ? filteredBookings.map((booking) => (
@@ -574,14 +614,14 @@ const Dashboard: React.FC = () => {
                     )) : <div className="text-center py-20 text-gray-400 font-bold">No bookings found in this category.</div>}
                   </div>
                 </div>}
-                  {activeTab === 'wishlist' &&
-                  <MyWishlist/>
-                  }
-            
-             
-              
+              {activeTab === 'wishlist' &&
+                <MyWishlist data={wishlists} handleRemove={handleRemove} />
+              }
+
+
+
             </motion.div>
-            
+
           </div>
         </div>
       </div>
@@ -648,6 +688,15 @@ const Dashboard: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* CustomAlert */}
+      <CustomAlert
+        isOpen={alert.isOpen}
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert({ ...alert, isOpen: false })}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };
