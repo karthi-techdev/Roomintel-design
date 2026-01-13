@@ -59,14 +59,18 @@ export default function Footer() {
         setMessage(null);
         setMessageType(null);
         setErrorSource(null);
-        if (!email || !emailpattern.test(email)) {
+        if(!email){
+            setMessage("Please enter a  email address.");
+            setMessageType("error");
+            setErrorSource("validation");
+            return;
+        }
+        if (!emailpattern.test(email)) {
             setMessage("Please enter a valid email address.");
             setMessageType("error");
             setErrorSource("validation");
             return;
         }
-
-
         setSubmitting(true);
         try {
             // Backend createSubscriber requires several fields; provide sensible defaults for newsletter signup
@@ -97,7 +101,20 @@ export default function Footer() {
             setSubmitting(false);
         }
     };
-
+    const handleChangeEmail =(event:any)=>{
+             setEmail(event.target.value)
+             const validEmail=event.target.value
+             if(!validEmail){
+                 setMessage("Please enter a  email address.");
+            setMessageType("error");
+            setErrorSource("validation");
+            return;
+             }else{
+                 setMessage("");
+            setMessageType("success");
+            setErrorSource(null);
+             }
+    }
     return (
         <>
             <footer className="bg-[#0B121C] pt-20 pb-8 relative text-white  ">
@@ -159,7 +176,7 @@ export default function Footer() {
                             <form onSubmit={handleSubscribe} noValidate className="mt-8 relative">
                                 <input
                                     value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
+                                    onChange={handleChangeEmail}
                                     type="email"
                                     placeholder="Enter your email address"
                                     className="w-full h-[60px] bg-transparent border border-gray-700 rounded-sm px-6 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-red transition-colors"

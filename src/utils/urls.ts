@@ -1,4 +1,4 @@
-export const LIVE = true;
+export const LIVE = false;
 
 export const SITE_URL = LIVE ? 'https://avensstay.com' : 'http://localhost:3000';
 export const API_BASE_URL = LIVE ? 'http://admin.avensstay.com:8000/api/v1' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1');
