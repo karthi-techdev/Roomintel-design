@@ -819,7 +819,6 @@ export default function Home() {
 
       {testimonialData && testimonialData.length > 0 && (
         <section className="bg-white py-10 sm:py-12 md:py-14 lg:py-20 rounded-[10px] md:px-5">
-
           {/* ================= Testimonials ================= */}
           <div className="max-w-[1200px] mx-auto">
             <div className="mb-8 max-w-4xl ml-5 md:ml-0">
@@ -915,6 +914,7 @@ export default function Home() {
               </div>
 
               {/* Navigation Controls - Placed outside the overflow-hidden div */}
+              {(carouselTestimonials && carouselTestimonials.length > 2 ) &&
               <div className="flex justify-center items-center gap-6 mt-12">
                 <button
                   onClick={() => setTestimonialIndex(prev => Math.max(0, prev - 1))}
@@ -943,7 +943,7 @@ export default function Home() {
                     <IoIosArrowRoundForward size={30} className="group-hover:translate-x-1 transition-transform" />
                   </button>
                 }
-              </div>
+              </div>}
             </div>
           </div>
         </section>

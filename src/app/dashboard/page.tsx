@@ -439,10 +439,7 @@ const Dashboard: React.FC = () => {
               const roomImage = primaryRoom?.images?.[0] || primaryRoom?.image || bk.rooms?.[0]?.room?.images?.[0];
 
               // Resolve Image URL
-              const finalImage = roomImage
-                ? (roomImage.startsWith('http') ? roomImage : `${process.env.NEXT_PUBLIC_IMAGE_BASE_URL || 'http://localhost:8000'}/uploads/rooms/${roomImage}`)
-                : "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop";
-
+              const finalImage = getImageUrl(roomImage, "https://images.unsplash.com/photo-1571896349842-6e53ce41e887?q=80&w=800&auto=format&fit=crop");
               // Resolve Guest Details
               const gd = bk.guestDetails || bk.rooms?.[0]?.guestDetails || bk.guests;
               const guestsString = Array.isArray(gd)
@@ -720,6 +717,7 @@ const Dashboard: React.FC = () => {
     if (bookingFilter === 'cancelled') return b.status === 'Cancelled';
     return true;
   });
+  console.log('========filteredBookings',filteredBookings)
   if (loading || !user) {
     return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-[#283862] font-semibold">Loading your dashboard...</div>;
   }
@@ -933,7 +931,7 @@ const Dashboard: React.FC = () => {
                       <h2 className="text-2xl noto-geogia-font font-bold text-[#283862]">My Bookings</h2>
                       <p className="text-sm text-gray-500 mt-1">Showing <span className="font-bold text-[#283862]">{filteredBookings.length}</span> {bookingFilter} bookings.</p>
                     </div>
-                    {filteredBookings.length > 0 && <div className="flex gap-2 text-xs font-bold">
+                    {bookings.length > 0 && <div className="flex gap-2 text-xs font-bold">
                       {['all', 'upcoming', 'completed', 'cancelled'].map(filter => (
                         <button key={filter} onClick={() => setBookingFilter(filter as any)} className={`px-4 py-2 rounded-md shadow-sm transition-all capitalize ${bookingFilter === filter ? 'bg-[#283862] text-white' : 'bg-white text-gray-500 border border-gray-200'}`}>{filter}</button>
                       ))}
@@ -943,7 +941,7 @@ const Dashboard: React.FC = () => {
                     {filteredBookings.length > 0 ? filteredBookings.map((booking) => (
                       <div key={booking.id} className="bg-white rounded-lg shadow-md border border-gray-100 overflow-hidden group hover:shadow-lg transition-all">
                         <div className="flex flex-col md:flex-row">
-                          <div className="w-full md:w-[280px] h-[200px] md:h-auto relative overflow-hidden shrink-0">
+                          <div className="w-full md:w-[280px] h-[240px] relative overflow-hidden shrink-0">
                             <img src={booking.image} alt={booking.roomName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                           </div>
                           <div className="flex-1 p-6 md:p-8 flex flex-col justify-between">
