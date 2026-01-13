@@ -1,4 +1,6 @@
 import React from 'react';
+// Rebuild trigger
+import { getImageUrl } from '../../utils/getImage';
 
 interface RoomImageGridProps {
     images: string[];
@@ -19,7 +21,7 @@ const RoomImageGrid: React.FC<RoomImageGridProps> = ({ images, onOpenLightbox })
 
                         {img ? (
                             <>
-                                <img src={img} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={`Room Image ${index + 1}`} />
+                                <img src={getImageUrl(img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" alt={`Room Image ${index + 1}`} />
                                 {index === 4 && (
                                     <div className="absolute inset-0 bg-[#283862]/60 flex items-center justify-center z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                         <span className="bg-white text-[#283862] px-6 py-3 font-bold text-xs uppercase tracking-widest hover:bg-[#c23535] hover:text-white transition-colors rounded-sm">See All Photos</span>

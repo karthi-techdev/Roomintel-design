@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaTimes, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
+import { getImageUrl } from '../../utils/getImage';
 
 interface RoomLightboxProps {
     isOpen: boolean;
@@ -46,7 +47,7 @@ const RoomLightbox: React.FC<RoomLightboxProps> = ({ isOpen, onClose, images, ph
                     </button>
 
                     <img
-                        src={images[photoIndex]}
+                        src={getImageUrl(images[photoIndex])}
                         alt="Full View"
                         className="max-w-full max-h-[90vh] object-contain rounded-sm shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
