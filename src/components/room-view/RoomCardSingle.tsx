@@ -1,5 +1,6 @@
 import { Room } from '@/store/useRoomStore';
 import { IND_CURRENCY } from '@/utils/constant';
+import { getImageUrl } from '@/utils/getImage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FaCalendarDay, FaTrash } from 'react-icons/fa';
 
@@ -229,7 +230,7 @@ const RoomCartCard: React.FC<RoomCartCardProps> = ({
                     <div className="flex flex-col md:flex-row gap-8 mb-8">
                         <div className="w-full md:w-48 h-40 rounded-[0.5rem] overflow-hidden shrink-0 shadow-inner bg-slate-100">
                             <img
-                                src={previewImage || "./image/housekeeping-1.avif"}
+                                src={getImageUrl(previewImage || "")}
                                 alt={name}
                                 className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
                             />
