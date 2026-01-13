@@ -43,6 +43,7 @@ import { useCurrency } from '@/hooks/useCurrency';
 import { Reviews, useReviewStore } from '@/store/useReviewStore';
 import RoomReview from '@/components/room-view/RoomReview';
 import RoomOverAllReview from '@/components/room-view/RoomOverAllReview';
+import { getImageUrl } from '../../../utils/getImage';
 
 interface DateRange {
     checkIn: Date | null;
@@ -167,11 +168,11 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
     const totalPriceAllNights = nights > 0 ? roomPricePerNight * nights * rooms : 0;
 
 
-    const roomImages = room && room.images ? room.images : [];
+    const roomImages = room && room.images ? room.images.map((img: string) => getImageUrl(img)) : [];
 
     const getPrimaryImage = () => {
-        if (room && room.previewImage) return room.previewImage;
-        if (room && room.images && room.images.length > 0) return room.images[0];
+        if (room && room.previewImage) return getImageUrl(room.previewImage);
+        if (room && room.images && room.images.length > 0) return getImageUrl(room.images[0]);
         return "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?q=80&w=2670&auto=format&fit=crop";
     };
 
@@ -442,7 +443,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                     <div className="flex flex-wrap justify-center items-center gap-2 text-[10px] md:text-xs font-bold tracking-widest uppercase text-gray-300">
                         <span className="hover:text-[#c23535] cursor-pointer transition-colors">Home</span>
                         <span>/</span>
-                        <span className="hover:text-[#c23535] cursor-pointer transition-colors">Rooms Grid</span>
+                        <span className="hover:text-[#c23535] cursor-pointer transition-colors">Rooms</span>
                         <span>/</span>
                         <span>{room && room.category && room.category.name ? room.category.name : "Classic"}</span>
                         <span>/</span>
@@ -577,10 +578,11 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             </div>
                         </div>
 
+
                         {/* Promo Banner */}
                         {banner && (
                             <div className="relative rounded-sm overflow-hidden h-[250px] flex items-center group cursor-pointer shadow-md">
-                                <img src={banner.image || "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop"} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Banner" />
+                                <img src={getImageUrl(banner.image, "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2070&auto=format&fit=crop")} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="Banner" />
                                 <div className="absolute inset-0 bg-gradient-to-r from-[#283862]/90 to-transparent"></div>
                                 <div className="relative z-10 p-8 md:p-12 max-w-xl">
                                     <h3 className="text-white text-xl md:text-2xl noto-geogia-font font-bold mb-4">{banner.title}</h3>
@@ -610,22 +612,22 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
 
                         {/* Reviews & Rating sec */}
                         {filteredReview.length > 0 &&
-                        <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
-                            <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
-                            <RoomOverAllReview reviews={filteredReview} />
-                            {filteredReview && filteredReview.slice(0, 8).map((item: Reviews) => {
-                                return <RoomReview item={item} key={item._id} />
-                            })}
-                            {/* View All Reviews Button */}
-                            {filteredReview && filteredReview.length > 10 &&
-                                <button
-                                    onClick={() => router.push(`/room-all-review?slug=${slug}`)}
-                                    className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
-                                >
-                                    All {filteredReview.length} reviews →
-                                </button>
-                            }
-                        </div>}
+                            <div ref={reviewRef} className='rounded-lg border border-slate-200 '>
+                                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] p-6">Ratings & Reviews</h3>
+                                <RoomOverAllReview reviews={filteredReview} />
+                                {filteredReview && filteredReview.slice(0, 8).map((item: Reviews) => {
+                                    return <RoomReview item={item} key={item._id} />
+                                })}
+                                {/* View All Reviews Button */}
+                                {filteredReview && filteredReview.length > 10 &&
+                                    <button
+                                        onClick={() => router.push(`/room-all-review?slug=${slug}`)}
+                                        className="w-full py-4 text-[#283862] font-bold text-sm bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+                                    >
+                                        All {filteredReview.length} reviews →
+                                    </button>
+                                }
+                            </div>}
 
                         {/* Nearby */}
                         <div>
@@ -772,7 +774,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 </button>
                                             </div>
                                         </div>
-                                        
+
 
                                         {/* Children */}
                                         <div className="flex justify-between items-center p-3 rounded-sm border border-gray-300 mt-2">
@@ -787,7 +789,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                                                 </button>
                                             </div>
                                         </div>
-                                        
+
                                     </div>
 
                                     <div className="border-t border-[#00000029] my-4 pt-4 flex justify-between font-bold text-lg text-[#1e2c4e]">
@@ -823,7 +825,7 @@ export default function RoomView({ params }: { params: Promise<{ slug: string }>
                             <div className="bg-[#1e2c4e] p-8 text-white rounded-sm shadow-xl border border-gray-700/50">
                                 <h3 className="text-xl noto-geogia-font font-bold mb-6 pb-4 border-b border-gray-600">Location</h3>
                                 <div className="h-[200px] bg-gray-700 mb-6 overflow-hidden relative group cursor-pointer rounded-sm border border-gray-600">
-                                    <img src={room && room.locationImage ? room.locationImage : "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2670&auto=format&fit=crop"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" alt="Map" />
+                                    <img src={getImageUrl(room?.locationImage, "https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=2670&auto=format&fit=crop")} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 opacity-60 group-hover:opacity-80" alt="Map" />
                                 </div>
                                 <div className="text-[10px] text-gray-400 mb-2 uppercase tracking-widest font-bold">{room ? room.locationName : "Location Name"}</div>
                                 <h4 className="text-lg font-bold mb-4 text-[#c23535]">Checkin & Explore</h4>

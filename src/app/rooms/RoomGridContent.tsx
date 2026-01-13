@@ -22,6 +22,7 @@ import ShareModal from '@/components/socialMedia/ShareModal';
 import useMyWishListStore from '@/store/useMyWishListstore';
 import { authService } from '@/api/authService';
 import { Suspense } from 'react';
+import { getImageUrl } from '@/utils/getImage';
 // --- TYPES ---
 interface Room {
   id: string | number;
@@ -55,6 +56,7 @@ export default function RoomsGridContent() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [bedConfig, setBedConfig] = useState<{ _id?: string; key: string; value: string }[]>([]);
+  const [banner, setBanner] = useState<any>(null);
   const router = useRouter();
   const { isLoggedIn } = useAuthStore();
   const { fetchReview, reviews } = useReviewStore();
@@ -106,7 +108,18 @@ export default function RoomsGridContent() {
         console.error("Failed to fetch bed config", e);
       }
     };
+    const fetchBanner = async () => {
+      try {
+        const data = await siteService.getRoomBanner();
+        if (data.success && data.data) {
+          setBanner(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch banner:", error);
+      }
+    };
     fetchBedConfig();
+    fetchBanner();
   }, []);
 
   // Map Data from Store
@@ -342,20 +355,20 @@ export default function RoomsGridContent() {
 
 
   // export default function RoomsPage() {
-    return (
-      <div className="w-full pb-20  ">
-        <ShareModal
-          isOpen={isShareOpen}
-          onClose={() => setIsShareOpen(false)}
-          shareUrl={`${currentOrigin}/rooms/${roomSlug}`}
-        />
-        {/* --- Page Header --- */}
-        <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
+  return (
+    <div className="w-full pb-20  ">
+      <ShareModal
+        isOpen={isShareOpen}
+        onClose={() => setIsShareOpen(false)}
+        shareUrl={`${currentOrigin}/rooms/${roomSlug}`}
+      />
+      {/* --- Page Header --- */}
+      <div className="min-h-[250px] sm:min-h-[300px] lg:min-h-[600px] flex items-center justify-center text-white text-center px-4 relative overflow-hidden">
 
         {/* Background Image */}
         <div className="absolute inset-0 opacity-40">
           <img
-            src={Roombg.src}
+            src={getImageUrl(banner?.image, Roombg.src)}
             alt="Rooms Background"
             className="w-full h-full object-cover"
           />
@@ -364,7 +377,7 @@ export default function RoomsGridContent() {
         {/* Center Content */}
         <div className="relative z-10 flex flex-col items-center justify-center">
           <h1 className="text-[22px] sm:text-[25px] md:text-[30px] lg:text-[60px] noto-geogia-font font-bold mb-4 drop-shadow-lg">
-            Rooms Grid
+            Rooms
           </h1>
 
           <div className="flex items-center justify-center gap-3 text-[10px] sm:text-xs md:text-sm font-bold tracking-widest uppercase text-gray-200">
@@ -381,657 +394,657 @@ export default function RoomsGridContent() {
       </div>
 
 
-        {/* --- Main Content --- */}
-        <div className="max-w-[1550px] mx-auto px-4 lg:px-10 py-12 bg-[#f0f0f0] ">
-          <div className="flex flex-col lg:flex-row gap-10">
+      {/* --- Main Content --- */}
+      <div className="max-w-[1550px] mx-auto px-4 lg:px-10 py-12 bg-[#f0f0f0] ">
+        <div className="flex flex-col lg:flex-row gap-10">
 
-            {/* --- Sidebar --- */}
-
-
-
-            <aside className="hidden lg:block lg:w-[25%] sticky top-28 h-fit space-y-10 bg-[#fff] p-5 rounded-[0.8rem]">
-
-              {/* Price Filter */}
-              <div className="bg-white">
-                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4 relative">
-                  Price
-                </h3>
-
-                <div className="mb-6">
-                  <input
-                    type="range"
-                    min="0"
-                    max="9900"
-                    step="50"
-                    value={priceRange}
-                    onChange={handlePriceChange}
-                    className="w-full h-2 bg-gray-200 rounded-lg lg:h-[14px] rounded-[5px] appearance-none cursor-pointer accent-[#c23535]"
-                  />
-                </div>
-                <div className="text-gray-500 font-medium">
-                  {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
-                </div>
-              </div>
-              <span className='bg-[#00000033] flex h-[2px]'></span>
-
-              {/* Category Filter */}
-              <div className="bg-white">
-                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
-                  Category
-                </h3>
-
-                <div className="space-y-3">
-                  {categories.map((cat, idx) => {
-                    const isChecked = selectedCategories.includes(cat);
-                    return (
-                      <label key={idx} className="flex items-center gap-3 cursor-pointer group select-none">
-                        <div className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center transition-colors group-hover:border-[#c23535] ${isChecked ? 'bg-[#c23535] border-brand-red' : 'border-[#c23535]'}`}>
-                          <input
-                            type="checkbox"
-                            className="peer appearance-none absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            checked={isChecked}
-                            onChange={() => handleCategoryChange(cat)}
-                          />
-                          <FaCheck className={`text-white text-xs ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
-                        </div>
-                        <span className={`transition-colors group-hover:text-brand-red ${isChecked ? 'text-brand-red font-semibold' : 'text-gray-500'}`}>{cat}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              <span className='bg-[#00000033] flex h-[2px]'></span>
+          {/* --- Sidebar --- */}
 
 
 
+          <aside className="hidden lg:block lg:w-[25%] sticky top-28 h-fit space-y-10 bg-[#fff] p-5 rounded-[0.8rem]">
 
-              <div className="bg-white ">
-                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
-                  Size
-                </h3>
+            {/* Price Filter */}
+            <div className="bg-white">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4 relative">
+                Price
+              </h3>
 
-                <div className="space-y-3">
-                  {sizes.map((size, idx) => {
-                    const isChecked = selectedSizes.includes(size);
-
-                    return (
-                      <label
-                        key={idx}
-                        className="flex items-center gap-3 cursor-pointer select-none"
-                      >
-                        <div
-                          className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            checked={isChecked}
-                            onChange={() => handleSizeChange(size)}
-                          />
-                          {isChecked && <FaCheck className="text-white text-xs" />}
-                        </div>
-
-                        <span
-                          className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                            }`}
-                        >
-                          {size} M
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              <span className='bg-[#00000033] flex h-[2px]'></span>
-
-              <div className="bg-white">
-                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
-                  Beds
-                </h3>
-
-                <div className="space-y-4">
-                  {bedsOptions.map((bed, idx) => {
-
-                    const isChecked = selectedBeds.includes(bed);
-
-                    return (
-                      <label
-                        key={idx}
-                        className="flex items-center gap-3 cursor-pointer select-none"
-                      >
-                        <div
-                          className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            checked={isChecked}
-                            onChange={() => handleBedsChange(bed)}
-                          />
-                          {isChecked && <FaCheck className="text-white text-xs" />}
-                        </div>
-
-                        <span
-                          className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                            }`}
-                        >
-                          {bed}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              <span className='bg-[#00000033] flex h-[2px]'></span>
-
-              <div className="bg-white">
-                <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
-                  Adults
-                </h3>
-
-                <div className="space-y-4">
-                  {adultsOptions.map((adult, idx) => {
-                    const isChecked = selectedAdults.includes(adult);
-
-                    return (
-                      <label
-                        key={idx}
-                        className="flex items-center gap-3 cursor-pointer select-none"
-                      >
-                        <div
-                          className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                        >
-                          <input
-                            type="checkbox"
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            checked={isChecked}
-                            onChange={() => handleAdultsChange(adult)}
-                          />
-                          {isChecked && <FaCheck className="text-white text-xs" />}
-                        </div>
-
-                        <span
-                          className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                            }`}
-                        >
-                          {adult}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-
-            </aside>
-
-            {/* MOBILE FILTER POPUP */}
-
-            {isFilterOpen && (
-
-              <>
-
-
-                {/* BACKDROP */}
-                <div
-                  className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                  onClick={() => setIsFilterOpen(false)}
-
+              <div className="mb-6">
+                <input
+                  type="range"
+                  min="0"
+                  max="9900"
+                  step="50"
+                  value={priceRange}
+                  onChange={handlePriceChange}
+                  className="w-full h-2 bg-gray-200 rounded-lg lg:h-[14px] rounded-[5px] appearance-none cursor-pointer accent-[#c23535]"
                 />
-
-
-                {/* POPUP */}
-                <motion.aside
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ duration: 0.3 }}
-                  className="fixed top-[68px] right-0 h-[calc(100vh-68px)] w-[90%] max-w-[380px] bg-white z-50 overflow-y-auto p-6 space-y-12 lg:hidden"
-                >
-                  {/* CLOSE HEADER */}
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862]">
-                      Filter
-                    </h3>
-                    <button
-                      onClick={() => setIsFilterOpen(false)}
-                      className="text-xl font-bold"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="bg-white mb-3">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2 relative">
-                      Price
-                    </h3>
-
-                    <div className="mb-6">
-                      <input
-                        type="range"
-                        min="0"
-                        max="9900"
-                        step="50"
-                        value={priceRange}
-                        onChange={handlePriceChange}
-                        className="w-full h-2 bg-gray-200 rounded-lg lg:h-[14px] rounded-[5px] appearance-none cursor-pointer accent-[#c23535]"
-                      />
-                    </div>
-                    <div className="text-gray-500 font-medium">
-                      {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
-                    </div>
-                  </div>
-                  <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
-
-                  {/* Category Filter */}
-                  <div className="bg-white">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
-                      Category
-                    </h3>
-
-                    <div className="space-y-3">
-                      {categories.map((cat, idx) => {
-                        const isChecked = selectedCategories.includes(cat);
-                        return (
-                          <label key={idx} className="flex items-center gap-3 cursor-pointer group select-none">
-                            <div className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center transition-colors group-hover:border-[#c23535] ${isChecked ? 'bg-[#c23535] border-brand-red' : 'border-[#c23535]'}`}>
-                              <input
-                                type="checkbox"
-                                className="peer appearance-none absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                checked={isChecked}
-                                onChange={() => handleCategoryChange(cat)}
-                              />
-                              <FaCheck className={`text-white text-xs ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
-                            </div>
-                            <span className={`transition-colors group-hover:text-brand-red ${isChecked ? 'text-brand-red font-semibold' : 'text-gray-500'}`}>{cat}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <span className='bg-[#00000033] flex h-[2px]'></span>
-                  <div className="bg-white ">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
-                      Size
-                    </h3>
-
-                    <div className="space-y-3">
-                      {sizes.map((size, idx) => {
-                        const isChecked = selectedSizes.includes(size);
-
-                        return (
-                          <label
-                            key={idx}
-                            className="flex items-center gap-3 cursor-pointer select-none"
-                          >
-                            <div
-                              className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                checked={isChecked}
-                                onChange={() => handleSizeChange(size)}
-                              />
-                              {isChecked && <FaCheck className="text-white text-xs" />}
-                            </div>
-
-                            <span
-                              className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                                }`}
-                            >
-                              {size} M
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
-
-                  <div className="bg-white">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
-                      Beds
-                    </h3>
-
-                    <div className="space-y-4">
-                      {bedsOptions.map((bed, idx) => {
-                        const isChecked = selectedBeds.includes(bed);
-
-                        return (
-                          <label
-                            key={idx}
-                            className="flex items-center gap-3 cursor-pointer select-none"
-                          >
-                            <div
-                              className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                checked={isChecked}
-                                onChange={() => handleBedsChange(bed)}
-                              />
-                              {isChecked && <FaCheck className="text-white text-xs" />}
-                            </div>
-
-                            <span
-                              className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                                }`}
-                            >
-                              {bed}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
-
-                  <div className="bg-white">
-                    <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
-                      Adults
-                    </h3>
-
-                    <div className="space-y-4">
-                      {adultsOptions.map((adult, idx) => {
-                        const isChecked = selectedAdults.includes(adult);
-
-                        return (
-                          <label
-                            key={idx}
-                            className="flex items-center gap-3 cursor-pointer select-none"
-                          >
-                            <div
-                              className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
-                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
-                            >
-                              <input
-                                type="checkbox"
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                checked={isChecked}
-                                onChange={() => handleAdultsChange(adult)}
-                              />
-                              {isChecked && <FaCheck className="text-white text-xs" />}
-                            </div>
-
-                            <span
-                              className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
-                                }`}
-                            >
-                              {adult}
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </motion.aside>
-              </>
-            )}
-
-
-            {/* --- Grid Content --- */}
-            <main className="w-full lg:w-[75%] bg-[#fff] p-5 rounded-[0.8rem]">
-
-              {/* Top Toolbar */}
-              <div className="flex justify-between items-center gap-2 lg:hidden">
-                {/* ROOMS COUNT – MOBILE */}
-                <span className="text-[#283862] font-bold text-sm">
-                  {filteredAndSortedRooms.length} Rooms Available
-                </span>
-
-                {/* FILTER BUTTON */}
-                <button
-                  onClick={() => setIsFilterOpen(true)}
-                  className="flex items-center gap-2 text-sm text-gray-500 
-               border border-gray-300 px-3 py-2 
-               rounded-sm hover:border-[#c23535]"
-                >
-                  <FaFilter />
-                  Filter
-                </button>
               </div>
+              <div className="text-gray-500 font-medium">
+                {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
+              </div>
+            </div>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
-              <div className="flex flex-col gap-4 mb-10 pb-6 border-b border-gray-200 md:flex-row md:items-center md:justify-between">
+            {/* Category Filter */}
+            <div className="bg-white">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
+                Category
+              </h3>
 
-                <div className="hidden lg:block text-[#283862] font-bold text-lg text-center md:text-left">
-                  {filteredAndSortedRooms.length} Rooms Available
-                </div>
+              <div className="space-y-3">
+                {categories.map((cat, idx) => {
+                  const isChecked = selectedCategories.includes(cat);
+                  return (
+                    <label key={idx} className="flex items-center gap-3 cursor-pointer group select-none">
+                      <div className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center transition-colors group-hover:border-[#c23535] ${isChecked ? 'bg-[#c23535] border-brand-red' : 'border-[#c23535]'}`}>
+                        <input
+                          type="checkbox"
+                          className="peer appearance-none absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => handleCategoryChange(cat)}
+                        />
+                        <FaCheck className={`text-white text-xs ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
+                      </div>
+                      <span className={`transition-colors group-hover:text-brand-red ${isChecked ? 'text-brand-red font-semibold' : 'text-gray-500'}`}>{cat}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
-                <div className="flex justify-between items-center gap-3 mt-5 whitespace-nowrap md:flex-row md:items-center md:gap-6">
 
-                  {/* SORT */}
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <span className="whitespace-nowrap">Sort By</span>
 
-                    <div className="relative">
-                      <button
-                        onClick={() => setIsSortOpen(!isSortOpen)}
-                        className="flex items-center justify-between gap-2 border border-gray-300 px-3 py-2 rounded-sm bg-white hover:border-[#c23535] transition-colors w-full"
+
+            <div className="bg-white ">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
+                Size
+              </h3>
+
+              <div className="space-y-3">
+                {sizes.map((size, idx) => {
+                  const isChecked = selectedSizes.includes(size);
+
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                    >
+                      <div
+                        className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
                       >
-                        {getSortLabel()} <FaChevronDown className="text-xs" />
-                      </button>
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => handleSizeChange(size)}
+                        />
+                        {isChecked && <FaCheck className="text-white text-xs" />}
+                      </div>
 
-                      {isSortOpen && (
-                        <div className="absolute left-0 top-full mt-1 w-[180px] bg-white border border-gray-200 shadow-lg z-20 rounded-sm py-1">
-                          <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('newest')}>Date: Newest First</div>
-                          <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('priceAsc')}>Price: Low to High</div>
-                          <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('priceDesc')}>Price: High to Low</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* GRID / LIST */}
-                  <div className="flex gap-2 min-w-max md:flex hidden">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'grid'
-                        ? 'bg-[#c23535] text-white'
-                        : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
-                        }`}
-                    >
-                      <FaTh />
-                    </button>
-
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'list'
-                        ? 'bg-[#c23535] text-white'
-                        : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
-                        }`}
-                    >
-                      <FaList />
-                    </button>
-                  </div>
-
-                </div>
-
-              </div>
-
-
-              {/* Room Cards Grid */}
-              {currentRooms.length > 0 ? (
-                <div className={`grid gap-10 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1'}`}>
-                  {currentRooms.map((room) => {
-                    const roomId: string | number = room.id;
-                    const overAllRating = calculateStatsByRoom(reviews, roomId);
-                    const isFav = wishlists.length > 0 && wishlistRoomIds.has(String(room.id));
-                    return (
-                      <motion.div
-                        key={room.id}
-                        layout
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ duration: 0.4, ease: "easeOut" }}
-                        className={`group bg-white rounded-[0.8rem] shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 overflow-hidden flex ${viewMode === 'list' ? 'flex-col md:flex-row min-h-[320px]' : 'flex-col'
+                      <span
+                        className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
                           }`}
                       >
-                        {/* --- IMAGE SECTION --- */}
-                        <div
-                          className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-[40%] h-72 md:h-auto' : 'h-72'
-                            }`}
-                        >
-                          <Link href={`/room-view/${room.slug}`}>
-                            <img
-                              src={room.image}
-                              alt={room.name}
-                              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-                              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                            />
-                          </Link>
+                        {size} M
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
 
-                          {/* Float Badges: Rating & Wishlist */}
-                          <div className="absolute top-5 left-5 right-5 flex justify-between items-start z-10">
-                            <div className="bg-slate-900/80 backdrop-blur-md text-white py-1.5 px-4 rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-xl">
-                              {overAllRating?.avgRating === "0.0" ? (
-                                <>
-                                  <span className="text-indigo-400 text-sm">✨</span>
-                                  <span>New Arrival</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Star size={12} className="fill-amber-400 text-amber-400" />
-                                  <span>{overAllRating?.avgRating} Rating</span>
-                                </>
-                              )}
-                            </div>
-                            <div className="absolute top-0 right-0 flex flex-col gap-3">
-                              <button
-                                onClick={() => handleWishlist(room.id)}
-                                className="group p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white transition-all duration-300 shadow-lg border border-white/10"
-                              >
-                                <Heart
-                                  size={20}
-                                  className={`transition-all duration-300 
+            <div className="bg-white">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
+                Beds
+              </h3>
+
+              <div className="space-y-4">
+                {bedsOptions.map((bed, idx) => {
+
+                  const isChecked = selectedBeds.includes(bed);
+
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                    >
+                      <div
+                        className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => handleBedsChange(bed)}
+                        />
+                        {isChecked && <FaCheck className="text-white text-xs" />}
+                      </div>
+
+                      <span
+                        className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                          }`}
+                      >
+                        {bed}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            <span className='bg-[#00000033] flex h-[2px]'></span>
+
+            <div className="bg-white">
+              <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-4">
+                Adults
+              </h3>
+
+              <div className="space-y-4">
+                {adultsOptions.map((adult, idx) => {
+                  const isChecked = selectedAdults.includes(adult);
+
+                  return (
+                    <label
+                      key={idx}
+                      className="flex items-center gap-3 cursor-pointer select-none"
+                    >
+                      <div
+                        className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          checked={isChecked}
+                          onChange={() => handleAdultsChange(adult)}
+                        />
+                        {isChecked && <FaCheck className="text-white text-xs" />}
+                      </div>
+
+                      <span
+                        className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                          }`}
+                      >
+                        {adult}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+          </aside>
+
+          {/* MOBILE FILTER POPUP */}
+
+          {isFilterOpen && (
+
+            <>
+
+
+              {/* BACKDROP */}
+              <div
+                className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+                onClick={() => setIsFilterOpen(false)}
+
+              />
+
+
+              {/* POPUP */}
+              <motion.aside
+                initial={{ x: "100%" }}
+                animate={{ x: 0 }}
+                exit={{ x: "100%" }}
+                transition={{ duration: 0.3 }}
+                className="fixed top-[68px] right-0 h-[calc(100vh-68px)] w-[90%] max-w-[380px] bg-white z-50 overflow-y-auto p-6 space-y-12 lg:hidden"
+              >
+                {/* CLOSE HEADER */}
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862]">
+                    Filter
+                  </h3>
+                  <button
+                    onClick={() => setIsFilterOpen(false)}
+                    className="text-xl font-bold"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="bg-white mb-3">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2 relative">
+                    Price
+                  </h3>
+
+                  <div className="mb-6">
+                    <input
+                      type="range"
+                      min="0"
+                      max="9900"
+                      step="50"
+                      value={priceRange}
+                      onChange={handlePriceChange}
+                      className="w-full h-2 bg-gray-200 rounded-lg lg:h-[14px] rounded-[5px] appearance-none cursor-pointer accent-[#c23535]"
+                    />
+                  </div>
+                  <div className="text-gray-500 font-medium">
+                    {IND_CURRENCY}0 - {IND_CURRENCY}{priceRange}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mb-[10px] flex h-[2px]'></span>
+
+                {/* Category Filter */}
+                <div className="bg-white">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-8 relative">
+                    Category
+                  </h3>
+
+                  <div className="space-y-3">
+                    {categories.map((cat, idx) => {
+                      const isChecked = selectedCategories.includes(cat);
+                      return (
+                        <label key={idx} className="flex items-center gap-3 cursor-pointer group select-none">
+                          <div className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center transition-colors group-hover:border-[#c23535] ${isChecked ? 'bg-[#c23535] border-brand-red' : 'border-[#c23535]'}`}>
+                            <input
+                              type="checkbox"
+                              className="peer appearance-none absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleCategoryChange(cat)}
+                            />
+                            <FaCheck className={`text-white text-xs ${isChecked ? 'opacity-100' : 'opacity-0'}`} />
+                          </div>
+                          <span className={`transition-colors group-hover:text-brand-red ${isChecked ? 'text-brand-red font-semibold' : 'text-gray-500'}`}>{cat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] flex h-[2px]'></span>
+                <div className="bg-white ">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
+                    Size
+                  </h3>
+
+                  <div className="space-y-3">
+                    {sizes.map((size, idx) => {
+                      const isChecked = selectedSizes.includes(size);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleSizeChange(size)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {size} M
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+
+                <div className="bg-white">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
+                    Beds
+                  </h3>
+
+                  <div className="space-y-4">
+                    {bedsOptions.map((bed, idx) => {
+                      const isChecked = selectedBeds.includes(bed);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleBedsChange(bed)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {bed}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+                <span className='bg-[#00000033] mt-[10px] flex h-[2px]'></span>
+
+                <div className="bg-white">
+                  <h3 className="text-2xl noto-geogia-font font-bold text-[#283862] mb-2">
+                    Adults
+                  </h3>
+
+                  <div className="space-y-4">
+                    {adultsOptions.map((adult, idx) => {
+                      const isChecked = selectedAdults.includes(adult);
+
+                      return (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 cursor-pointer select-none"
+                        >
+                          <div
+                            className={`relative w-5 h-5 border-2 rounded-[2px] flex items-center justify-center
+                ${isChecked ? "bg-[#c23535] border-[#c23535]" : "border-[#c23535]"}`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                              checked={isChecked}
+                              onChange={() => handleAdultsChange(adult)}
+                            />
+                            {isChecked && <FaCheck className="text-white text-xs" />}
+                          </div>
+
+                          <span
+                            className={`${isChecked ? "text-[#c23535] font-semibold" : "text-gray-500"
+                              }`}
+                          >
+                            {adult}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.aside>
+            </>
+          )}
+
+
+          {/* --- Grid Content --- */}
+          <main className="w-full lg:w-[75%] bg-[#fff] p-5 rounded-[0.8rem]">
+
+            {/* Top Toolbar */}
+            <div className="flex justify-between items-center gap-2 lg:hidden">
+              {/* ROOMS COUNT – MOBILE */}
+              <span className="text-[#283862] font-bold text-sm">
+                {filteredAndSortedRooms.length} Rooms Available
+              </span>
+
+              {/* FILTER BUTTON */}
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className="flex items-center gap-2 text-sm text-gray-500 
+               border border-gray-300 px-3 py-2 
+               rounded-sm hover:border-[#c23535]"
+              >
+                <FaFilter />
+                Filter
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-4 mb-10 pb-6 border-b border-gray-200 md:flex-row md:items-center md:justify-between">
+
+              <div className="hidden lg:block text-[#283862] font-bold text-lg text-center md:text-left">
+                {filteredAndSortedRooms.length} Rooms Available
+              </div>
+
+              <div className="flex justify-between items-center gap-3 mt-5 whitespace-nowrap md:flex-row md:items-center md:gap-6">
+
+                {/* SORT */}
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span className="whitespace-nowrap">Sort By</span>
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsSortOpen(!isSortOpen)}
+                      className="flex items-center justify-between gap-2 border border-gray-300 px-3 py-2 rounded-sm bg-white hover:border-[#c23535] transition-colors w-full"
+                    >
+                      {getSortLabel()} <FaChevronDown className="text-xs" />
+                    </button>
+
+                    {isSortOpen && (
+                      <div className="absolute left-0 top-full mt-1 w-[180px] bg-white border border-gray-200 shadow-lg z-20 rounded-sm py-1">
+                        <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('newest')}>Date: Newest First</div>
+                        <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('priceAsc')}>Price: Low to High</div>
+                        <div className="px-4 py-2 hover:bg-gray-50 cursor-pointer hover:text-[#c23535]" onClick={() => handleSortChange('priceDesc')}>Price: High to Low</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* GRID / LIST */}
+                <div className="flex gap-2 min-w-max md:flex hidden">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'grid'
+                      ? 'bg-[#c23535] text-white'
+                      : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
+                      }`}
+                  >
+                    <FaTh />
+                  </button>
+
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`w-9 h-9 flex items-center justify-center rounded-sm transition-colors ${viewMode === 'list'
+                      ? 'bg-[#c23535] text-white'
+                      : 'bg-white text-gray-500 border border-gray-300 hover:text-[#c23535]'
+                      }`}
+                  >
+                    <FaList />
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* Room Cards Grid */}
+            {currentRooms.length > 0 ? (
+              <div className={`grid gap-10 ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1'}`}>
+                {currentRooms.map((room) => {
+                  const roomId: string | number = room.id;
+                  const overAllRating = calculateStatsByRoom(reviews, roomId);
+                  const isFav = wishlists.length > 0 && wishlistRoomIds.has(String(room.id));
+                  return (
+                    <motion.div
+                      key={room.id}
+                      layout
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      className={`group bg-white rounded-[0.8rem] shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 overflow-hidden flex ${viewMode === 'list' ? 'flex-col md:flex-row min-h-[320px]' : 'flex-col'
+                        }`}
+                    >
+                      {/* --- IMAGE SECTION --- */}
+                      <div
+                        className={`relative overflow-hidden ${viewMode === 'list' ? 'w-full md:w-[40%] h-72 md:h-auto' : 'h-72'
+                          }`}
+                      >
+                        <Link href={`/room-view/${room.slug}`}>
+                          <img
+                            src={getImageUrl(room.image)}
+                            alt={room.name}
+                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                          />
+                        </Link>
+
+                        {/* Float Badges: Rating & Wishlist */}
+                        <div className="absolute top-5 left-5 right-5 flex justify-between items-start z-10">
+                          <div className="bg-slate-900/80 backdrop-blur-md text-white py-1.5 px-4 rounded-full flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-xl">
+                            {overAllRating?.avgRating === "0.0" ? (
+                              <>
+                                <span className="text-indigo-400 text-sm">✨</span>
+                                <span>New Arrival</span>
+                              </>
+                            ) : (
+                              <>
+                                <Star size={12} className="fill-amber-400 text-amber-400" />
+                                <span>{overAllRating?.avgRating} Rating</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="absolute top-0 right-0 flex flex-col gap-3">
+                            <button
+                              onClick={() => handleWishlist(room.id)}
+                              className="group p-3 rounded-full bg-white/20 backdrop-blur-md text-white hover:bg-white transition-all duration-300 shadow-lg border border-white/10"
+                            >
+                              <Heart
+                                size={20}
+                                className={`transition-all duration-300 
                                 ${isFav
-                                      ? 'fill-[#c23535] text-[#c23535]' // If Favorite: Red fill & Red border
-                                      : 'fill-none text-white group-hover:text-[#c23535]' // Not Fav: White border, Red border on hover
-                                    }`}
-                                />
-                              </button>
-                              <button onClick={() => handleShowShareModel(room.slug)} className="flex items-center justify-center rounded-full h-[46px] w-[46px] p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-300 text-slate-600 hover:text-red-500 group">
-                                <FaShare className="text-lg group-active:scale-90 transition-transform" />
-                              </button>
+                                    ? 'fill-[#c23535] text-[#c23535]' // If Favorite: Red fill & Red border
+                                    : 'fill-none text-white group-hover:text-[#c23535]' // Not Fav: White border, Red border on hover
+                                  }`}
+                              />
+                            </button>
+                            <button onClick={() => handleShowShareModel(room.slug)} className="flex items-center justify-center rounded-full h-[46px] w-[46px] p-2.5 bg-white/90 hover:bg-white rounded-full shadow-lg transition-all duration-300 text-slate-600 hover:text-red-500 group">
+                              <FaShare className="text-lg group-active:scale-90 transition-transform" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* --- CONTENT SECTION --- */}
+                      <div className={`p-8 flex flex-col justify-between ${viewMode === 'list' ? 'w-full md:w-[60%]' : ''}`}>
+                        <div>
+                          <div className="flex justify-between items-start gap-4 mb-4">
+                            <Link href={`/room-view/${room.slug}`}>
+                              <h3 className="text-xl font-black text-[#283862] leading-tight group-hover:text-[#c23535] transition-colors line-clamp-2 uppercase tracking-tight">
+                                {room.name}
+                              </h3>
+                            </Link>
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Starting At</span>
+                              <span className="text-2xl font-black text-[#283862] tracking-tighter">{IND_CURRENCY}{room.price}</span>
+                            </div>
+                          </div>
+
+                          <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-2 font-medium">
+                            {room.description}
+                          </p>
+
+                          {/* Amenities Display */}
+                          <div className="flex flex-wrap items-center gap-y-3 gap-x-6 py-5 border-y border-slate-200 mb-6">
+                            <div className="flex items-center gap-2 text-slate-400 group/icon">
+                              <Maximize size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
+                              <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{room.size} m²</span>
+                            </div>
+
+                            {room.beds.map((bed, idx) => (
+                              <div key={idx} className="flex items-center gap-2 text-slate-400 group/icon">
+                                <BedDouble size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
+                                <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{bed.type}</span>
+                              </div>
+                            ))}
+
+                            <div className="flex items-center gap-2 text-slate-400 group/icon">
+                              <Users size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
+                              <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{room.adults} Guests</span>
                             </div>
                           </div>
                         </div>
 
-                        {/* --- CONTENT SECTION --- */}
-                        <div className={`p-8 flex flex-col justify-between ${viewMode === 'list' ? 'w-full md:w-[60%]' : ''}`}>
-                          <div>
-                            <div className="flex justify-between items-start gap-4 mb-4">
-                              <Link href={`/room-view/${room.slug}`}>
-                                <h3 className="text-xl font-black text-[#283862] leading-tight group-hover:text-[#c23535] transition-colors line-clamp-2 uppercase tracking-tight">
-                                  {room.name}
-                                </h3>
-                              </Link>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Starting At</span>
-                                <span className="text-2xl font-black text-[#283862] tracking-tighter">{IND_CURRENCY}{room.price}</span>
-                              </div>
-                            </div>
+                        {/* --- ACTION BUTTONS --- */}
+                        <div className="flex gap-4">
+                          <button
+                            onClick={() => {
+                              if (isLoggedIn) {
+                                router.push(`/room-view/${room.slug}`);
+                              } else {
+                                useAuthStore.getState().openLoginModal();
+                              }
+                            }}
+                            className="flex-[4] bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-[#c23535] transition-all duration-300 flex items-center justify-center gap-3 group/btn shadow-xl shadow-slate-200 uppercase text-[11px] tracking-[0.15em]"
+                          >
+                            Reserve Now
+                            <ArrowRight size={18} className="group-hover/btn:translate-x-1.5 transition-transform" />
+                          </button>
 
-                            <p className="text-slate-500 text-sm leading-relaxed mb-6 line-clamp-2 font-medium">
-                              {room.description}
-                            </p>
-
-                            {/* Amenities Display */}
-                            <div className="flex flex-wrap items-center gap-y-3 gap-x-6 py-5 border-y border-slate-200 mb-6">
-                              <div className="flex items-center gap-2 text-slate-400 group/icon">
-                                <Maximize size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
-                                <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{room.size} m²</span>
-                              </div>
-
-                              {room.beds.map((bed, idx) => (
-                                <div key={idx} className="flex items-center gap-2 text-slate-400 group/icon">
-                                  <BedDouble size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
-                                  <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{bed.type}</span>
-                                </div>
-                              ))}
-
-                              <div className="flex items-center gap-2 text-slate-400 group/icon">
-                                <Users size={16} className="text-[#c23535] transition-transform group-hover/icon:scale-110" />
-                                <span className="text-[12px] font-bold font-black uppercase tracking-tighter text-slate-600">{room.adults} Guests</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* --- ACTION BUTTONS --- */}
-                          <div className="flex gap-4">
-                            <button
-                              onClick={() => {
-                                if (isLoggedIn) {
-                                  router.push(`/room-view/${room.slug}`);
-                                } else {
-                                  useAuthStore.getState().openLoginModal();
-                                }
-                              }}
-                              className="flex-[4] bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-[#c23535] transition-all duration-300 flex items-center justify-center gap-3 group/btn shadow-xl shadow-slate-200 uppercase text-[11px] tracking-[0.15em]"
-                            >
-                              Reserve Now
-                              <ArrowRight size={18} className="group-hover/btn:translate-x-1.5 transition-transform" />
-                            </button>
-
-                            {/* <button
+                          {/* <button
                             className="flex-1 bg-slate-100 text-slate-900 rounded-2xl flex items-center justify-center hover:bg-slate-200 transition-colors group/cart"
                             title="Add to wishlist"
                           >
                             <ShoppingCart size={20} className="group-hover/cart:scale-110 transition-transform" />
                           </button> */}
-                          </div>
                         </div>
-                      </motion.div>
-                    );
-                  })}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* --- EMPTY STATE --- */
+              <div className="w-full py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center px-6">
+                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                  <Search size={40} className="text-slate-200" />
                 </div>
-              ) : (
-                /* --- EMPTY STATE --- */
-                <div className="w-full py-32 bg-white rounded-[3rem] border-2 border-dashed border-slate-100 flex flex-col items-center justify-center text-center px-6">
-                  <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                    <Search size={40} className="text-slate-200" />
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 mb-2">No Matches Found</h3>
-                  <p className="text-slate-400 max-w-xs font-medium">We couldn't find any rooms matching your current filters. Try resetting them!</p>
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="mt-8 text-[#c23535] font-black text-sm uppercase tracking-widest border-b-2 border-[#c23535] pb-1 hover:text-slate-900 hover:border-slate-900 transition-all"
-                  >
-                    Clear All Filters
-                  </button>
-                </div>
-              )}
+                <h3 className="text-2xl font-black text-slate-800 mb-2">No Matches Found</h3>
+                <p className="text-slate-400 max-w-xs font-medium">We couldn't find any rooms matching your current filters. Try resetting them!</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-8 text-[#c23535] font-black text-sm uppercase tracking-widest border-b-2 border-[#c23535] pb-1 hover:text-slate-900 hover:border-slate-900 transition-all"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            )}
 
-              {/* Pagination Controls */}
-              {totalPages > 1 && (
-                <div className="mt-16 flex justify-center gap-2">
-                  {/* Page Buttons */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => {
-                        setCurrentPage(page);
-                        window.scrollTo({ top: 400, behavior: 'smooth' });
-                      }}
-                      className={`w-10 h-10 flex items-center justify-center font-bold rounded-full transition-all duration-300 shadow-md
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-16 flex justify-center gap-2">
+                {/* Page Buttons */}
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => {
+                      setCurrentPage(page);
+                      window.scrollTo({ top: 400, behavior: 'smooth' });
+                    }}
+                    className={`w-10 h-10 flex items-center justify-center font-bold rounded-full transition-all duration-300 shadow-md
                         ${currentPage === page
-                          ? 'bg-[#c23535] text-white scale-110'
-                          : 'bg-white text-[#c23535] hover:bg-gray-100'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </main>
-          </div>
+                        ? 'bg-[#c23535] text-white scale-110'
+                        : 'bg-white text-[#c23535] hover:bg-gray-100'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+            )}
+          </main>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
