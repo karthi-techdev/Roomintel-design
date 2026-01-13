@@ -127,15 +127,17 @@ export default function Footer() {
                             <div className="flex flex-col gap-4 text-sm text-gray-400">
                                 <div className="grid grid-cols-[90px_1fr]">
                                     <span className="font-bold text-white">Tel :</span>
-                                    <span>000-111-222-3333</span>
+                                    <a href="tel:+086181 24702">+086181 24702</a>
+                                    {/* <span>086181 24702</span> */}
                                 </div>
                                 <div className="grid grid-cols-[90px_1fr]">
                                     <span className="font-bold text-white">Email :</span>
-                                    <span>info@example.com</span>
+                                    <a href="mailto:info@avensstay.com">info@avensstay.com</a>
+                                    {/* <span>info@avensstay.com</span> */}
                                 </div>
                                 <div className="grid grid-cols-[90px_1fr]">
                                     <span className="font-bold text-white">Location :</span>
-                                    <span>256, Resort Street, New York<br />Blue Beach, 8974</span>
+                                    <span>2nd Main Right, near Kaimara, Laxmipura, <br />Karnataka 577131•086181 24702</span>
                                 </div>
                             </div>
                         </div>
@@ -144,10 +146,10 @@ export default function Footer() {
                         <div className="lg:pl-10">
                             <h3 className="text-2xl noto-geogia-font font-bold mb-8">Quick Links</h3>
                             <ul className="flex flex-col gap-4 text-sm text-gray-400">
-                                <li><a href="#" className="hover:text-brand-red transition-colors">About Us</a></li>
-                                <li><a href="#" className="hover:text-brand-red transition-colors">Boutique Apartment</a></li>
-                                <li><a href="#" className="hover:text-brand-red transition-colors">Jungle Safari Resort</a></li>
-                                <li><a href="#" className="hover:text-brand-red transition-colors">Mountain Chalet</a></li>
+                                <li><Link href={'/about-us'}>About Us</Link></li>
+                                <li><Link href={'/rooms'}>Rooms</Link></li>
+                                <li><Link href={'/gallery'}>Gallery</Link></li>
+                                <li><Link href={'/contact-us'}>Contact Us</Link></li>
                             </ul>
                         </div>
 
